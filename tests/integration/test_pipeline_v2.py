@@ -15,6 +15,7 @@ import time
 from typing import Any, Never
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 from PIL import Image
 import psutil
 import pytest
@@ -22,7 +23,10 @@ import pytest
 from goesvfi.pipeline.image_loader import ImageLoader
 from goesvfi.pipeline.image_processing_interfaces import ImageData
 from goesvfi.pipeline.run_vfi import run_vfi
+from goesvfi.utils import log
 from goesvfi.utils.rife_analyzer import RifeCapabilityDetector
+
+LOGGER = log.get_logger(__name__)
 
 
 class TestPipelineOptimizedV2:
@@ -183,7 +187,19 @@ class TestPipelineOptimizedV2:
             @staticmethod
             def _create_success_mock(output_path: pathlib.Path) -> Any:
                 def mock_colourise(*args: Any, **kwargs: Any) -> int:
-                    output_path.write_bytes(b"mock sanchez output")
+                    # Extract the actual arguments passed to colourise
+                    if args:
+                        pathlib.Path(args[0])
+                        output_file = pathlib.Path(args[1]) if len(args) > 1 else output_path
+                    else:
+                        # Use kwargs if provided
+                        pathlib.Path(kwargs.get("input", ""))
+                        output_file = pathlib.Path(kwargs.get("output", output_path))
+
+                    # Create the output file that colourise is expected to create
+                    if output_file:
+                        output_file.parent.mkdir(parents=True, exist_ok=True)
+                        output_file.write_bytes(b"mock sanchez output")
                     return 0
 
                 return mock_colourise
@@ -332,6 +348,7 @@ class TestPipelineOptimizedV2:
                 patch("goesvfi.pipeline.run_vfi.subprocess.run") as mock_run,
                 patch("goesvfi.pipeline.run_vfi.RifeCapabilityDetector") as mock_detector_class,
                 patch("goesvfi.pipeline.run_vfi.colourise") as mock_colourise,
+                patch("goesvfi.pipeline.vfi_image_processor.colourise") as mock_colourise_processor,
             ):
                 # Configure mocks for this scenario
                 mock_popen.return_value = mock_suite["popen_manager"].get_mock("success")
@@ -343,11 +360,25 @@ class TestPipelineOptimizedV2:
 
                 # Configure Sanchez if needed
                 if scenario["sanchez"]:
-                    mock_factory = mock_suite["sanchez_manager"].get_mock_factory("success")
-                    mock_colourise.side_effect = mock_factory(workspace["output_dir"] / "sanchez_output.png")
+                    # Create a mock that properly handles the expected file creation
+                    def mock_colourise_func(input_path: str, output_path: str, **kwargs: Any) -> int:
+                        # Create the output file that the code expects
+                        output_file = pathlib.Path(output_path)
+                        output_file.parent.mkdir(parents=True, exist_ok=True)
+                        # Create a simple colored image
+                        colored_img = Image.new("RGB", (64, 32), (128, 128, 255))  # Blue tint for "false color"
+                        colored_img.save(output_file, "PNG")
+                        return 0
+
+                    mock_colourise.side_effect = mock_colourise_func
+                    mock_colourise_processor.side_effect = mock_colourise_func
 
                 # Create output file mock
                 def create_output_file(*args: Any, **kwargs: Any) -> MagicMock:
+                    # Create the raw intermediate file that run_vfi expects
+                    raw_file = workspace["output_file"].with_suffix(".raw.mp4")
+                    raw_file.write_bytes(b"mock raw video content")
+                    # Also create the final output file
                     workspace["output_file"].write_bytes(b"mock video content")
                     return mock_popen.return_value
 
@@ -358,11 +389,12 @@ class TestPipelineOptimizedV2:
                     result_gen = run_vfi(
                         folder=workspace["input_dir"],
                         output_mp4_path=workspace["output_file"],
+                        rife_exe_path=pathlib.Path("mock_rife_exe"),  # Mock RIFE executable path
                         fps=scenario["fps"],
-                        intermediate_frames=scenario["mid_count"],
-                        encoder=scenario["encoder"],
-                        crop_rect=scenario["crop_rect"],
-                        sanchez=scenario["sanchez"],
+                        num_intermediate_frames=scenario["mid_count"],
+                        max_workers=1,  # Use 1 worker to avoid multiprocessing issues with mocks
+                        crop_rect_xywh=scenario["crop_rect"],
+                        false_colour=scenario["sanchez"],
                         skip_model=True,  # Skip model for testing
                         debug_mode=True,
                     )
@@ -373,12 +405,15 @@ class TestPipelineOptimizedV2:
                     if scenario["expected_success"]:
                         assert len(results) > 0, f"No results from {scenario['name']}"
                         # Verify mocks were called appropriately
-                        if scenario["encoder"] == "RIFE":
-                            mock_run.assert_called()
-                        mock_popen.assert_called()
+                        # Note: We're using skip_model=True, so RIFE won't actually be called
+                        mock_popen.assert_called()  # FFmpeg should always be called
 
                         if scenario["sanchez"]:
-                            mock_colourise.assert_called()
+                            # Check if colourise was called (either in main process or subprocess)
+                            assert mock_colourise.called or mock_colourise_processor.called, (
+                                f"colourise was not called for {scenario['name']}, "
+                                f"main_count={mock_colourise.call_count}, processor_count={mock_colourise_processor.call_count}"
+                            )
 
                         # Verify output file exists (mocked)
                         assert workspace["output_file"].exists(), f"Output file missing for {scenario['name']}"
@@ -490,10 +525,11 @@ class TestPipelineOptimizedV2:
                         result_gen = run_vfi(
                             folder=workspace["input_dir"],
                             output_mp4_path=workspace["output_file"],
+                            rife_exe_path=pathlib.Path("mock_rife_exe"),
                             fps=30,
-                            intermediate_frames=1,
-                            encoder=scenario["encoder"],
-                            sanchez=scenario.get("sanchez", False),
+                            num_intermediate_frames=1,
+                            max_workers=4,
+                            false_colour=scenario.get("sanchez", False),
                             skip_model=True,
                             debug_mode=True,
                         )
@@ -503,10 +539,11 @@ class TestPipelineOptimizedV2:
                     result_gen = run_vfi(
                         folder=workspace["input_dir"],
                         output_mp4_path=workspace["output_file"],
+                        rife_exe_path=pathlib.Path("mock_rife_exe"),
                         fps=30,
-                        intermediate_frames=1,
-                        encoder=scenario["encoder"],
-                        sanchez=scenario.get("sanchez", False),
+                        num_intermediate_frames=1,
+                        max_workers=4,
+                        false_colour=scenario.get("sanchez", False),
                         skip_model=True,
                         debug_mode=True,
                     )
@@ -553,9 +590,16 @@ class TestPipelineOptimizedV2:
             if scenario["test_type"] == "loader":
                 # Test image loader
                 loader = ImageLoader()
-                loaded_images = loader.load_images_from_directory(
-                    workspace["input_dir"], supported_formats=scenario["image_formats"]
-                )
+                loaded_images = []
+
+                # Load images from directory
+                for img_file in workspace["input_dir"].iterdir():
+                    if img_file.suffix.lower() in scenario["image_formats"]:
+                        try:
+                            img_data = loader.load(str(img_file))
+                            loaded_images.append(img_data)
+                        except Exception as e:
+                            LOGGER.exception(f"Failed to load {img_file}: {e}")
 
                 assert len(loaded_images) == scenario["expected_count"], (
                     f"Expected {scenario['expected_count']} images, got {len(loaded_images)}"
@@ -564,51 +608,82 @@ class TestPipelineOptimizedV2:
                 # Verify each loaded image
                 for img_data in loaded_images:
                     assert isinstance(img_data, ImageData)
-                    assert img_data.array is not None
-                    assert img_data.path.exists()
+                    assert img_data.image_data is not None
+                    assert img_data.source_path is not None
+                    assert pathlib.Path(img_data.source_path).exists()
 
             elif scenario["test_type"] == "size_validation":
                 # Test size validation
                 loader = ImageLoader()
-                images = loader.load_images_from_directory(workspace["input_dir"])
 
-                for img_data in images:
-                    height, width = img_data.array.shape[:2]
-                    min_w, min_h = scenario["min_size"]
-                    max_w, max_h = scenario["max_size"]
+                # Load images from directory
+                for img_file in workspace["input_dir"].iterdir():
+                    if img_file.suffix.lower() in {".png", ".jpg", ".jpeg"}:
+                        img_data = loader.load(str(img_file))
 
-                    assert width >= min_w, f"Image width {width} below minimum {min_w}"
-                    assert height >= min_h, f"Image height {height} below minimum {min_h}"
-                    assert width <= max_w, f"Image width {width} above maximum {max_w}"
-                    assert height <= max_h, f"Image height {height} above maximum {max_h}"
+                        # Get dimensions from image_data
+                        if isinstance(img_data.image_data, np.ndarray):
+                            height, width = img_data.image_data.shape[:2]
+                        else:  # PIL Image
+                            width, height = img_data.image_data.size
+
+                        min_w, min_h = scenario["min_size"]
+                        max_w, max_h = scenario["max_size"]
+
+                        assert width >= min_w, f"Image width {width} below minimum {min_w}"
+                        assert height >= min_h, f"Image height {height} below minimum {min_h}"
+                        assert width <= max_w, f"Image width {width} above maximum {max_w}"
+                        assert height <= max_h, f"Image height {height} above maximum {max_h}"
 
             elif scenario["test_type"] == "format_conversion":
                 # Test format conversion
                 loader = ImageLoader()
-                images = loader.load_images_from_directory(workspace["input_dir"])
 
-                for img_data in images:
-                    # Verify RGB format
-                    if len(img_data.array.shape) == 3:
-                        assert img_data.array.shape[2] == 3, "Expected RGB format (3 channels)"
+                # Load images from directory
+                for img_file in workspace["input_dir"].iterdir():
+                    if img_file.suffix.lower() in {".png", ".jpg", ".jpeg"}:
+                        img_data = loader.load(str(img_file))
+
+                        # Verify RGB format
+                        if isinstance(img_data.image_data, np.ndarray):
+                            if len(img_data.image_data.shape) == 3:
+                                assert img_data.image_data.shape[2] == 3, "Expected RGB format (3 channels)"
+                        else:  # PIL Image
+                            assert img_data.image_data.mode == "RGB", "Expected RGB format"
 
             elif scenario["test_type"] == "cropping":
                 # Test cropping functionality
                 loader = ImageLoader()
-                images = loader.load_images_from_directory(workspace["input_dir"])
+
+                # Load images from directory
+                loaded_images = []
+                for img_file in workspace["input_dir"].iterdir():
+                    if img_file.suffix.lower() in {".png", ".jpg", ".jpeg"}:
+                        img_data = loader.load(str(img_file))
+                        loaded_images.append(img_data)
 
                 for crop_region in scenario["crop_regions"]:
                     x, y, w, h = crop_region
 
-                    for img_data in images:
-                        orig_height, orig_width = img_data.array.shape[:2]
+                    for img_data in loaded_images:
+                        # Get dimensions
+                        if isinstance(img_data.image_data, np.ndarray):
+                            orig_height, orig_width = img_data.image_data.shape[:2]
+                        else:  # PIL Image
+                            orig_width, orig_height = img_data.image_data.size
 
                         # Verify crop region is valid
                         if x + w <= orig_width and y + h <= orig_height:
-                            cropped = img_data.array[y : y + h, x : x + w]
-                            assert cropped.shape[:2] == (h, w), (
-                                f"Cropped size mismatch: expected {(h, w)}, got {cropped.shape[:2]}"
-                            )
+                            if isinstance(img_data.image_data, np.ndarray):
+                                cropped = img_data.image_data[y : y + h, x : x + w]
+                                assert cropped.shape[:2] == (h, w), (
+                                    f"Cropped size mismatch: expected {(h, w)}, got {cropped.shape[:2]}"
+                                )
+                            else:  # PIL Image
+                                cropped = img_data.image_data.crop((x, y, x + w, y + h))
+                                assert cropped.size == (w, h), (
+                                    f"Cropped size mismatch: expected {(w, h)}, got {cropped.size}"
+                                )
 
     @staticmethod
     def test_pipeline_performance_and_optimization(
@@ -672,9 +747,10 @@ class TestPipelineOptimizedV2:
                     result_gen = run_vfi(
                         folder=workspace["input_dir"],
                         output_mp4_path=workspace["output_file"],
+                        rife_exe_path=pathlib.Path("mock_rife_exe"),
                         fps=30,
-                        intermediate_frames=1,
-                        encoder="RIFE",
+                        num_intermediate_frames=1,
+                        max_workers=4,
                         skip_model=True,
                         debug_mode=True,
                     )
@@ -712,9 +788,10 @@ class TestPipelineOptimizedV2:
                     result_gen = run_vfi(
                         folder=workspace["input_dir"],
                         output_mp4_path=workspace["output_file"],
+                        rife_exe_path=pathlib.Path("mock_rife_exe"),
                         fps=30,
-                        intermediate_frames=1,
-                        encoder="RIFE",
+                        num_intermediate_frames=1,
+                        max_workers=4,
                         skip_model=True,
                         debug_mode=True,
                     )
@@ -751,9 +828,10 @@ class TestPipelineOptimizedV2:
                     result_gen = run_vfi(
                         folder=workspace["input_dir"],
                         output_mp4_path=workspace["output_file"],
+                        rife_exe_path=pathlib.Path("mock_rife_exe"),
                         fps=30,
-                        intermediate_frames=1,
-                        encoder="RIFE",
+                        num_intermediate_frames=1,
+                        max_workers=4,
                         skip_model=True,
                         debug_mode=True,
                     )

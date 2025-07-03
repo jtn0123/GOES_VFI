@@ -197,9 +197,7 @@ class TestPreviewVisualValidationV2:
 
         for test_case in size_test_cases:
             size_tuple = test_case["size"]
-            test_image = test_image_factory(
-                filename=f"size_test_{size_tuple[0]}x{size_tuple[1]}.png", size=size_tuple
-            )
+            test_image = test_image_factory(filename=f"size_test_{size_tuple[0]}x{size_tuple[1]}.png", size=size_tuple)
 
             result = TestPreviewVisualValidationV2._simulate_preview_display(mock_window, test_image)
             assert result["visible"] == test_case["expected_valid"]

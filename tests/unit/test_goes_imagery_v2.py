@@ -259,7 +259,9 @@ class TestGOESImageryV2(unittest.TestCase):  # noqa: PLR0904
 
         # Test IMAGE_PRODUCT mode
         result = manager.get_imagery(
-            channel=ChannelType.CH13, product_type=ProductType.FULL_DISK, mode=ImageryMode.IMAGE_PRODUCT,
+            channel=ChannelType.CH13,
+            product_type=ProductType.FULL_DISK,
+            mode=ImageryMode.IMAGE_PRODUCT,
         )
         assert str(result).endswith("pre.jpg")
         mock_download_pre.assert_called_once()
@@ -269,7 +271,9 @@ class TestGOESImageryV2(unittest.TestCase):  # noqa: PLR0904
 
         # Test RAW_DATA mode
         result = manager.get_imagery(
-            channel=ChannelType.CH13, product_type=ProductType.FULL_DISK, mode=ImageryMode.RAW_DATA,
+            channel=ChannelType.CH13,
+            product_type=ProductType.FULL_DISK,
+            mode=ImageryMode.RAW_DATA,
         )
         assert str(result).endswith("processed.png")
         mock_find_raw.assert_called_once()
@@ -425,7 +429,9 @@ class TestGOESImageryV2(unittest.TestCase):  # noqa: PLR0904
 
             for size in valid_sizes:
                 result = downloader.download_precolorized_image(
-                    channel=ChannelType.CH13, product_type=ProductType.FULL_DISK, size=size,
+                    channel=ChannelType.CH13,
+                    product_type=ProductType.FULL_DISK,
+                    size=size,
                 )
                 assert result is not None
 

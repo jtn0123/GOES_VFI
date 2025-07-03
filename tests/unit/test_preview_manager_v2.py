@@ -279,7 +279,9 @@ class TestPreviewManagerV2(unittest.TestCase):  # noqa: PLR0904
                     mock_sanchez.return_value = processed_data
 
                     self.preview_manager.load_preview_images(
-                        self.test_dir, apply_sanchez=True, sanchez_resolution=(sanchez_res, sanchez_res) if sanchez_res else None
+                        self.test_dir,
+                        apply_sanchez=True,
+                        sanchez_resolution=(sanchez_res, sanchez_res) if sanchez_res else None,
                     )
 
                     # Verify Sanchez was called with correct resolution

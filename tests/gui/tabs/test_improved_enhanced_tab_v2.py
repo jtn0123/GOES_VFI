@@ -8,7 +8,9 @@ Optimizations applied:
 - Comprehensive UI state testing
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock
 
 from PyQt6.QtWidgets import QApplication
@@ -24,22 +26,32 @@ class TestImprovedEnhancedTabV2:
     """Optimized test class for improved enhanced integrity check tab."""
 
     @pytest.fixture(scope="class")
-    def shared_app(self):
-        """Create shared QApplication for tests."""
+    @staticmethod
+    def shared_app() -> QApplication:
+        """Create shared QApplication for tests.
+
+        Returns:
+            QApplication: The shared QApplication instance.
+        """
         app = QApplication.instance()
         if app is None:
             app = QApplication([])
         return app
 
     @pytest.fixture()
-    def mock_view_model(self, tmpdir):
-        """Create mock view model for testing."""
+    @staticmethod
+    def mock_view_model(tmpdir: Path) -> MagicMock:
+        """Create mock view model for testing.
+
+        Returns:
+            MagicMock: Mock view model for testing.
+        """
         model = MagicMock(spec=IntegrityCheckViewModel)
 
         # Configure essential properties
         model.base_directory = str(tmpdir)
-        model.start_date = datetime.now() - timedelta(days=1)
-        model.end_date = datetime.now()
+        model.start_date = datetime.now(UTC) - timedelta(days=1)
+        model.end_date = datetime.now(UTC)
 
         # Mock methods
         model.set_date_range = MagicMock()
@@ -50,8 +62,13 @@ class TestImprovedEnhancedTabV2:
         return model
 
     @pytest.fixture()
-    def mock_tab(self, shared_app, mock_view_model):
-        """Create mock improved enhanced integrity check tab."""
+    @staticmethod
+    def mock_tab(shared_app: QApplication, mock_view_model: MagicMock) -> MagicMock:
+        """Create mock improved enhanced integrity check tab.
+
+        Returns:
+            MagicMock: Mock improved enhanced integrity check tab.
+        """
         # Mock the tab class to avoid GUI initialization issues
         tab = MagicMock(spec=ImprovedEnhancedIntegrityCheckTab)
         tab.view_model = mock_view_model
@@ -95,7 +112,7 @@ class TestImprovedEnhancedTabV2:
     )
     def test_date_range_handling_scenarios(self, mock_view_model, start_offset, end_offset, expected_valid) -> None:
         """Test date range handling with various scenarios."""
-        base_date = datetime.now()
+        base_date = datetime.now(UTC)
         start_date = base_date + timedelta(days=start_offset)
         end_date = base_date + timedelta(days=end_offset)
 
@@ -164,7 +181,7 @@ class TestImprovedEnhancedTabV2:
         """Test directory selection and validation."""
         # Test valid directory paths
         valid_paths = [
-            "/tmp/test_directory",
+            "/tmp/test_directory",  # noqa: S108
             "/home/user/data",
             "/var/satellite_data",
         ]
@@ -190,7 +207,7 @@ class TestImprovedEnhancedTabV2:
         mock_tab.scan_button.setEnabled = MagicMock()
 
         # Simulate scan workflow
-        def simulate_scan_workflow():
+        def simulate_scan_workflow() -> dict[str, Any]:
             # Disable scan button during operation
             mock_tab.scan_button.setEnabled(False)
 
@@ -223,7 +240,7 @@ class TestImprovedEnhancedTabV2:
         # Mock progress tracking
         progress_updates = []
 
-        def mock_download_with_progress():
+        def mock_download_with_progress() -> dict[str, Any]:
             # Simulate progress updates
             for progress in [20, 40, 60, 80, 100]:
                 progress_updates.append(progress)
@@ -246,7 +263,7 @@ class TestImprovedEnhancedTabV2:
         # Configure export operation
         mock_view_model.export_results.return_value = {
             "exported_files": 3,
-            "export_path": "/tmp/export_results.json",
+            "export_path": "/tmp/export_results.json",  # noqa: S108
             "success": True,
         }
 
@@ -299,7 +316,8 @@ class TestImprovedEnhancedTabV2:
         assert mock_tab.directory_edit.text() == new_directory
         assert mock_view_model.base_directory == new_directory
 
-    def test_ui_component_validation(self, mock_tab) -> None:
+    @staticmethod
+    def test_ui_component_validation(mock_tab: Any) -> None:
         """Test UI component validation and properties."""
         # Verify all required UI components exist
         required_components = ["directory_edit", "download_button", "export_button", "scan_button", "advanced_options"]
@@ -308,13 +326,14 @@ class TestImprovedEnhancedTabV2:
             assert hasattr(mock_tab, component)
             assert getattr(mock_tab, component) is not None
 
-    def test_state_persistence_and_restoration(self, mock_tab, mock_view_model) -> None:
+    @staticmethod
+    def test_state_persistence_and_restoration(mock_tab: Any, mock_view_model: MagicMock) -> None:
         """Test state persistence and restoration functionality."""
         # Mock state persistence
         initial_state = {
             "base_directory": "/initial/directory",
-            "start_date": datetime.now() - timedelta(days=7),
-            "end_date": datetime.now(),
+            "start_date": datetime.now(UTC) - timedelta(days=7),
+            "end_date": datetime.now(UTC),
             "advanced_options_expanded": False,
         }
 
@@ -333,7 +352,8 @@ class TestImprovedEnhancedTabV2:
         mock_view_model.set_state(new_state)
         mock_view_model.set_state.assert_called_with(new_state)
 
-    def test_performance_monitoring(self, mock_tab, mock_view_model) -> None:
+    @staticmethod
+    def test_performance_monitoring(mock_tab: Any, mock_view_model: MagicMock) -> None:
         """Test performance monitoring for tab operations."""
         # Mock performance metrics
         performance_data = {"scan_time": 2.5, "download_time": 15.2, "export_time": 1.1}

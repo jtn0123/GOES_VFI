@@ -182,7 +182,12 @@ class TestSuperButtonV2:  # noqa: PLR0904
 
             # Simulate mouse release event handling
             def mock_mouse_release(event: Any) -> None:
-                if event and hasattr(event, "button") and event.button() == Qt.MouseButton.LeftButton and mock_super_button.click_callback:
+                if (
+                    event
+                    and hasattr(event, "button")
+                    and event.button() == Qt.MouseButton.LeftButton
+                    and mock_super_button.click_callback
+                ):
                     mock_timer(10, mock_super_button.click_callback)
 
             mock_super_button.mouseReleaseEvent = mock_mouse_release

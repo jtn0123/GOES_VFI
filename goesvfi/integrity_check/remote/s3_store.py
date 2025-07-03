@@ -686,7 +686,10 @@ class S3Store(RemoteStore):
 
     async def __aenter__(self) -> "S3Store":
         """Context manager entry."""
-        await self._get_s3_client()
+        if self.use_connection_pool:
+            await self._get_s3_client_from_pool()
+        else:
+            await self._get_s3_client()
         return self
 
     async def __aexit__(

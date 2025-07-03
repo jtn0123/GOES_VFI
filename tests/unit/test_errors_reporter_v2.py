@@ -7,7 +7,6 @@ structured errors in both simple and verbose modes.
 
 from io import StringIO
 import sys
-from typing import Any
 
 import pytest
 
@@ -22,7 +21,7 @@ class TestErrorReporter:
     @staticmethod
     def output_stream() -> StringIO:
         """Create a reusable output stream.
-        
+
         Returns:
             StringIO: Output stream for testing.
         """
@@ -32,7 +31,7 @@ class TestErrorReporter:
     @staticmethod
     def error_context() -> ErrorContext:
         """Create a reusable error context with test data.
-        
+
         Returns:
             ErrorContext: Error context with test data.
         """

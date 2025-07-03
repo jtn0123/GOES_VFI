@@ -13,7 +13,7 @@ import pytest
 
 def simple_function(x: int, y: int) -> int:
     """Simple function for coverage demonstration.
-    
+
     Returns:
         int: Result of x - y or y - x.
     """
@@ -26,7 +26,7 @@ def simple_function(x: int, y: int) -> int:
 
 def complex_function(value: str, *, flag: bool = False) -> str:
     """Complex function with multiple branches.
-    
+
     Returns:
         str: Processed string value.
     """

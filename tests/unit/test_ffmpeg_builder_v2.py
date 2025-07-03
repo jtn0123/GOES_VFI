@@ -151,7 +151,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 builder.set_encoder(config["encoder"])
                 builder.set_bitrate(config["bitrate"])
                 builder.set_pix_fmt("yuv420p")
-                builder.set_two_pass(enabled=True, logfile=pass_log_prefix, pass_num=1)
+                builder.set_two_pass(True, pass_log_prefix, 1)
 
                 cmd_pass1 = builder.build()
 
@@ -179,7 +179,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 builder.set_encoder(config["encoder"])
                 builder.set_bitrate(config["bitrate"])
                 builder.set_pix_fmt("yuv420p")
-                builder.set_two_pass(enabled=True, logfile=pass_log_prefix, pass_num=2)
+                builder.set_two_pass(True, pass_log_prefix, 2)
 
                 cmd_pass2 = builder.build()
 
@@ -244,8 +244,13 @@ class TestFFmpegCommandBuilderOptimizedV2:
 
                 return results
 
-            def _test_error_validations(self, temp_workspace: Any) -> dict[str, Any]:  # noqa: PLR0915
-                """Test error validation scenarios."""
+            @staticmethod
+            def _test_error_validations(temp_workspace: Any) -> dict[str, Any]:  # noqa: PLR0915
+                """Test error validation scenarios.
+
+                Returns:
+                    dict[str, Any]: Test results and validation data.
+                """
                 error_tests = {}
 
                 # Test missing input
@@ -318,7 +323,8 @@ class TestFFmpegCommandBuilderOptimizedV2:
 
                 return error_tests
 
-            def _test_edge_cases(self, temp_workspace: Any) -> dict[str, Any]:
+            @staticmethod
+            def _test_edge_cases(temp_workspace: Any) -> dict[str, Any]:
                 """Test edge cases and boundary conditions.
 
                 Returns:
@@ -346,7 +352,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 builder.set_encoder("Software x265 (2-Pass)")
                 builder.set_bitrate(1000)
                 builder.set_pix_fmt("yuv420p")
-                builder.set_two_pass(enabled=True, logfile=None, pass_num=1)  # Missing log prefix
+                builder.set_two_pass(True, None, 1)  # Missing log prefix
 
                 with pytest.raises(ValueError, match=r".*"):
                     builder.build()
@@ -359,7 +365,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 builder.set_encoder("Software x265 (2-Pass)")
                 builder.set_bitrate(1000)
                 builder.set_pix_fmt("yuv420p")
-                builder.set_two_pass(enabled=True, logfile="log_prefix", pass_num=None)  # Missing pass number
+                builder.set_two_pass(True, "log_prefix", None)  # Missing pass number
 
                 with pytest.raises(ValueError, match=r".*"):
                     builder.build()
@@ -372,7 +378,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 builder.set_encoder("Software x265 (2-Pass)")
                 builder.set_bitrate(1000)
                 builder.set_pix_fmt("yuv420p")
-                builder.set_two_pass(enabled=True, logfile="log_prefix", pass_num=3)  # Invalid pass number
+                builder.set_two_pass(True, "log_prefix", 3)  # Invalid pass number
 
                 with pytest.raises(ValueError, match=r".*"):
                     builder.build()
@@ -530,7 +536,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
             "output_path": output_path,
         }
 
-    def test_ffmpeg_builder_comprehensive_scenarios(self, ffmpeg_test_components: Any, temp_workspace: Any) -> None:  # noqa: PLR6301
+    def test_ffmpeg_builder_comprehensive_scenarios(self, ffmpeg_test_components: Any, temp_workspace: Any) -> None:  # noqa: PLR6301, C901
         """Test comprehensive FFmpeg command builder scenarios."""
         components = ffmpeg_test_components
         test_manager = components["test_manager"]
@@ -787,21 +793,21 @@ class TestFFmpegCommandBuilderOptimizedV2:
 
             # Validate parameter presence
             if "crf" in params:
-                assert "-crf" in cmd and str(params["crf"]) in cmd, (
-                    f"CRF {params['crf']} not found in {scenario['name']}"
-                )
+                assert "-crf" in cmd, f"CRF parameter not found in {scenario['name']}"
+                assert str(params["crf"]) in cmd, f"CRF value {params['crf']} not found in {scenario['name']}"
             if "bitrate" in params:
-                assert "-b:v" in cmd and f"{params['bitrate']}k" in cmd, (
-                    f"Bitrate {params['bitrate']} not found in {scenario['name']}"
+                assert "-b:v" in cmd, f"Bitrate parameter not found in {scenario['name']}"
+                assert f"{params['bitrate']}k" in cmd, (
+                    f"Bitrate value {params['bitrate']} not found in {scenario['name']}"
                 )
             if "bufsize" in params:
-                assert "-maxrate" in cmd and f"{params['bufsize']}k" in cmd, (
-                    f"Bufsize {params['bufsize']} not found in {scenario['name']}"
+                assert "-maxrate" in cmd, f"Maxrate parameter not found in {scenario['name']}"
+                assert f"{params['bufsize']}k" in cmd, (
+                    f"Bufsize value {params['bufsize']} not found in {scenario['name']}"
                 )
 
-            assert "-pix_fmt" in cmd and params["pix_fmt"] in cmd, (
-                f"Pixel format {params['pix_fmt']} not found in {scenario['name']}"
-            )
+            assert "-pix_fmt" in cmd, f"Pixel format parameter not found in {scenario['name']}"
+            assert params["pix_fmt"] in cmd, f"Pixel format value {params['pix_fmt']} not found in {scenario['name']}"
 
             # Validate overall command structure
             validation_results = validator.validate_command(
@@ -813,7 +819,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
             )
             assert validation_results["codec_settings"]["has_video_codec"], f"Codec missing for {scenario['name']}"
 
-    def test_ffmpeg_builder_edge_cases_and_boundaries(self, ffmpeg_test_components: Any, temp_workspace: Any) -> None:  # noqa: PLR6301
+    def test_ffmpeg_builder_edge_cases_and_boundaries(self, ffmpeg_test_components: Any, temp_workspace: Any) -> None:  # noqa: ARG002
         """Test edge cases and boundary conditions."""
 
         # Edge case scenarios
@@ -843,7 +849,7 @@ class TestFFmpegCommandBuilderOptimizedV2:
                 assert result is not None, f"Edge case {edge_case['name']} returned None"
             except Exception as e:  # noqa: BLE001
                 # Some edge cases may raise exceptions, which can be acceptable
-                if not ("expected" in str(e).lower() or isinstance(e, (ValueError, OSError))):
+                if not ("expected" in str(e).lower() or isinstance(e, ValueError | OSError)):
                     pytest.fail(f"Unexpected error in edge case {edge_case['name']}: {e}")
 
     def _test_extreme_crf_values(self, temp_workspace: Any) -> dict[str, Any]:  # noqa: PLR6301

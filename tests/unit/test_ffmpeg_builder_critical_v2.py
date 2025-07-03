@@ -474,7 +474,9 @@ class TestFFmpegCommandBuilderCriticalV2:
             "output_path": output_path,
         }
 
-    def test_ffmpeg_critical_comprehensive_scenarios(self, ffmpeg_critical_components: Any, temp_workspace: Any) -> None:  # noqa: PLR6301, C901
+    def test_ffmpeg_critical_comprehensive_scenarios(
+        self, ffmpeg_critical_components: Any, temp_workspace: Any
+    ) -> None:
         """Test comprehensive critical FFmpeg command scenarios."""
         components = ffmpeg_critical_components
         test_manager = components["test_manager"]
@@ -687,7 +689,9 @@ class TestFFmpegCommandBuilderCriticalV2:
                 params_failed = not params["flag_value_pairs_correct"]
                 assert integrity_failed or params_failed, f"Malformed command passed validation: {test_cmd['name']}"
 
-    def test_ffmpeg_critical_edge_cases_and_boundaries(self, ffmpeg_critical_components: Any, temp_workspace: Any) -> None:
+    def test_ffmpeg_critical_edge_cases_and_boundaries(
+        self, ffmpeg_critical_components: Any, temp_workspace: Any
+    ) -> None:
         """Test critical edge cases and boundary conditions."""
         components = ffmpeg_critical_components
         components["test_manager"]

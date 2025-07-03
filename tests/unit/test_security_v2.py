@@ -189,7 +189,13 @@ class TestInputValidatorOptimizedV2:
     )
     @staticmethod
     def test_validate_numeric_range_valid_values(
-        validator: InputValidator, value: float, min_val: float, max_val: float, name: str, *, should_pass: bool,
+        validator: InputValidator,
+        value: float,
+        min_val: float,
+        max_val: float,
+        name: str,
+        *,
+        should_pass: bool,
     ) -> None:
         """Test numeric range validation with valid values."""
         assert validator.validate_numeric_range(value, min_val, max_val, name) == should_pass

@@ -136,7 +136,7 @@ class TestDownloadRealV2:  # noqa: PLR0904
     @staticmethod
     def mock_download_results() -> dict[str, Any]:
         """Define various mock download result scenarios.
-        
+
         Returns:
             dict[str, Any]: Mock download result scenarios.
         """
@@ -178,7 +178,7 @@ class TestDownloadRealV2:  # noqa: PLR0904
     @staticmethod
     def temp_directory() -> Iterator[Path]:
         """Create a temporary directory for test files.
-        
+
         Yields:
             Path: Temporary directory path.
         """
@@ -189,7 +189,7 @@ class TestDownloadRealV2:  # noqa: PLR0904
     @staticmethod
     def mock_visualization_manager() -> MagicMock:
         """Create a mock visualization manager.
-        
+
         Returns:
             MagicMock: Mock visualization manager.
         """
@@ -259,7 +259,10 @@ class TestDownloadRealV2:  # noqa: PLR0904
     @pytest.mark.parametrize("timestamp_category", ["current_times", "historical_times", "edge_case_times"])
     @staticmethod
     def test_download_sample_data_with_timestamps(
-        product_type_configurations: dict[str, Any], timestamp_scenarios: dict[str, Any], mock_sample_processor: MagicMock, timestamp_category: str  # noqa: ARG004
+        product_type_configurations: dict[str, Any],
+        timestamp_scenarios: dict[str, Any],
+        mock_sample_processor: MagicMock,
+        timestamp_category: str,
     ) -> None:
         """Test download sample data with various timestamp scenarios."""
         timestamps = timestamp_scenarios[timestamp_category]
@@ -348,7 +351,11 @@ class TestDownloadRealV2:  # noqa: PLR0904
     @pytest.mark.parametrize("channel", [1, 7, 13, 14])
     @staticmethod
     def test_create_sample_comparison(
-        product_type_configurations: dict[str, Any], mock_sample_processor: MagicMock, temp_directory: Path, product_name: str, channel: int
+        product_type_configurations: dict[str, Any],
+        mock_sample_processor: MagicMock,
+        temp_directory: Path,
+        product_name: str,
+        channel: int,
     ) -> None:
         """Test sample comparison creation functionality."""
         product_config = product_type_configurations[product_name]

@@ -8,10 +8,10 @@ This v2 version maintains all test scenarios while optimizing through:
 - Improved mock management with session and client fixtures
 """
 
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 import tempfile
-from collections.abc import Iterator
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, mock_open, patch
 
@@ -36,7 +36,7 @@ class TestRemoteStoresOptimizedV2:
     @staticmethod
     def remote_store_test_components() -> dict[str, Any]:  # noqa: C901
         """Create shared components for remote store testing.
-        
+
         Returns:
             dict[str, Any]: Test components including manager.
         """
@@ -82,16 +82,18 @@ class TestRemoteStoresOptimizedV2:
             @staticmethod
             def create_cdn_store(resolution: str = "1000m", timeout: int = 5) -> CDNStore:
                 """Create a CDN store instance.
-                
+
                 Returns:
                     CDNStore: CDN store instance.
                 """
                 return CDNStore(resolution=resolution, timeout=timeout)
 
             @staticmethod
-            def create_s3_store(aws_profile: str | None = None, aws_region: str = "us-east-1", timeout: int = 30) -> S3Store:
+            def create_s3_store(
+                aws_profile: str | None = None, aws_region: str = "us-east-1", timeout: int = 30
+            ) -> S3Store:
                 """Create an S3 store instance with mocked diagnostics.
-                
+
                 Returns:
                     S3Store: S3 store instance.
                 """
@@ -112,7 +114,7 @@ class TestRemoteStoresOptimizedV2:
                 return MagicMock()
 
             @staticmethod
-            def create_mock_response( status: int = 200, content_length: int = 12345) -> MagicMock:
+            def create_mock_response(status: int = 200, content_length: int = 12345) -> MagicMock:
                 """Create a mock HTTP response."""
                 response_mock = MagicMock()
                 response_mock.status = status
@@ -336,7 +338,9 @@ class TestRemoteStoresOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            async def _test_cdn_error_handling(self, scenario_name: str, temp_dir: Path, **kwargs: Any) -> dict[str, Any]:
+            async def _test_cdn_error_handling(
+                self, scenario_name: str, temp_dir: Path, **kwargs: Any
+            ) -> dict[str, Any]:
                 """Test CDN error handling scenarios."""
                 results = {}
 
@@ -654,7 +658,9 @@ class TestRemoteStoresOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            async def _test_s3_wildcard_handling(self, scenario_name: str, temp_dir: Path, **kwargs: Any) -> dict[str, Any]:
+            async def _test_s3_wildcard_handling(
+                self, scenario_name: str, temp_dir: Path, **kwargs: Any
+            ) -> dict[str, Any]:
                 """Test S3 wildcard handling scenarios."""
                 results = {}
 
@@ -666,18 +672,18 @@ class TestRemoteStoresOptimizedV2:
                         patch("goesvfi.integrity_check.time_index._USE_EXACT_MATCH_IN_TEST", False),
                         patch.object(s3_store, "download", new_callable=AsyncMock) as mock_download,
                     ):
-                            dest_path = temp_dir / "test_wildcard.nc"
-                            mock_download.return_value = dest_path
+                        dest_path = temp_dir / "test_wildcard.nc"
+                        mock_download.return_value = dest_path
 
-                            result = await s3_store.download_file(
-                                self.test_configs["timestamps"][0], self.test_configs["satellites"][0], dest_path
-                            )
+                        result = await s3_store.download_file(
+                            self.test_configs["timestamps"][0], self.test_configs["satellites"][0], dest_path
+                        )
 
-                            assert result == dest_path
-                            mock_download.assert_called_once()
+                        assert result == dest_path
+                        mock_download.assert_called_once()
 
-                            results["wildcard_enabled"] = True
-                            results["download_successful"] = True
+                        results["wildcard_enabled"] = True
+                        results["download_successful"] = True
 
                 return {"scenario": scenario_name, "results": results}
 
@@ -693,7 +699,7 @@ class TestRemoteStoresOptimizedV2:
 
     @pytest.mark.asyncio()
     @staticmethod
-    async def test_cdn_session_management_scenarios( remote_store_test_components: dict[str, Any]) -> None:
+    async def test_cdn_session_management_scenarios(remote_store_test_components: dict[str, Any]) -> None:
         """Test CDN session management scenarios."""
         manager = remote_store_test_components["manager"]
 
@@ -706,7 +712,7 @@ class TestRemoteStoresOptimizedV2:
 
     @pytest.mark.asyncio()
     @staticmethod
-    async def test_cdn_existence_checking_scenarios( remote_store_test_components: dict[str, Any]) -> None:
+    async def test_cdn_existence_checking_scenarios(remote_store_test_components: dict[str, Any]) -> None:
         """Test CDN file existence checking scenarios."""
         manager = remote_store_test_components["manager"]
 
@@ -721,7 +727,9 @@ class TestRemoteStoresOptimizedV2:
 
     @pytest.mark.asyncio()
     @staticmethod
-    async def test_cdn_download_operation_scenarios( remote_store_test_components: dict[str, Any], temp_directory: Path) -> None:
+    async def test_cdn_download_operation_scenarios(
+        remote_store_test_components: dict[str, Any], temp_directory: Path
+    ) -> None:
         """Test CDN download operation scenarios."""
         manager = remote_store_test_components["manager"]
 
@@ -736,7 +744,9 @@ class TestRemoteStoresOptimizedV2:
 
     @pytest.mark.asyncio()
     @staticmethod
-    async def test_cdn_error_handling_scenarios( remote_store_test_components: dict[str, Any], temp_directory: Path) -> None:
+    async def test_cdn_error_handling_scenarios(
+        remote_store_test_components: dict[str, Any], temp_directory: Path
+    ) -> None:
         """Test CDN error handling scenarios."""
         manager = remote_store_test_components["manager"]
 
@@ -746,7 +756,7 @@ class TestRemoteStoresOptimizedV2:
 
     @pytest.mark.asyncio()
     @staticmethod
-    async def test_cdn_edge_case_scenarios( remote_store_test_components: dict[str, Any]) -> None:
+    async def test_cdn_edge_case_scenarios(remote_store_test_components: dict[str, Any]) -> None:
         """Test CDN edge case scenarios."""
         manager = remote_store_test_components["manager"]
 
@@ -756,7 +766,7 @@ class TestRemoteStoresOptimizedV2:
 
     @pytest.mark.asyncio()
     @staticmethod
-    async def test_s3_client_management_scenarios( remote_store_test_components: dict[str, Any]) -> None:
+    async def test_s3_client_management_scenarios(remote_store_test_components: dict[str, Any]) -> None:
         """Test S3 client management scenarios."""
         manager = remote_store_test_components["manager"]
 
@@ -769,7 +779,7 @@ class TestRemoteStoresOptimizedV2:
 
     @pytest.mark.asyncio()
     @staticmethod
-    async def test_s3_bucket_key_generation_scenarios( remote_store_test_components: dict[str, Any]) -> None:
+    async def test_s3_bucket_key_generation_scenarios(remote_store_test_components: dict[str, Any]) -> None:
         """Test S3 bucket and key generation scenarios."""
         manager = remote_store_test_components["manager"]
 
@@ -779,7 +789,7 @@ class TestRemoteStoresOptimizedV2:
 
     @pytest.mark.asyncio()
     @staticmethod
-    async def test_s3_existence_checking_scenarios( remote_store_test_components: dict[str, Any]) -> None:
+    async def test_s3_existence_checking_scenarios(remote_store_test_components: dict[str, Any]) -> None:
         """Test S3 file existence checking scenarios."""
         manager = remote_store_test_components["manager"]
 
@@ -789,7 +799,9 @@ class TestRemoteStoresOptimizedV2:
 
     @pytest.mark.asyncio()
     @staticmethod
-    async def test_s3_download_operation_scenarios( remote_store_test_components: dict[str, Any], temp_directory: Path) -> None:
+    async def test_s3_download_operation_scenarios(
+        remote_store_test_components: dict[str, Any], temp_directory: Path
+    ) -> None:
         """Test S3 download operation scenarios."""
         manager = remote_store_test_components["manager"]
 
@@ -799,7 +811,7 @@ class TestRemoteStoresOptimizedV2:
 
     @pytest.mark.asyncio()
     @staticmethod
-    async def test_s3_error_handling_scenarios( remote_store_test_components: dict[str, Any]) -> None:
+    async def test_s3_error_handling_scenarios(remote_store_test_components: dict[str, Any]) -> None:
         """Test S3 error handling scenarios."""
         manager = remote_store_test_components["manager"]
 
@@ -809,7 +821,9 @@ class TestRemoteStoresOptimizedV2:
 
     @pytest.mark.asyncio()
     @staticmethod
-    async def test_s3_wildcard_handling_scenarios( remote_store_test_components: dict[str, Any], temp_directory: Path) -> None:
+    async def test_s3_wildcard_handling_scenarios(
+        remote_store_test_components: dict[str, Any], temp_directory: Path
+    ) -> None:
         """Test S3 wildcard handling scenarios."""
         manager = remote_store_test_components["manager"]
 
@@ -820,7 +834,7 @@ class TestRemoteStoresOptimizedV2:
     @pytest.mark.parametrize("resolution", ["1000m", "5000m"])
     @pytest.mark.asyncio()
     @staticmethod
-    async def test_cdn_resolution_variations( remote_store_test_components: dict[str, Any], resolution: str) -> None:
+    async def test_cdn_resolution_variations(remote_store_test_components: dict[str, Any], resolution: str) -> None:
         """Test CDN store with different resolutions."""
         manager = remote_store_test_components["manager"]
 
@@ -830,7 +844,9 @@ class TestRemoteStoresOptimizedV2:
     @pytest.mark.parametrize("satellite", [SatellitePattern.GOES_16, SatellitePattern.GOES_18])
     @pytest.mark.asyncio()
     @staticmethod
-    async def test_satellite_specific_operations( remote_store_test_components: dict[str, Any], satellite: SatellitePattern) -> None:
+    async def test_satellite_specific_operations(
+        remote_store_test_components: dict[str, Any], satellite: SatellitePattern
+    ) -> None:
         """Test operations with specific satellites."""
         manager = remote_store_test_components["manager"]
 
@@ -843,7 +859,9 @@ class TestRemoteStoresOptimizedV2:
 
     @pytest.mark.asyncio()
     @staticmethod
-    async def test_comprehensive_remote_store_validation( remote_store_test_components: dict[str, Any], temp_directory: Path) -> None:
+    async def test_comprehensive_remote_store_validation(
+        remote_store_test_components: dict[str, Any], temp_directory: Path
+    ) -> None:
         """Test comprehensive remote store validation."""
         manager = remote_store_test_components["manager"]
 
@@ -869,7 +887,9 @@ class TestRemoteStoresOptimizedV2:
 
     @pytest.mark.asyncio()
     @staticmethod
-    async def test_remote_stores_integration_validation( remote_store_test_components: dict[str, Any], temp_directory: Path) -> None:
+    async def test_remote_stores_integration_validation(
+        remote_store_test_components: dict[str, Any], temp_directory: Path
+    ) -> None:
         """Test remote stores integration scenarios."""
         manager = remote_store_test_components["manager"]
 

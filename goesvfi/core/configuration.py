@@ -50,14 +50,16 @@ if PYDANTIC_AVAILABLE:
         batch_size: int = Field(default=10, description="Batch size for bulk operations")
 
         @validator("max_workers")
-        def validate_max_workers(self, v):
+        @classmethod
+        def validate_max_workers(cls, v):
             if v < 1 or v > 32:
                 msg = "max_workers must be between 1 and 32"
                 raise ValueError(msg)
             return v
 
         @validator("cache_size")
-        def validate_cache_size(self, v):
+        @classmethod
+        def validate_cache_size(cls, v):
             if v < 10 or v > 1000:
                 msg = "cache_size must be between 10 and 1000"
                 raise ValueError(msg)
@@ -73,7 +75,8 @@ if PYDANTIC_AVAILABLE:
         max_connections: int = Field(default=10, description="Maximum concurrent connections")
 
         @validator("connection_timeout", "read_timeout")
-        def validate_timeouts(self, v):
+        @classmethod
+        def validate_timeouts(cls, v):
             if v <= 0 or v > 3600:
                 msg = "timeout must be between 0 and 3600 seconds"
                 raise ValueError(msg)
@@ -89,7 +92,8 @@ if PYDANTIC_AVAILABLE:
         max_disk_usage: int = Field(default=10 * 1024 * 1024 * 1024, description="Max disk usage in bytes (10GB)")
 
         @validator("max_disk_usage")
-        def validate_disk_usage(self, v):
+        @classmethod
+        def validate_disk_usage(cls, v):
             if v < 100 * 1024 * 1024:  # 100MB minimum
                 msg = "max_disk_usage must be at least 100MB"
                 raise ValueError(msg)
@@ -105,7 +109,8 @@ if PYDANTIC_AVAILABLE:
         preview_size: int = Field(default=512, description="Preview image size")
 
         @validator("theme")
-        def validate_theme(self, v):
+        @classmethod
+        def validate_theme(cls, v):
             if v not in {"light", "dark"}:
                 msg = "theme must be 'light' or 'dark'"
                 raise ValueError(msg)
@@ -125,7 +130,8 @@ if PYDANTIC_AVAILABLE:
         profile_performance: bool = Field(default=False, description="Enable performance profiling")
 
         @validator("log_level")
-        def validate_log_level(self, v):
+        @classmethod
+        def validate_log_level(cls, v):
             valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
             if v.upper() not in valid_levels:
                 msg = f"log_level must be one of: {valid_levels}"

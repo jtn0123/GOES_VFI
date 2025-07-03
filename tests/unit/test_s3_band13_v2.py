@@ -186,7 +186,7 @@ class TestS3Band13OptimizedV2:
 
             async def _test_download_operations(
                 self, scenario_name: str, tmp_path: Any, **kwargs: Any
-            ) -> dict[str, Any]:  # noqa: PLR0915, PLR0914
+            ) -> dict[str, Any]:
                 """Test download operations scenarios.
 
                 Returns:
@@ -565,7 +565,7 @@ class TestS3Band13OptimizedV2:
 
             async def _test_integration_workflows(
                 self, scenario_name: str, tmp_path: Any, **kwargs: Any
-            ) -> dict[str, Any]:  # noqa: PLR0914
+            ) -> dict[str, Any]:
                 """Test integration workflow scenarios.
 
                 Returns:

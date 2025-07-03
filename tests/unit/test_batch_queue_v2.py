@@ -137,7 +137,9 @@ class TestBatchJob:
             (JobPriority.NORMAL, JobPriority.HIGH, False),
         ],
     )
-    def test_job_priority_comparison(self, sample_job_data: Any, priority1: Any, priority2: Any, expected_order: Any) -> None:  # noqa: PLR6301
+    def test_job_priority_comparison(
+        self, sample_job_data: Any, priority1: Any, priority2: Any, expected_order: Any
+    ) -> None:
         """Test job priority comparison with parameterized priorities."""
         job1_data = sample_job_data["basic"].copy()
         job1_data["id"] = "job1"
@@ -264,7 +266,9 @@ class TestBatchQueue:
 
     @patch("goesvfi.pipeline.batch_queue.json.dump")
     @patch("goesvfi.pipeline.batch_queue.open", create=True)
-    def test_queue_persistence(self, mock_open: Any, mock_json_dump: Any, batch_queue: Any, sample_job_data: Any) -> None:  # noqa: PLR6301
+    def test_queue_persistence(
+        self, mock_open: Any, mock_json_dump: Any, batch_queue: Any, sample_job_data: Any
+    ) -> None:
         """Test saving and loading queue state."""
         job_data = sample_job_data["basic"]
         job = BatchJob(**job_data)
@@ -278,7 +282,9 @@ class TestBatchQueue:
         mock_json_dump.assert_called()
 
     @pytest.mark.parametrize("max_concurrent", [1, 2, 4])
-    def test_queue_concurrency_settings(self, mock_process_function: Any, mock_file_operations: Any, max_concurrent: Any) -> None:  # noqa: PLR6301, ARG002
+    def test_queue_concurrency_settings(
+        self, mock_process_function: Any, mock_file_operations: Any, max_concurrent: Any
+    ) -> None:
         """Test queue with different concurrency settings."""
         queue = BatchQueue(
             process_function=mock_process_function,

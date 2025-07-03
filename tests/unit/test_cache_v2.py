@@ -128,7 +128,11 @@ class TestCacheOperations:
         ],
     )
     def test_load_cached_frame_count_validation(  # noqa: PLR6301
-        self, sample_paths: Any, mock_cache_dir: Any, num_frames: int, should_return_none: bool  # noqa: FBT001, ARG002
+        self,
+        sample_paths: Any,
+        mock_cache_dir: Any,
+        num_frames: int,
+        should_return_none: bool,  # noqa: FBT001
     ) -> None:
         """Test load_cached behavior with different frame counts."""
         file1, file2 = sample_paths["basic"]
@@ -149,7 +153,11 @@ class TestCacheOperations:
 
     @pytest.mark.parametrize("scenario", ["basic", "minimal"])
     def test_save_and_load_cache_roundtrip(  # noqa: PLR6301
-        self, sample_paths: Any, mock_cache_dir: Any, cache_test_scenarios: Any, scenario: str  # noqa: ARG002
+        self,
+        sample_paths: Any,
+        mock_cache_dir: Any,
+        cache_test_scenarios: Any,
+        scenario: str,
     ) -> None:
         """Test complete save and load roundtrip for different scenarios."""
         file1, file2 = sample_paths[scenario]
@@ -187,7 +195,13 @@ class TestCacheOperations:
         ],
     )
     def test_save_cache_mismatch_validation(  # noqa: PLR6301
-        self, sample_paths: Any, mock_cache_dir: Any, caplog: Any, num_frames: int, frame_count: int, should_warn: bool  # noqa: FBT001, ARG002
+        self,
+        sample_paths: Any,
+        mock_cache_dir: Any,
+        caplog: Any,
+        num_frames: int,
+        frame_count: int,
+        should_warn: bool,  # noqa: FBT001
     ) -> None:
         """Test save cache validation with frame count mismatches."""
         file1, file2 = sample_paths["basic"]
@@ -207,7 +221,9 @@ class TestCacheOperations:
         else:
             assert "Cache save called with mismatch" not in caplog.text
 
-    def test_load_cached_error_handling(self, sample_paths: Any, mock_cache_dir: Any, caplog: Any, monkeypatch: Any) -> None:  # noqa: PLR6301, ARG002
+    def test_load_cached_error_handling(
+        self, sample_paths: Any, mock_cache_dir: Any, caplog: Any, monkeypatch: Any
+    ) -> None:
         """Test load_cached error handling with corrupted files."""
         file1, file2 = sample_paths["basic"]
         model_id = "modelA"
@@ -236,7 +252,9 @@ class TestCacheOperations:
             [("save", "bulk", 5), ("load", "bulk", 5), ("load", "bulk", 5)],  # Multiple loads
         ],
     )
-    def test_cache_operation_sequences(self, sample_paths: Any, mock_cache_dir: Any, operation_sequence: list[tuple]) -> None:  # noqa: PLR6301, ARG002
+    def test_cache_operation_sequences(
+        self, sample_paths: Any, mock_cache_dir: Any, operation_sequence: list[tuple]
+    ) -> None:
         """Test sequences of cache operations for robustness."""
         file1, file2 = sample_paths["basic"]
         saved_frames = {}

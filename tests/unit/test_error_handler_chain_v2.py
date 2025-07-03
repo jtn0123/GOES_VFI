@@ -335,7 +335,8 @@ class TestErrorHandlerChainV2(unittest.TestCase):
         # Create severity-based handlers
         severity_handlers = {
             "critical": MockErrorHandler(
-                "critical_handler", can_handle_types=["MemoryError", "SystemError", "KeyboardInterrupt"],
+                "critical_handler",
+                can_handle_types=["MemoryError", "SystemError", "KeyboardInterrupt"],
             ),
             "high": MockErrorHandler("high_handler", can_handle_types=["PermissionError", "FileNotFoundError"]),
             "medium": MockErrorHandler("medium_handler", can_handle_types=["ConnectionError", "TimeoutError"]),

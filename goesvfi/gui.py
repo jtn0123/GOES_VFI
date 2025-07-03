@@ -353,11 +353,13 @@ class MainWindow(QWidget):
 
     def _update_rife_ui_elements(self) -> None:
         """Updates the visibility and state of RIFE-specific UI elements."""
+        # Only pass ffmpeg_settings_tab if it exists (lazy loading)
+        ffmpeg_tab = getattr(self, "ffmpeg_settings_tab", None)
         self.rife_ui_manager.update_rife_ui_elements(
             self.main_tab,
             self.current_encoder,
             self.current_model_key,
-            self.ffmpeg_settings_tab,
+            ffmpeg_tab,
         )
 
     def _on_model_changed(self, model_key: str) -> None:

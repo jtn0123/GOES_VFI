@@ -9,14 +9,13 @@ from unittest.mock import Mock, patch
 import botocore
 import numpy as np
 import pytest
-from test_netcdf_channel_extraction import (
+from goesvfi.integrity_check.render.netcdf import (
     detect_channel_from_filename,
     download_file_from_s3,
     explore_netcdf_structure,
     extract_channel_from_netcdf,
     process_and_save_image,
     process_channel_data,
-    test_download_and_process_channels,
 )
 import xarray as xr
 
@@ -172,7 +171,9 @@ class TestNetCDFChannelExtractionV2:  # noqa: PLR0904
             ("plasma", False, 0.1),
         ],
     )
-    def test_process_and_save_image_various_params(self, temp_dir: Any, colormap: str, invert: bool, scale_factor: float) -> None:  # noqa: PLR6301, FBT001
+    def test_process_and_save_image_various_params(
+        self, temp_dir: Any, colormap: str, invert: bool, scale_factor: float
+    ) -> None:
         """Test image processing with various parameters."""
 
         # Create test data
@@ -316,7 +317,9 @@ class TestNetCDFChannelExtractionV2:  # noqa: PLR0904
         assert len(matching_files) == 1
         assert "C01" in matching_files[0]
 
-    def test_test_download_and_process_channels_integration(self, mock_s3_client: Any, temp_dir: Any, monkeypatch: Any) -> None:  # noqa: PLR6301
+    def test_test_download_and_process_channels_integration(
+        self, mock_s3_client: Any, temp_dir: Any, monkeypatch: Any
+    ) -> None:
         """Test the main integration function."""
 
         # Mock environment

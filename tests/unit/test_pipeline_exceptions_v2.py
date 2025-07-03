@@ -713,7 +713,10 @@ class TestPipelineExceptionsOptimizedV2:
         ],
     )
     def test_exception_message_variations(  # noqa: PLR6301
-        self, exception_test_components: dict[str, Any], exception_name: str, test_messages: list[str],
+        self,
+        exception_test_components: dict[str, Any],
+        exception_name: str,
+        test_messages: list[str],
     ) -> None:
         """Test exception creation with various messages."""
         manager = exception_test_components["manager"]

@@ -93,8 +93,9 @@ class TestS3DownloadStatsParamOptimizedV2:
 
             def reset_stats(self) -> None:
                 """Reset download statistics to default state."""
-                s3_store.DOWNLOAD_STATS.clear()
-                s3_store.DOWNLOAD_STATS.update(self.default_stats.copy())
+                from goesvfi.integrity_check.remote.download_statistics import reset_global_stats
+
+                reset_global_stats()
 
             def get_current_stats(self) -> dict[str, Any]:  # noqa: PLR6301
                 """Get current download statistics.
@@ -102,7 +103,7 @@ class TestS3DownloadStatsParamOptimizedV2:
                 Returns:
                     dict[str, Any]: Current download statistics dictionary.
                 """
-                return s3_store.DOWNLOAD_STATS.copy()
+                return s3_store.get_download_stats_dict()
 
             def _test_basic_stats_update(self, scenario_name: str, **kwargs: Any) -> dict[str, Any]:
                 """Test basic statistics update scenarios.
@@ -379,6 +380,7 @@ class TestS3DownloadStatsParamOptimizedV2:
                 elif scenario_name == "success_time_tracking":
                     # Test last success time tracking
                     self.reset_stats()
+                    stats = self.get_current_stats()
                     initial_time = stats["last_success_time"] = 0
 
                     # Record a successful download
@@ -412,7 +414,7 @@ class TestS3DownloadStatsParamOptimizedV2:
                     update_download_stats(success=True, download_time=1.0, file_size=50)
                     update_download_stats(success=False, error_type="timeout", error_message="Test timeout")
 
-                    with patch("goesvfi.integrity_check.remote.s3_store.LOGGER.info") as mock_log:
+                    with patch("goesvfi.integrity_check.remote.download_statistics.LOGGER.info") as mock_log:
                         log_download_statistics()
 
                         # Verify logging was called
@@ -432,7 +434,7 @@ class TestS3DownloadStatsParamOptimizedV2:
                     # Test logging when no downloads have occurred
                     self.reset_stats()
 
-                    with patch("goesvfi.integrity_check.remote.s3_store.LOGGER.info") as mock_log:
+                    with patch("goesvfi.integrity_check.remote.download_statistics.LOGGER.info") as mock_log:
                         log_download_statistics()
 
                         # Should still log (even if no data)
@@ -813,6 +815,6 @@ class TestS3DownloadStatsParamOptimizedV2:
         assert len(stats["download_rates"]) == stats["successful"]
 
         # Test logging integration
-        with patch("goesvfi.integrity_check.remote.s3_store.LOGGER.info") as mock_log:
+        with patch("goesvfi.integrity_check.remote.download_statistics.LOGGER.info") as mock_log:
             log_download_statistics()
             mock_log.assert_called_once()

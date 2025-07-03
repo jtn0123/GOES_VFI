@@ -122,7 +122,9 @@ class TestProcessingStateManagement:
         assert processing_vm.current_operation is None
 
     @pytest.mark.parametrize("operation_type", ["video_interpolation", "image_processing", "batch_operation"])
-    def test_start_processing_state_transition(self, processing_vm: MockProcessingViewModel, operation_type: str) -> None:  # noqa: PLR6301
+    def test_start_processing_state_transition(
+        self, processing_vm: MockProcessingViewModel, operation_type: str
+    ) -> None:
         """Test state transition when starting different types of processing."""
         state_changes = []
         processing_vm.state_changed.connect(state_changes.append)
@@ -150,7 +152,9 @@ class TestProcessingStateManagement:
             "detailed",
         ],
     )
-    def test_progress_update_sequences(self, processing_vm: MockProcessingViewModel, progress_sequences: Any, progress_sequence: str) -> None:  # noqa: PLR6301
+    def test_progress_update_sequences(
+        self, processing_vm: MockProcessingViewModel, progress_sequences: Any, progress_sequence: str
+    ) -> None:
         """Test progress update with different sequences."""
         processing_vm.start_processing()
 
@@ -178,7 +182,9 @@ class TestProcessingStateManagement:
             (100, 100),  # Max should remain
         ],
     )
-    def test_progress_bounds_clamping(self, processing_vm: MockProcessingViewModel, progress_value: int, expected_clamped: int) -> None:  # noqa: PLR6301
+    def test_progress_bounds_clamping(
+        self, processing_vm: MockProcessingViewModel, progress_value: int, expected_clamped: int
+    ) -> None:
         """Test progress values are clamped to valid range."""
         processing_vm.start_processing()
 
@@ -198,7 +204,9 @@ class TestProcessingStateManagement:
             (False, 0),  # Failed completion resets progress to 0
         ],
     )
-    def test_finish_processing_outcomes(self, processing_vm: MockProcessingViewModel, success: bool, expected_progress: int) -> None:  # noqa: PLR6301, FBT001
+    def test_finish_processing_outcomes(
+        self, processing_vm: MockProcessingViewModel, success: bool, expected_progress: int
+    ) -> None:
         """Test processing completion with different outcomes."""
         processing_vm.start_processing()
 
@@ -248,7 +256,9 @@ class TestProcessingStateManagement:
             ],
         ],
     )
-    def test_complete_processing_workflows(self, processing_vm: MockProcessingViewModel, workflow_steps: list[tuple]) -> None:  # noqa: PLR6301
+    def test_complete_processing_workflows(
+        self, processing_vm: MockProcessingViewModel, workflow_steps: list[tuple]
+    ) -> None:
         """Test complete processing workflows from start to finish."""
         # Track all signals
         all_signals = []

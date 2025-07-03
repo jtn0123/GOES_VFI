@@ -18,8 +18,7 @@ from PIL import Image
 from PyQt6.QtWidgets import QApplication
 import pytest
 
-from goesvfi.gui import VfiWorker
-from goesvfi.pipeline.run_vfi import run_vfi
+from goesvfi.pipeline.run_vfi import VfiWorker, run_vfi
 
 # Set environment for headless operation
 os.environ["QT_QPA_PLATFORM"] = "offscreen"

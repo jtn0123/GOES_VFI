@@ -11,6 +11,7 @@ Optimizations applied:
 from collections.abc import Callable
 import contextlib
 from typing import Any
+from unittest.mock import patch
 
 from PyQt6.QtCore import QRect, Qt
 from PyQt6.QtGui import QImage
@@ -22,6 +23,21 @@ from goesvfi.utils.gui_helpers import CropSelectionDialog
 
 class TestCropDialogIntegrationV2:
     """Optimized integration tests for crop dialog functionality."""
+
+    @pytest.fixture(autouse=True)
+    @staticmethod
+    def mock_dialog_show() -> Any:
+        """Mock dialog show/exec methods to prevent actual window display.
+
+        Yields:
+            tuple[Mock, Mock]: Mocked show and exec methods.
+        """
+        with (
+            patch("goesvfi.utils.gui_helpers.CropSelectionDialog.show") as mock_show,
+            patch("goesvfi.utils.gui_helpers.CropSelectionDialog.exec") as mock_exec,
+        ):
+            mock_exec.return_value = 0  # Default to rejected
+            yield mock_show, mock_exec
 
     @pytest.fixture(scope="class")
     @staticmethod
@@ -101,6 +117,8 @@ class TestCropDialogIntegrationV2:
         # Verify dialog is properly initialized
         assert hasattr(dialog, "crop_label")
         assert dialog.crop_label is not None
+
+        dialog.deleteLater()
 
     @staticmethod
     def test_crop_dialog_with_initial_rect(shared_app: QApplication, standard_test_image: QImage) -> None:  # noqa: ARG004

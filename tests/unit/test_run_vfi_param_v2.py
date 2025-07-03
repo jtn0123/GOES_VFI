@@ -11,7 +11,7 @@ This v2 version maintains all test scenarios while optimizing through:
 from collections.abc import Callable
 import pathlib
 import subprocess  # noqa: S404
-from typing import Any, TypedDict
+from typing import Any, Never, TypedDict
 from unittest.mock import MagicMock, patch
 
 from PIL import Image
@@ -155,10 +155,11 @@ class TestRunVfiParamOptimizedV2:
                 """
                 raw_output = temp_dir / "out.raw.mp4"
 
-                # Mock RIFE to fail
-                rife_error = subprocess.CalledProcessError(1, ["rife"], stderr="RIFE execution failed")
-                mock_run_factory = create_mock_subprocess_run(side_effect=rife_error)
-                mock_registry["mock_run"] = mock_run_factory
+                # Mock RIFE to fail - need a factory function that raises the error
+                def raise_rife_error(*args, **kwargs) -> Never:
+                    raise subprocess.CalledProcessError(1, ["rife"], stderr="RIFE execution failed")
+
+                mock_registry["mock_run"] = raise_rife_error
 
                 # Mock FFmpeg to work normally
                 mock_popen_factory = create_mock_popen(output_file_to_create=raw_output)
@@ -312,11 +313,14 @@ class TestRunVfiParamOptimizedV2:
                     patch("goesvfi.pipeline.run_vfi.pathlib.Path.mkdir"),
                     patch("goesvfi.pipeline.run_vfi.pathlib.Path.exists", return_value=True),
                     patch("goesvfi.pipeline.run_vfi.pathlib.Path.is_file", return_value=True),
-                    patch("goesvfi.pipeline.run_vfi.shutil.rmtree"),
-                    patch("goesvfi.pipeline.run_vfi.shutil.move"),
+                    patch("goesvfi.pipeline.run_vfi.pathlib.Path.is_dir", return_value=True),
                     patch(
-                        "goesvfi.pipeline.run_vfi.get_rife_capability_detector", return_value=mock_capability_detector
+                        "goesvfi.pipeline.run_vfi.pathlib.Path.stat",
+                        return_value=type("MockStat", (), {"st_size": 1024, "st_mode": 0o100644})(),
                     ),
+                    patch("shutil.rmtree"),
+                    patch("shutil.move"),
+                    patch("goesvfi.pipeline.run_vfi.RifeCapabilityDetector", return_value=mock_capability_detector),
                     patch("goesvfi.pipeline.run_vfi.colourise") as mock_colourise,
                 ):
                     # Apply scenario-specific mock configurations
@@ -343,6 +347,7 @@ class TestRunVfiParamOptimizedV2:
                         "rife_tta_spatial": False,
                         "rife_tta_temporal": False,
                         "model_key": "rife-v4.6",
+                        "skip_model": False,  # Explicitly set to ensure RIFE is used by default
                         # Sanchez/Crop parameters
                         "false_colour": False,
                         "res_km": 4,
@@ -355,14 +360,17 @@ class TestRunVfiParamOptimizedV2:
                     if scenario_config["expect_error"]:
                         # Test error scenarios
                         with pytest.raises((RuntimeError, ProcessingError, RIFEError, FFmpegError)) as exc_info:
-                            run_vfi_mod.run_vfi(**base_params)
+                            # run_vfi returns a generator, need to consume it to trigger the error
+                            generator = run_vfi_mod.run_vfi(**base_params)
+                            # Consume the generator to trigger the exception
+                            list(generator)
 
                         # Validate error scenario
                         validation_result = scenario_config["validation"](exc_info, scenario_data)
                         validation_result["scenario"] = scenario_name
                         return validation_result
                     # Test success scenarios
-                    results = run_vfi_mod.run_vfi(**base_params)
+                    results = list(run_vfi_mod.run_vfi(**base_params))
 
                     # Validate success scenario
                     validation_result = scenario_config["validation"](results, scenario_data)
@@ -471,9 +479,14 @@ class TestRunVfiParamOptimizedV2:
             patch("goesvfi.pipeline.run_vfi.pathlib.Path.mkdir"),
             patch("goesvfi.pipeline.run_vfi.pathlib.Path.exists", return_value=True),
             patch("goesvfi.pipeline.run_vfi.pathlib.Path.is_file", return_value=True),
-            patch("goesvfi.pipeline.run_vfi.shutil.rmtree"),
-            patch("goesvfi.pipeline.run_vfi.shutil.move"),
-            patch("goesvfi.pipeline.run_vfi.get_rife_capability_detector", return_value=mock_capability_detector),
+            patch("goesvfi.pipeline.run_vfi.pathlib.Path.is_dir", return_value=True),
+            patch(
+                "goesvfi.pipeline.run_vfi.pathlib.Path.stat",
+                return_value=type("MockStat", (), {"st_size": 1024, "st_mode": 0o100644})(),
+            ),
+            patch("shutil.rmtree"),
+            patch("shutil.move"),
+            patch("goesvfi.pipeline.run_vfi.RifeCapabilityDetector", return_value=mock_capability_detector),
             patch("goesvfi.pipeline.run_vfi.colourise"),
         ):
             # Setup successful mocks

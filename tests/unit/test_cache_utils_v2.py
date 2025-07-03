@@ -149,7 +149,10 @@ class TestCacheUtilsOptimizedV2:
                 np.testing.assert_array_equal(orig, result)
 
     def test_cache_error_scenarios(
-        self, cache_setup: Path, sample_files: tuple[Path, Path], caplog: pytest.LogCaptureFixture,
+        self,
+        cache_setup: Path,
+        sample_files: tuple[Path, Path],
+        caplog: pytest.LogCaptureFixture,
     ) -> None:
         """Test cache error handling scenarios."""
         file1, file2 = sample_files

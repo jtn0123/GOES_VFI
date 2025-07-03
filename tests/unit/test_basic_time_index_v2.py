@@ -50,7 +50,8 @@ class TestBasicTimeIndexV2(unittest.TestCase):
         }
 
     @pytest.mark.parametrize(
-        "satellite_key,expected_url", [("goes16", 'expected_urls["goes16"]'), ("goes18", 'expected_urls["goes18"]')],
+        "satellite_key,expected_url",
+        [("goes16", 'expected_urls["goes16"]'), ("goes18", 'expected_urls["goes18"]')],
     )
     def test_to_cdn_url_parametrized(self, satellite_key: str, expected_url: str) -> None:  # noqa: ARG002
         """Test generating CDN URLs for different satellites using parametrization."""

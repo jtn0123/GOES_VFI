@@ -18,7 +18,7 @@ class TestQtMaterialIntegration:
     @staticmethod
     def valid_material_themes() -> list[str]:
         """Provide list of valid Material Design themes.
-        
+
         Returns:
             list[str]: List of valid theme names.
         """

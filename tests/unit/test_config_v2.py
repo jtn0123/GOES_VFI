@@ -75,7 +75,10 @@ default_tile_size = 512
             assert cache_dir.is_dir()
 
     def test_config_loading_from_file(  # noqa: PLR6301
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path, sample_toml_content: str,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: pathlib.Path,
+        sample_toml_content: str,
     ) -> None:
         """Test configuration loading from TOML file."""
         # Create temp config file
@@ -99,7 +102,10 @@ default_tile_size = 512
         assert pathlib.Path(cfg["cache_dir"]).exists()
 
     def test_config_environment_overrides(  # noqa: PLR6301
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path, sample_toml_content: str,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: pathlib.Path,
+        sample_toml_content: str,
     ) -> None:
         """Test configuration environment variable overrides."""
         # Test CONFIG_FILE override
@@ -123,7 +129,10 @@ default_tile_size = 512
         assert cfg["output_dir"] == "/temp/goesvfi_output"
 
     def test_config_partial_merge_and_defaults(  # noqa: PLR6301
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path, minimal_toml_content: str,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: pathlib.Path,
+        minimal_toml_content: str,
     ) -> None:
         """Test partial configuration merging with defaults."""
         cfg_file = tmp_path / "config.toml"
@@ -172,7 +181,10 @@ default_tile_size = 512
         assert cfg["output_dir"] == str(pathlib.Path.home() / "Documents/goesvfi")
 
     def test_directory_getter_functions(  # noqa: PLR6301
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path, sample_toml_content: str,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: pathlib.Path,
+        sample_toml_content: str,
     ) -> None:
         """Test directory getter functions."""
         config_path = tmp_path / "config.toml"
@@ -314,7 +326,10 @@ default_model = "rife-v4.6"
         assert cache_dir.exists()
 
     def test_config_cache_behavior(  # noqa: PLR6301
-        self, monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path, sample_toml_content: str,
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        tmp_path: pathlib.Path,
+        sample_toml_content: str,
     ) -> None:
         """Test configuration caching behavior."""
         config_path = tmp_path / "cache_test.toml"

@@ -87,7 +87,15 @@ class TestCropHandlerV2:  # noqa: PLR0904
             ("image5.JPG", (75, 75)),  # Uppercase
         ]):
             img = QImage(size[0], size[1], QImage.Format.Format_RGB32)
-            img.fill(Qt.GlobalColor(Qt.GlobalColor.red.value + i))
+            # Use different colors for each image
+            colors = [
+                Qt.GlobalColor.red,
+                Qt.GlobalColor.green,
+                Qt.GlobalColor.blue,
+                Qt.GlobalColor.yellow,
+                Qt.GlobalColor.cyan,
+            ]
+            img.fill(colors[i % len(colors)])
             img.save(str(image_dir / name))
 
         # Create non-image files
@@ -159,7 +167,8 @@ class TestCropHandlerV2:  # noqa: PLR0904
                 call_args = mock_msgbox.warning.call_args[0]
                 assert "No images found" in call_args[2]
 
-    def test_on_crop_clicked_image_load_failure(self, crop_handler: Any, mock_main_window: Any, temp_image_dir: Any) -> None:  # noqa: PLR6301
+    @staticmethod
+    def test_on_crop_clicked_image_load_failure(crop_handler: Any, mock_main_window: Any, temp_image_dir: Any) -> None:
         """Test crop clicked when image loading fails."""
         mock_main_window.in_dir = temp_image_dir
 
@@ -175,7 +184,13 @@ class TestCropHandlerV2:  # noqa: PLR0904
                 call_args = mock_msgbox.critical.call_args[0]
                 assert "Could not load or process image" in call_args[2]
 
-    def test_on_crop_clicked_success(self, crop_handler: Any, mock_main_window: Any, temp_image_dir: Any, app: Any) -> None:  # noqa: PLR6301, ARG002
+    @staticmethod
+    def test_on_crop_clicked_success(
+        crop_handler: Any,
+        mock_main_window: Any,
+        temp_image_dir: Any,
+        app: Any,  # noqa: ARG004
+    ) -> None:
         """Test successful crop dialog workflow."""
         mock_main_window.in_dir = temp_image_dir
 
@@ -213,7 +228,8 @@ class TestCropHandlerV2:  # noqa: PLR0904
             mock_main_window.in_dir = Path(temp_dir)
             assert crop_handler.get_sorted_image_files(mock_main_window) == []
 
-    def test_get_sorted_image_files_with_images(self, crop_handler: Any, mock_main_window: Any, temp_image_dir: Any) -> None:  # noqa: PLR6301
+    @staticmethod
+    def test_get_sorted_image_files_with_images(crop_handler: Any, mock_main_window: Any, temp_image_dir: Any) -> None:
         """Test getting image files from directory with mixed file types."""
         mock_main_window.in_dir = temp_image_dir
 
@@ -227,7 +243,10 @@ class TestCropHandlerV2:  # noqa: PLR0904
         # Verify no subdirectory files included
         assert not any("subdir" in str(f) for f in result)
 
-    def test_get_sorted_image_files_case_insensitive(self, crop_handler: Any, mock_main_window: Any, temp_image_dir: Any) -> None:  # noqa: PLR6301
+    @staticmethod
+    def test_get_sorted_image_files_case_insensitive(
+        crop_handler: Any, mock_main_window: Any, temp_image_dir: Any
+    ) -> None:
         """Test that image file detection is case insensitive."""
         mock_main_window.in_dir = temp_image_dir
 
@@ -247,7 +266,10 @@ class TestCropHandlerV2:  # noqa: PLR0904
             ("WEBP", QImage.Format.Format_RGB32),
         ],
     )
-    def test_prepare_image_various_formats(self, crop_handler: Any, mock_main_window: Any, image_format: str, expected_format: Any) -> None:  # noqa: PLR6301
+    @staticmethod
+    def test_prepare_image_various_formats(
+        crop_handler: Any, mock_main_window: Any, image_format: str, expected_format: Any
+    ) -> None:
         """Test preparing images of various formats."""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create test image
@@ -263,7 +285,12 @@ class TestCropHandlerV2:  # noqa: PLR0904
             assert result is not None
             assert isinstance(result, QPixmap)
 
-    def test_prepare_image_for_crop_dialog_sanchez_preview(self, crop_handler: Any, mock_main_window: Any, app: Any) -> None:  # noqa: PLR6301, ARG002
+    @staticmethod
+    def test_prepare_image_for_crop_dialog_sanchez_preview(
+        crop_handler: Any,
+        mock_main_window: Any,
+        app: Any,  # noqa: ARG004
+    ) -> None:
         """Test preparing image with Sanchez preview enabled."""
         # Enable Sanchez preview
         mock_main_window.main_tab.sanchez_false_colour_checkbox.isChecked.return_value = True
@@ -279,7 +306,8 @@ class TestCropHandlerV2:  # noqa: PLR0904
         assert result is not None
         assert isinstance(result, QPixmap)
 
-    def test_prepare_image_fallback_scenarios(self, crop_handler: Any, mock_main_window: Any, temp_image_dir: Any) -> None:  # noqa: PLR6301
+    @staticmethod
+    def test_prepare_image_fallback_scenarios(crop_handler: Any, mock_main_window: Any, temp_image_dir: Any) -> None:
         """Test fallback scenarios in image preparation."""
         # Enable Sanchez but no processed image available
         mock_main_window.main_tab.sanchez_false_colour_checkbox.isChecked.return_value = True
@@ -438,7 +466,13 @@ class TestCropHandlerV2:  # noqa: PLR0904
             mock_logger.info.assert_called()
             assert "Crop rectangle cleared" in str(mock_logger.info.call_args)
 
-    def test_integration_workflow_end_to_end(self, crop_handler: Any, mock_main_window: Any, temp_image_dir: Any, app: Any) -> None:  # noqa: PLR6301, ARG002
+    @staticmethod
+    def test_integration_workflow_end_to_end(
+        crop_handler: Any,
+        mock_main_window: Any,
+        temp_image_dir: Any,
+        app: Any,  # noqa: ARG004
+    ) -> None:
         """Test complete crop workflow from start to finish."""
         mock_main_window.in_dir = temp_image_dir
         mock_main_window.current_crop_rect = None
@@ -617,12 +651,18 @@ class TestCropHandlerV2:  # noqa: PLR0904
         """Test complex Sanchez preview scenarios."""
 
         # Scenario 1: Sanchez enabled but checkbox throws during check
-        def side_effect() -> bool:
-            if not hasattr(side_effect, "called"):
-                side_effect.called = True
-                msg = "Checkbox error"
-                raise RuntimeError(msg)
-            return True
+        class SideEffectCallable:
+            def __init__(self) -> None:
+                self.called = False
+
+            def __call__(self) -> bool:
+                if not self.called:
+                    self.called = True
+                    msg = "Checkbox error"
+                    raise RuntimeError(msg)
+                return True
+
+        side_effect = SideEffectCallable()
 
         mock_main_window.main_tab.sanchez_false_colour_checkbox.isChecked.side_effect = side_effect
 

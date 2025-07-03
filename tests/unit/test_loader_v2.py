@@ -87,7 +87,9 @@ class TestLoaderV2:
             else:
                 assert filename not in result_filenames, f"Unsupported file {filename} should be excluded"
 
-    def test_discover_frames_sorted_order_comprehensive(self, tmp_path: Path, shared_file_data: dict[str, list[str]]) -> None:  # noqa: PLR6301, ARG002
+    def test_discover_frames_sorted_order_comprehensive(
+        self, tmp_path: Path, shared_file_data: dict[str, list[str]]
+    ) -> None:
         """Test that files are returned in sorted lexicographic order."""
         # Create files in random order but expect sorted output
         unsorted_files = [
@@ -210,7 +212,9 @@ class TestLoaderV2:
             ("frame[with]brackets.png", True),
         ],
     )
-    def test_discover_frames_special_filenames(self, tmp_path: Path, special_characters: str, should_work: bool) -> None:  # noqa: PLR6301, FBT001
+    def test_discover_frames_special_filenames(
+        self, tmp_path: Path, special_characters: str, should_work: bool
+    ) -> None:
         """Test handling of filenames with special characters."""
         # Create file with special characters
         (tmp_path / special_characters).write_text("content")
@@ -270,7 +274,9 @@ class TestLoaderV2:
             # Expected behavior when path is not a directory
             pass
 
-    def test_discover_frames_return_type_consistency(self, tmp_path: Path, shared_file_data: dict[str, list[str]]) -> None:  # noqa: PLR6301
+    def test_discover_frames_return_type_consistency(
+        self, tmp_path: Path, shared_file_data: dict[str, list[str]]
+    ) -> None:
         """Test that return type is always consistent."""
         # Test with empty directory
         result_empty = loader.discover_frames(tmp_path)
@@ -350,7 +356,9 @@ class TestLoaderV2:
             ([".pNg", ".JpG"], 2),  # Should work with mixed case
         ],
     )
-    def test_discover_frames_extension_case_matrix(self, tmp_path: Path, extension_case: list[str], expected_count: int) -> None:  # noqa: PLR6301
+    def test_discover_frames_extension_case_matrix(
+        self, tmp_path: Path, extension_case: list[str], expected_count: int
+    ) -> None:
         """Test extension matching with various case combinations."""
         # Create files with specific extensions
         base_name = "test"

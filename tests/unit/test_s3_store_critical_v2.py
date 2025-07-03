@@ -9,7 +9,7 @@ This v2 version maintains all test scenarios while optimizing through:
 """
 
 import asyncio
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 import tempfile
 from typing import Any
@@ -27,7 +27,7 @@ class TestS3StoreCriticalOptimizedV2:
     """Optimized S3Store critical functionality tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def s3_store_critical_test_components(self):
+    def s3_store_critical_test_components(self) -> dict[str, Any]:  # noqa: C901
         """Create shared components for S3Store critical testing."""
 
         # Enhanced S3Store Critical Test Manager
@@ -39,9 +39,9 @@ class TestS3StoreCriticalOptimizedV2:
                 self.test_configs = {
                     "satellites": [SatellitePattern.GOES_16, SatellitePattern.GOES_18],
                     "timestamps": [
-                        datetime(2023, 1, 1, 12, 0, 0),
-                        datetime(2023, 6, 15, 18, 30, 0),
-                        datetime(2023, 12, 31, 6, 0, 0),
+                        datetime(2023, 1, 1, 12, 0, 0, tzinfo=UTC),
+                        datetime(2023, 6, 15, 18, 30, 0, tzinfo=UTC),
+                        datetime(2023, 12, 31, 6, 0, 0, tzinfo=UTC),
                     ],
                     "file_sizes": [9, 1000, 50000, 1000000],
                     "concurrent_count": 5,
@@ -103,12 +103,22 @@ class TestS3StoreCriticalOptimizedV2:
                     "performance_validation": self._test_performance_validation,
                 }
 
-            def create_s3_store(self) -> S3Store:
-                """Create a fresh S3Store instance."""
+            @staticmethod
+            def create_s3_store() -> S3Store:
+                """Create a fresh S3Store instance.
+
+                Returns:
+                    S3Store: A new S3Store instance.
+                """
                 return S3Store()
 
-            def create_temp_directory(self) -> tempfile.TemporaryDirectory:
-                """Create a temporary directory for test files."""
+            @staticmethod
+            def create_temp_directory() -> tempfile.TemporaryDirectory:
+                """Create a temporary directory for test files.
+
+                Returns:
+                    tempfile.TemporaryDirectory: A temporary directory instance.
+                """
                 return tempfile.TemporaryDirectory()
 
             def create_mock_s3_client(self, **config) -> AsyncMock:
@@ -510,10 +520,10 @@ class TestS3StoreCriticalOptimizedV2:
                 if scenario_name == "edge_case_timestamps":
                     # Test with edge case timestamps
                     edge_timestamps = [
-                        datetime(2000, 1, 1, 0, 0, 0),  # Y2K
-                        datetime(2023, 2, 29, 12, 0, 0),  # Invalid leap year (will be adjusted)
-                        datetime(2024, 2, 29, 12, 0, 0),  # Valid leap year
-                        datetime(2023, 12, 31, 23, 59, 59),  # End of year
+                        datetime(2000, 1, 1, 0, 0, 0, tzinfo=UTC),  # Y2K
+                        datetime(2023, 2, 28, 12, 0, 0, tzinfo=UTC),  # End of February (non-leap year)
+                        datetime(2024, 2, 29, 12, 0, 0, tzinfo=UTC),  # Valid leap year
+                        datetime(2023, 12, 31, 23, 59, 59, tzinfo=UTC),  # End of year
                     ]
 
                     edge_results = []
@@ -584,7 +594,7 @@ class TestS3StoreCriticalOptimizedV2:
         initialization_scenarios = ["context_manager", "multiple_instances"]
 
         for scenario in initialization_scenarios:
-            result = await manager._test_initialization(scenario)
+            result = await manager._test_initialization(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
@@ -596,7 +606,7 @@ class TestS3StoreCriticalOptimizedV2:
         download_scenarios = ["successful_download", "multiple_file_sizes", "download_not_found"]
 
         for scenario in download_scenarios:
-            result = await manager._test_download_operations(scenario, temp_directory)
+            result = await manager._test_download_operations(scenario, temp_directory)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
@@ -608,7 +618,7 @@ class TestS3StoreCriticalOptimizedV2:
         existence_scenarios = ["exists_success", "exists_not_found", "exists_multiple_satellites"]
 
         for scenario in existence_scenarios:
-            result = await manager._test_file_existence(scenario)
+            result = await manager._test_file_existence(scenario)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
@@ -620,7 +630,7 @@ class TestS3StoreCriticalOptimizedV2:
         wildcard_scenarios = ["wildcard_single_match", "wildcard_multiple_matches", "wildcard_no_matches"]
 
         for scenario in wildcard_scenarios:
-            result = await manager._test_wildcard_matching(scenario, temp_directory)
+            result = await manager._test_wildcard_matching(scenario, temp_directory)  # noqa: SLF001
             assert result["scenario"] == scenario
             assert len(result["results"]) > 0
 
@@ -632,16 +642,19 @@ class TestS3StoreCriticalOptimizedV2:
         concurrent_scenarios = ["concurrent_downloads", "concurrent_existence_checks"]
 
         for scenario in concurrent_scenarios:
-            result = await manager._test_concurrent_operations(scenario, temp_directory)
+            result = await manager._test_concurrent_operations(scenario, temp_directory)  # noqa: SLF001
             assert result["scenario"] == scenario
-            assert result["results"]["concurrent_downloads"] == 5 or result["results"]["concurrent_checks"] == 5
+            if scenario == "concurrent_downloads":
+                assert result["results"]["concurrent_downloads"] == 5
+            else:  # concurrent_existence_checks
+                assert result["results"]["concurrent_checks"] == 5
 
     @pytest.mark.asyncio()
     async def test_error_handling_scenarios(self, s3_store_critical_test_components, temp_directory) -> None:
         """Test error handling scenarios."""
         manager = s3_store_critical_test_components["manager"]
 
-        result = await manager._test_error_handling("various_s3_errors", temp_directory)
+        result = await manager._test_error_handling("various_s3_errors", temp_directory)  # noqa: SLF001
         assert result["scenario"] == "various_s3_errors"
         assert result["results"]["s3_errors_tested"] == 3
 
@@ -650,7 +663,7 @@ class TestS3StoreCriticalOptimizedV2:
         """Test edge cases and boundary conditions."""
         manager = s3_store_critical_test_components["manager"]
 
-        result = await manager._test_edge_cases("edge_case_timestamps", temp_directory)
+        result = await manager._test_edge_cases("edge_case_timestamps", temp_directory)  # noqa: SLF001
         assert result["scenario"] == "edge_case_timestamps"
         assert result["results"]["edge_timestamps_tested"] == 4
 
@@ -659,7 +672,7 @@ class TestS3StoreCriticalOptimizedV2:
         """Test performance validation scenarios."""
         manager = s3_store_critical_test_components["manager"]
 
-        result = await manager._test_performance_validation("high_throughput", temp_directory)
+        result = await manager._test_performance_validation("high_throughput", temp_directory)  # noqa: SLF001
         assert result["scenario"] == "high_throughput"
         assert result["results"]["operations_completed"] == 50
         assert result["results"]["all_successful"] is True
@@ -696,24 +709,24 @@ class TestS3StoreCriticalOptimizedV2:
         manager = s3_store_critical_test_components["manager"]
 
         # Test context manager behavior
-        result = await manager._test_initialization("context_manager")
+        result = await manager._test_initialization("context_manager")  # noqa: SLF001
         assert result["results"]["context_enter"] is True
         assert result["results"]["context_exit"] is True
 
         # Test successful download
-        result = await manager._test_download_operations("successful_download", temp_directory)
+        result = await manager._test_download_operations("successful_download", temp_directory)  # noqa: SLF001
         assert result["results"]["download_successful"] is True
 
         # Test existence checking
-        result = await manager._test_file_existence("exists_success")
+        result = await manager._test_file_existence("exists_success")  # noqa: SLF001
         assert result["results"]["exists_check_successful"] is True
 
         # Test wildcard matching
-        result = await manager._test_wildcard_matching("wildcard_single_match", temp_directory)
+        result = await manager._test_wildcard_matching("wildcard_single_match", temp_directory)  # noqa: SLF001
         assert result["results"]["wildcard_match_successful"] is True
 
         # Test concurrent operations
-        result = await manager._test_concurrent_operations("concurrent_downloads", temp_directory)
+        result = await manager._test_concurrent_operations("concurrent_downloads", temp_directory)  # noqa: SLF001
         assert result["results"]["concurrent_downloads"] == 5
 
     @pytest.mark.asyncio()
@@ -724,14 +737,14 @@ class TestS3StoreCriticalOptimizedV2:
         manager = s3_store_critical_test_components["manager"]
 
         # Test multiple file sizes
-        result = await manager._test_download_operations("multiple_file_sizes", temp_directory)
+        result = await manager._test_download_operations("multiple_file_sizes", temp_directory)  # noqa: SLF001
         assert result["results"]["file_sizes_tested"] == len(manager.test_configs["file_sizes"])
 
         # Test multiple satellites
-        result = await manager._test_file_existence("exists_multiple_satellites")
+        result = await manager._test_file_existence("exists_multiple_satellites")  # noqa: SLF001
         assert result["results"]["satellites_checked"] == len(manager.test_configs["satellites"])
 
         # Test high throughput
-        result = await manager._test_performance_validation("high_throughput", temp_directory)
+        result = await manager._test_performance_validation("high_throughput", temp_directory)  # noqa: SLF001
         assert result["results"]["operations_completed"] == 50
         assert result["results"]["all_successful"] is True

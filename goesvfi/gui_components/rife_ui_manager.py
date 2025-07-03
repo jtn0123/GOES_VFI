@@ -56,8 +56,11 @@ class RifeUIManager:
         main_tab.rife_thread_spec_edit.setEnabled(is_rife)
 
         # Enable/disable the entire FFmpeg settings tab content
-        ffmpeg_settings_tab.set_enabled(is_ffmpeg)
-        LOGGER.debug("Called ffmpeg_settings_tab.set_enabled(%s)", is_ffmpeg)
+        if ffmpeg_settings_tab is not None:
+            ffmpeg_settings_tab.set_enabled(is_ffmpeg)
+            LOGGER.debug("Called ffmpeg_settings_tab.set_enabled(%s)", is_ffmpeg)
+        else:
+            LOGGER.debug("ffmpeg_settings_tab is None, skipping set_enabled call")
 
     def _update_rife_capabilities(self, main_tab: Any, current_model_key: str) -> None:
         """Update RIFE UI elements based on model capabilities.

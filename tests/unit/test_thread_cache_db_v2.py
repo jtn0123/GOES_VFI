@@ -118,7 +118,10 @@ class TestThreadLocalCacheDB:
 
     @pytest.mark.parametrize("thread_count", [2, 3, 5])
     def test_multithread_access_patterns(  # noqa: PLR6301
-        self, temp_db_path: Path, mock_time_operations: Any, thread_count: int  # noqa: ARG002
+        self,
+        temp_db_path: Path,
+        mock_time_operations: Any,
+        thread_count: int,
     ) -> None:
         """Test accessing the database from multiple threads with different thread counts."""
         db = ThreadLocalCacheDB(db_path=temp_db_path)
@@ -138,8 +141,19 @@ class TestThreadLocalCacheDB:
                 assert conn is not None
                 assert thread_id in db._connections  # noqa: SLF001
 
-                # Perform a simple database operation
-                conn.execute("SELECT 1").fetchone()
+                # Perform a simple database operation using CacheDB methods
+                # Test adding and retrieving an entry
+                test_filepath = f"test_file_{thread_id}.nc"
+                conn.add_entry(
+                    filepath=test_filepath,
+                    file_hash=f"hash_{thread_id}",
+                    file_size=1000,
+                    timestamp=datetime.now(UTC),
+                )
+
+                # Verify entry was added
+                entry = conn.get_entry(test_filepath)
+                assert entry is not None
 
             except Exception as e:  # noqa: BLE001
                 test_result["success"] = False
@@ -251,9 +265,21 @@ class TestThreadLocalCacheDB:
             }
 
             try:
-                # Perform database operation
-                conn.execute("SELECT 1").fetchone()
-                connection_info[thread_id]["operations_successful"] = True
+                # Perform database operation - use CacheDB's connection
+                if hasattr(conn, "conn") and conn.conn:
+                    conn.conn.execute("SELECT 1").fetchone()
+                    connection_info[thread_id]["operations_successful"] = True
+                else:
+                    # Alternative: test with cache operations
+                    test_entry = f"test_lifecycle_{thread_id}.nc"
+                    conn.add_entry(
+                        filepath=test_entry,
+                        file_hash=f"hash_{thread_id}",
+                        file_size=100,
+                        timestamp=datetime.now(UTC),
+                    )
+                    result = conn.get_entry(test_entry)
+                    connection_info[thread_id]["operations_successful"] = result is not None
             except Exception:  # noqa: BLE001, S110
                 pass
 
@@ -276,28 +302,27 @@ class TestThreadLocalCacheDB:
             assert info["operations_successful"], f"Thread {thread_id} operations failed"
 
         # Test closing individual thread connections
-        main_thread_id = threading.get_ident()
+        threading.get_ident()
+
+        # Get initial connection count
         len(db._connections)  # noqa: SLF001
+
+        # Check if main thread has a connection already by accessing it
+        _ = db.get_db()  # This will create a connection for main thread if not exists
+        updated_connection_count = len(db._connections)  # noqa: SLF001
 
         # Close current thread connection
         db.close_current_thread()
 
-        # Should have one fewer connection
-        if main_thread_id in db._connections:  # noqa: SLF001
-            # Main thread had a connection that was closed
-            assert len(db._connections) == initial_connection_count - 1  # noqa: SLF001
-        else:
-            # Main thread didn't have a connection, count unchanged
-            assert len(db._connections) == initial_connection_count  # noqa: SLF001
+        # Should have one fewer connection after closing
+        assert len(db._connections) == updated_connection_count - 1  # noqa: SLF001
 
         # Close all connections
         db.close()
         assert len(db._connections) == 0  # noqa: SLF001
 
     @pytest.mark.parametrize("operation_count", [3, 5, 8])
-    def test_concurrent_database_operations(
-        self, thread_cache_db: Any, mock_time_operations: Any, operation_count: int
-    ) -> None:
+    def test_concurrent_database_operations(self, thread_cache_db: Any, operation_count: int) -> None:
         """Test concurrent database operations with varying operation counts."""
         results = []
 
@@ -352,15 +377,34 @@ class TestThreadLocalCacheDB:
             # Test with invalid operation
             conn = db._get_connection()  # noqa: SLF001
 
-            # This should work
-            conn.execute("SELECT 1").fetchone()
+            # This should work - use CacheDB's connection
+            if hasattr(conn, "conn") and conn.conn:
+                conn.conn.execute("SELECT 1").fetchone()
 
-            # Test error handling by trying to access non-existent table
-            with contextlib.suppress(Exception):
-                conn.execute("SELECT * FROM non_existent_table").fetchone()
+                # Test error handling by trying to access non-existent table
+                with contextlib.suppress(Exception):
+                    conn.conn.execute("SELECT * FROM non_existent_table").fetchone()
 
-            # Verify database is still functional after error
-            conn.execute("SELECT 1").fetchone()
+                # Verify database is still functional after error
+                conn.conn.execute("SELECT 1").fetchone()
+            else:
+                # Alternative: test error handling with cache operations
+                # This should work
+                test_file = "test_error_handling.nc"
+                conn.add_entry(
+                    filepath=test_file,
+                    file_hash="test_hash",
+                    file_size=100,
+                    timestamp=datetime.now(UTC),
+                )
+
+                # Test error handling - try to get non-existent entry
+                non_existent = conn.get_entry("non_existent_file.nc")
+                assert non_existent is None
+
+                # Verify database is still functional
+                result = conn.get_entry(test_file)
+                assert result is not None
 
         finally:
             db.close()

@@ -208,11 +208,13 @@ def create_mock_subprocess_run(
 
         if file_to_create and returncode == 0:
             try:
-                # Create a valid PNG file instead of just touching it
-                # create_test_png(file_to_create)
-                # FIX: Just create a dummy file to avoid calling Image.fromarray via create_test_png
-                file_to_create.parent.mkdir(parents=True, exist_ok=True)
-                file_to_create.touch()
+                # Create a valid PNG file for RIFE interpolation output
+                if str(file_to_create).endswith(".png"):
+                    create_test_png(file_to_create)
+                else:
+                    # For non-PNG files, just create a dummy file
+                    file_to_create.parent.mkdir(parents=True, exist_ok=True)
+                    file_to_create.touch()
             except Exception:
                 pass
 

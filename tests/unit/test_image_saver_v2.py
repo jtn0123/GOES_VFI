@@ -164,7 +164,9 @@ class TestImageSaverV2:  # noqa: PLR0904
             (".webp", "RGB"),
         ],
     )
-    def test_save_different_formats(self, saver: Any, sample_images: Any, temp_dir: Any, format_ext: str, pil_mode: str) -> None:  # noqa: PLR6301
+    def test_save_different_formats(
+        self, saver: Any, sample_images: Any, temp_dir: Any, format_ext: str, pil_mode: str
+    ) -> None:
         """Test saving in different image formats."""
         output_path = Path(temp_dir) / f"test{format_ext}"
 

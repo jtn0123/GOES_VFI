@@ -51,7 +51,10 @@ class TestRifeCapabilityDetectorV2:
 
     def test_init_successful_detection(self, rife_path: Path, mock_subprocess: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test successful initialization and capability detection."""
-        with patch("subprocess.run", return_value=mock_subprocess["success"]), patch("pathlib.Path.exists", return_value=True):
+        with (
+            patch("subprocess.run", return_value=mock_subprocess["success"]),
+            patch("pathlib.Path.exists", return_value=True),
+        ):
             detector = RifeCapabilityDetector(rife_path)
 
             assert detector.rife_path == rife_path
@@ -69,7 +72,11 @@ class TestRifeCapabilityDetectorV2:
 
     def test_init_help_command_fails(self, rife_path: Path, mock_subprocess: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test initialization when help command fails."""
-        with patch("subprocess.run", return_value=mock_subprocess["failure"]), patch("pathlib.Path.exists", return_value=True), pytest.raises(RuntimeError, match="Failed to run"):
+        with (
+            patch("subprocess.run", return_value=mock_subprocess["failure"]),
+            patch("pathlib.Path.exists", return_value=True),
+            pytest.raises(RuntimeError, match="Failed to run"),
+        ):
             RifeCapabilityDetector(rife_path)
 
     def test_version_detection(self, rife_path: Path, mock_subprocess: dict[str, Any]) -> None:  # noqa: PLR6301, ARG002
@@ -128,12 +135,19 @@ class TestRifeCapabilityDetectorV2:
 
     def test_help_command_timeout(self, rife_path: Path, mock_subprocess: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test handling of subprocess timeout."""
-        with patch("subprocess.run", side_effect=mock_subprocess["timeout"]), patch("pathlib.Path.exists", return_value=True), pytest.raises(RuntimeError, match="Timeout"):
+        with (
+            patch("subprocess.run", side_effect=mock_subprocess["timeout"]),
+            patch("pathlib.Path.exists", return_value=True),
+            pytest.raises(RuntimeError, match="Timeout"),
+        ):
             RifeCapabilityDetector(rife_path)
 
     def test_build_command_basic(self, rife_path: Path, mock_subprocess: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test building basic RIFE command."""
-        with patch("subprocess.run", return_value=mock_subprocess["success"]), patch("pathlib.Path.exists", return_value=True):
+        with (
+            patch("subprocess.run", return_value=mock_subprocess["success"]),
+            patch("pathlib.Path.exists", return_value=True),
+        ):
             detector = RifeCapabilityDetector(rife_path)
 
             cmd = detector.build_command(
@@ -156,7 +170,10 @@ class TestRifeCapabilityDetectorV2:
 
     def test_build_command_with_capabilities(self, rife_path: Path, mock_subprocess: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test building command with optional capabilities."""
-        with patch("subprocess.run", return_value=mock_subprocess["success"]), patch("pathlib.Path.exists", return_value=True):
+        with (
+            patch("subprocess.run", return_value=mock_subprocess["success"]),
+            patch("pathlib.Path.exists", return_value=True),
+        ):
             detector = RifeCapabilityDetector(rife_path)
 
             cmd = detector.build_command(
