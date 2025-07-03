@@ -50,7 +50,7 @@ class ImageCache:
         else:
             samples = img.flat
 
-        pixel_hash = hashlib.md5(samples.tobytes()).hexdigest()[:16]
+        pixel_hash = hashlib.md5(np.asarray(samples).tobytes()).hexdigest()[:16]
         return f"{shape_str}_{pixel_hash}"
 
     def get(self, img: NDArray[np.float32]) -> NDArray[np.float32] | None:

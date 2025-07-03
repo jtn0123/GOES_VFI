@@ -84,7 +84,7 @@ class TestUnsignedS3AccessV2:
         Returns:
             S3Store: Configured S3Store instance.
         """
-        return S3Store(aws_profile=None, aws_region="us-east-1", timeout=30)
+        return S3Store(aws_profile=None, aws_region="us-east-1", timeout=30, use_connection_pool=False)
 
     @staticmethod
     @pytest.mark.asyncio()

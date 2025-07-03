@@ -35,10 +35,11 @@ class TestCounts:
     skipped: int = 0
     error: int = 0
     crashed: int = 0
+    timeout: int = 0
 
     def total(self) -> int:
         """Return total number of tests."""
-        return self.passed + self.failed + self.skipped + self.error
+        return self.passed + self.failed + self.skipped + self.error + self.crashed + self.timeout
 
     def to_dict(self) -> dict[str, int]:
         """Convert to dictionary for compatibility."""
@@ -48,6 +49,7 @@ class TestCounts:
             "skipped": self.skipped,
             "error": self.error,
             "crashed": self.crashed,
+            "timeout": self.timeout,
         }
 
 
@@ -91,6 +93,7 @@ class RunnerConfig:
     directory: str = "tests"
     skip_problematic: bool = False
     tolerant: bool = False
+    count_tests: bool = True
     specific_files: list[str] = field(default_factory=list)
 
 
@@ -104,6 +107,7 @@ class ColorScheme:
     skipped: str = "\033[94m"  # Blue
     crashed: str = "\033[91m"  # Red
     timeout: str = "\033[93m"  # Yellow
+    bright_magenta: str = "\033[95m"  # Bright purplish-pink
     reset: str = "\033[0m"
 
     def get(self, status: str) -> str:
@@ -544,7 +548,7 @@ class TestExecutor:
 
     def _create_timeout_result(self, test_path: str, duration: float) -> TestResult:
         """Create result for timeout."""
-        counts = TestCounts(error=1)
+        counts = TestCounts(timeout=1)
         return TestResult(
             path=test_path,
             status="TIMEOUT",
@@ -606,7 +610,7 @@ class ProgressReporter:
         color = self._get_file_status_color(result)
         count_summary = self._build_count_summary(result)
 
-        print(f"[{index}/{total}] {color}{emoji} {display_status} {result.path}{self.colors.reset} ({count_summary})")  # noqa: T201
+        print(f"{self.colors.bright_magenta}[{index}/{total}]{self.colors.reset} {color}{emoji} {display_status}{self.colors.reset} {self.colors.bright_magenta}{result.path}{self.colors.reset} ({count_summary}) {self.colors.bright_magenta}[{result.duration:.1f}s]{self.colors.reset}")  # noqa: T201
 
     def report_error(self, index: int, total: int, path: str, error: str) -> None:
         """Report error running test."""
@@ -621,7 +625,7 @@ class ProgressReporter:
             return
 
         workers = self.config.parallel
-        print(f"🚀 Running {total} test files with {workers} parallel workers...")  # noqa: T201
+        print(f"{self.colors.bright_magenta}🚀 Running {total} test files with {workers} parallel workers...{self.colors.reset}")  # noqa: T201
 
     def _build_count_summary(self, result: TestResult) -> str:
         """Build count summary string."""
@@ -637,15 +641,7 @@ class ProgressReporter:
 
     def _format_collected_count(self, result: TestResult) -> str:
         """Format count summary using collected count."""
-        status_colors = {
-            "PASSED": self.colors.passed,
-            "FAILED": self.colors.failed,
-            "SKIPPED": self.colors.skipped,
-            "ERROR": self.colors.error,
-            "TIMEOUT": self.colors.timeout,
-        }
-
-        color = status_colors.get(result.status)
+        color = self.colors.get(result.status)
         if color:
             status_text = {
                 "PASSED": "passed",
@@ -653,7 +649,8 @@ class ProgressReporter:
                 "SKIPPED": "skipped",
                 "ERROR": "errors",
                 "TIMEOUT": "timed out",
-            }[result.status]
+                "CRASHED": "crashed",
+            }.get(result.status, "tests")
             return f"{color}{result.collected} {status_text}{self.colors.reset}"
 
         return f"{result.collected} tests"
@@ -727,8 +724,9 @@ class ProgressReporter:
 class SummaryReporter:
     """Generate and print test execution summary."""
 
-    def __init__(self, color_scheme: ColorScheme):
+    def __init__(self, color_scheme: ColorScheme, config: RunnerConfig):
         self.colors = color_scheme
+        self.config = config
 
     def print_summary(self, results: list[TestResult], duration: float) -> None:
         """Print complete test summary."""
@@ -763,6 +761,8 @@ class SummaryReporter:
                 "failed": 0,
                 "skipped": 0,
                 "error": 0,
+                "crashed": 0,
+                "timeout": 0,
             },
         }
 
@@ -803,6 +803,8 @@ class SummaryReporter:
         test_counts["failed"] += counts.failed
         test_counts["skipped"] += counts.skipped
         test_counts["error"] += counts.error
+        test_counts["crashed"] += counts.crashed
+        test_counts["timeout"] += counts.timeout
 
     def _adjust_counts_from_collected(self, counts: TestCounts, result: TestResult) -> None:
         """Adjust counts using collected count when individual counts are missing."""
@@ -812,8 +814,12 @@ class SummaryReporter:
             counts.failed = result.collected
         elif result.status == "SKIPPED":
             counts.skipped = result.collected
-        elif result.status in {"ERROR", "CRASHED", "TIMEOUT"}:
+        elif result.status == "ERROR":
             counts.error = result.collected
+        elif result.status == "CRASHED":
+            counts.crashed = result.collected
+        elif result.status == "TIMEOUT":
+            counts.timeout = result.collected
 
     def _print_failed_section(self, results: list[TestResult]) -> None:
         """Print failed tests section."""
@@ -861,7 +867,7 @@ class SummaryReporter:
         if not skipped:
             return
 
-        print(f"\n{self.colors.skipped}⏭️  SKIPPED FILES ({len(skipped)}):{self.colors.reset}")  # noqa: T201
+        print(f"\n{self.colors.skipped}⏭️ SKIPPED FILES ({len(skipped)}):{self.colors.reset}")  # noqa: T201
         for result in skipped:
             print(f"  {self.colors.skipped}{result.path}{self.colors.reset}")  # noqa: T201
 
@@ -873,7 +879,8 @@ class SummaryReporter:
         print(f"  {color}{result.path}{self.colors.reset} ({count_summary})")  # noqa: T201
 
         if result.error_summary:
-            print(f"    → {self.colors.failed}{result.error_summary}{self.colors.reset}")  # noqa: T201
+            error_color = self.colors.get(result.status) or self.colors.failed
+            print(f"    → {error_color}{result.error_summary}{self.colors.reset}")  # noqa: T201
 
     def _build_count_summary(self, result: TestResult) -> str:
         """Build count summary for result line."""
@@ -916,6 +923,13 @@ class SummaryReporter:
         return defaults.get(status, "1 test")
 
     def _print_file_counter_summary(self, stats: dict[str, Any], duration: float) -> None:
+        """Print colorized summary - either file counts or individual test counts."""
+        if self.config.count_tests:
+            self._print_test_counter_summary(stats, duration)
+        else:
+            self._print_file_counter_summary_impl(stats, duration)
+
+    def _print_file_counter_summary_impl(self, stats: dict[str, Any], duration: float) -> None:
         """Print colorized file counter summary."""
         print(f"\n{self.colors.reset}📊 TEST FILE SUMMARY:")  # noqa: T201
 
@@ -947,7 +961,7 @@ class SummaryReporter:
             counter_parts.append(f"{self.colors.timeout}⏰ {timeout} TIMEOUT{self.colors.reset}")
 
         if skipped > 0:
-            counter_parts.append(f"{self.colors.skipped}⏭️ {skipped} SKIPPED{self.colors.reset}")
+            counter_parts.append(f"{self.colors.skipped}⏭️  {skipped} SKIPPED{self.colors.reset}")
 
         # Print the counter
         counter_line = "  " + " | ".join(counter_parts)
@@ -956,6 +970,56 @@ class SummaryReporter:
         # Print total and duration
         total_color = self.colors.passed if (failed + error + crashed + timeout) == 0 else self.colors.failed
         print(f"  {total_color}📁 TOTAL: {total} files{self.colors.reset} in {duration:.1f}s")  # noqa: T201
+
+    def _print_test_counter_summary(self, stats: dict[str, Any], duration: float) -> None:
+        """Print colorized individual test counter summary."""
+        print(f"\n{self.colors.reset}📊 INDIVIDUAL TEST SUMMARY:")  # noqa: T201
+
+        # Individual test counts
+        test_counts = stats["test_counts"]
+        assert isinstance(test_counts, dict)  # Type narrowing for mypy
+        passed = test_counts["passed"]
+        failed = test_counts["failed"]
+        skipped = test_counts["skipped"]
+        error = test_counts["error"]
+        crashed = test_counts["crashed"]
+        timeout = test_counts["timeout"]
+        total_tests = passed + failed + skipped + error + crashed + timeout
+
+        # Build colorized counter parts with percentages
+        counter_parts = []
+
+        if passed > 0:
+            passed_pct = (passed / total_tests * 100) if total_tests > 0 else 0.0
+            counter_parts.append(f"{self.colors.passed}✅ {passed} PASSED ({passed_pct:.1f}%){self.colors.reset}")
+
+        if failed > 0:
+            failed_pct = (failed / total_tests * 100) if total_tests > 0 else 0.0
+            counter_parts.append(f"{self.colors.failed}❌ {failed} FAILED ({failed_pct:.1f}%){self.colors.reset}")
+
+        if error > 0:
+            error_pct = (error / total_tests * 100) if total_tests > 0 else 0.0
+            counter_parts.append(f"{self.colors.error}💥 {error} ERROR ({error_pct:.1f}%){self.colors.reset}")
+
+        if skipped > 0:
+            skipped_pct = (skipped / total_tests * 100) if total_tests > 0 else 0.0
+            counter_parts.append(f"{self.colors.skipped}⏭️  {skipped} SKIPPED ({skipped_pct:.1f}%){self.colors.reset}")
+
+        if crashed > 0:
+            crashed_pct = (crashed / total_tests * 100) if total_tests > 0 else 0.0
+            counter_parts.append(f"{self.colors.crashed}💀 {crashed} CRASHED ({crashed_pct:.1f}%){self.colors.reset}")
+
+        if timeout > 0:
+            timeout_pct = (timeout / total_tests * 100) if total_tests > 0 else 0.0
+            counter_parts.append(f"{self.colors.timeout}⏰ {timeout} TIMEOUT ({timeout_pct:.1f}%){self.colors.reset}")
+
+        # Print the counter
+        counter_line = "  " + " | ".join(counter_parts)
+        print(counter_line)  # noqa: T201
+
+        # Print total and duration
+        total_color = self.colors.passed if (failed + error + crashed + timeout) == 0 else self.colors.failed
+        print(f"  {total_color}🧪 TOTAL: {total_tests} tests{self.colors.reset} in {duration:.1f}s")  # noqa: T201
 
 
 # ============================================================================
@@ -1028,9 +1092,9 @@ class LogManager:
             return None
 
         # Only save logs for failed/errored tests
-        if result.status not in {"FAILED", "ERROR", "CRASHED", "TIMEOUT"}:
-            if "PASSED" not in result.status or "error" not in result.status:
-                return None
+        if (result.status not in {"FAILED", "ERROR", "CRASHED", "TIMEOUT"} 
+            and ("PASSED" not in result.status or "error" not in result.status)):
+            return None
 
         # Create log directory
         log_dir = self.log_dir / "debug" if debug_mode else self.log_dir
@@ -1041,7 +1105,8 @@ class LogManager:
         log_path = log_dir / f"{filename}.log"
 
         # Write log file
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        from datetime import timezone
+        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
         with open(log_path, "w", encoding="utf-8") as f:
             f.write(f"=== Test Log for {result.path} ===\n")
             f.write(f"Generated: {timestamp}\n")
@@ -1068,7 +1133,7 @@ class TestRunner:
         self.discovery = TestDiscovery()
         self.executor = TestExecutor(config)
         self.progress = ProgressReporter(config, self.colors)
-        self.summary = SummaryReporter(self.colors)
+        self.summary = SummaryReporter(self.colors, config)
         self.logs = LogManager(config.dump_logs)
 
     def run(self) -> int:
@@ -1113,15 +1178,20 @@ class TestRunner:
     def _run_tests(self, test_files: list[str]) -> list[TestResult]:
         """Run all tests with progress reporting."""
         if self.config.parallel == 1 or self.config.debug_mode:
-            # Run sequentially
-            results = []
-            for i, test_file in enumerate(test_files, 1):
-                result = self.executor.run_single_test(test_file)
-                self.progress.report_progress(i, len(test_files), result)
-                results.append(result)
-            return results
+            return self._run_tests_sequential(test_files)
+        return self._run_tests_parallel(test_files)
 
-        # Run in parallel with progress updates
+    def _run_tests_sequential(self, test_files: list[str]) -> list[TestResult]:
+        """Run tests sequentially with progress reporting."""
+        results = []
+        for i, test_file in enumerate(test_files, 1):
+            result = self.executor.run_single_test(test_file)
+            self.progress.report_progress(i, len(test_files), result)
+            results.append(result)
+        return results
+
+    def _run_tests_parallel(self, test_files: list[str]) -> list[TestResult]:
+        """Run tests in parallel with progress reporting."""
         indexed_results: list[tuple[int, TestResult]] = []
         with ThreadPoolExecutor(max_workers=self.config.parallel) as executor:
             future_to_info: dict[Any, dict[str, Any]] = {}
@@ -1195,6 +1265,9 @@ def parse_arguments() -> RunnerConfig:
     parser.add_argument("--debug-mode", action="store_true", help="Run tests with extra debug options")
     parser.add_argument("--quiet", "-q", action="store_true", help="Minimal output (only summary)")
     parser.add_argument("--timeout", type=int, default=30, help="Timeout for individual tests in seconds (default: 30)")
+    parser.add_argument(
+        "--count-files", action="store_true", help="Count test files instead of individual tests in summary"
+    )
 
     args = parser.parse_args()
 
@@ -1209,6 +1282,7 @@ def parse_arguments() -> RunnerConfig:
         directory=args.directory,
         skip_problematic=args.skip_problematic,
         tolerant=args.tolerant,
+        count_tests=not args.count_files,
         specific_files=args.specific_files or [],
     )
 

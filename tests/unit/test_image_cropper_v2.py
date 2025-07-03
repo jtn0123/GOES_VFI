@@ -117,7 +117,7 @@ class TestImageCropperV2:  # noqa: PLR0904
         cropped_data = cropper.crop(image_data, rect)
 
         assert cropped_data.image_data.shape == (40, 40, 4)
-        assert np.array_equal(cropped_data.image_data[:, :, 3], 255)  # Alpha preserved
+        assert np.all(cropped_data.image_data[:, :, 3] == 255)  # Alpha preserved
 
     @pytest.mark.parametrize(
         "rect,expected_shape",
@@ -130,8 +130,8 @@ class TestImageCropperV2:  # noqa: PLR0904
             ((40, 40, 60, 60), (20, 20, 3)),  # Small center crop
         ],
     )
-    @staticmethod
     def test_crop_regions(
+        self,
         sample_images: dict[str, Any],
         cropper: ImageCropper,
         rect: tuple[int, int, int, int],

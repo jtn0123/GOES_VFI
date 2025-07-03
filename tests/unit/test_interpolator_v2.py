@@ -230,7 +230,7 @@ class TestInterpolatorOptimizedV2:
 
                     # Cleanup
                     manager.cleanup()
-                    assert not manager._current_dir.exists()  # noqa: SLF001
+                    assert manager._current_dir is None or not manager._current_dir.exists()  # noqa: SLF001
                     results["cleanup_verified"] = True
 
                 elif scenario_name == "directory_rotation":
@@ -323,21 +323,30 @@ class TestInterpolatorOptimizedV2:
                     mock_run.return_value = MagicMock(returncode=0)
 
                     # Test interpolation
-                    with patch("cv2.imread") as mock_imread:
-                        # Return different image for output
+                    with patch("PIL.Image.open") as mock_pil_open, \
+                         patch("pathlib.Path.exists", return_value=True):
+                        # Create mock PIL image
                         result_img = self.image_generator.create_dummy_image(value=0.75)
-                        mock_imread.return_value = result_img
+                        # Convert to uint8 for PIL format
+                        result_img_uint8 = (result_img * 255).astype(np.uint8)
+                        
+                        mock_pil_img = MagicMock()
+                        mock_pil_img.__enter__ = MagicMock(return_value=mock_pil_img)
+                        mock_pil_img.__exit__ = MagicMock(return_value=None)
+                        mock_pil_open.return_value = mock_pil_img
+                        
+                        # Mock numpy array conversion
+                        with patch("numpy.array", return_value=result_img_uint8):
+                            result = backend.interpolate_pair(img1, img2)
 
-                        result = backend.interpolate_pair(img1, img2)
+                            # Verify subprocess was called
+                            assert mock_run.called
+                            results["subprocess_called"] = True
 
-                        # Verify subprocess was called
-                        assert mock_run.called
-                        results["subprocess_called"] = True
-
-                        # Verify result
-                        assert result is not None
-                        assert result.shape == img1.shape
-                        results["interpolation_completed"] = True
+                            # Verify result
+                            assert result is not None
+                            assert result.shape == img1.shape
+                            results["interpolation_completed"] = True
 
                 # Cleanup
                 backend.cleanup()
@@ -363,21 +372,31 @@ class TestInterpolatorOptimizedV2:
                 with patch("subprocess.run") as mock_run:
                     mock_run.return_value = MagicMock(returncode=0)
 
-                    with patch("cv2.imread") as mock_imread:
+                    with patch("PIL.Image.open") as mock_pil_open, \
+                         patch("pathlib.Path.exists", return_value=True):
+                        # Create mock PIL image
                         result_img = self.image_generator.create_dummy_image(value=0.75)
-                        mock_imread.return_value = result_img
+                        # Convert to uint8 for PIL format
+                        result_img_uint8 = (result_img * 255).astype(np.uint8)
+                        
+                        mock_pil_img = MagicMock()
+                        mock_pil_img.__enter__ = MagicMock(return_value=mock_pil_img)
+                        mock_pil_img.__exit__ = MagicMock(return_value=None)
+                        mock_pil_open.return_value = mock_pil_img
+                        
+                        # Mock numpy array conversion
+                        with patch("numpy.array", return_value=result_img_uint8):
+                            # First call
+                            result1 = backend.interpolate_pair(img1, img2)
+                            assert mock_run.call_count == 1
 
-                        # First call
-                        result1 = backend.interpolate_pair(img1, img2)
-                        assert mock_run.call_count == 1
+                            # Second call (should hit cache)
+                            result2 = backend.interpolate_pair(img1, img2)
+                            assert mock_run.call_count == 1  # No additional call
 
-                        # Second call (should hit cache)
-                        result2 = backend.interpolate_pair(img1, img2)
-                        assert mock_run.call_count == 1  # No additional call
-
-                        # Results should be identical
-                        np.testing.assert_array_equal(result1, result2)
-                        results["cache_hit_verified"] = True
+                            # Results should be identical
+                            np.testing.assert_array_equal(result1, result2)
+                            results["cache_hit_verified"] = True
 
                 backend.cleanup()
                 return {"scenario": "cache_hit", "results": results}
@@ -401,9 +420,12 @@ class TestInterpolatorOptimizedV2:
 
                 # Test subprocess error
                 with patch("subprocess.run") as mock_run:
-                    mock_run.return_value = MagicMock(returncode=1)
+                    # Mock subprocess.CalledProcessError to be raised
+                    import subprocess
+                    error = subprocess.CalledProcessError(1, ["rife-cli"], stderr="Mock error")
+                    mock_run.side_effect = error
 
-                    with pytest.raises(RuntimeError, match="Failed to run RIFE"):
+                    with pytest.raises(RuntimeError, match="RIFE executable failed"):
                         backend.interpolate_pair(img1, img2)
 
                     results["subprocess_error_handled"] = True
@@ -542,8 +564,7 @@ class TestInterpolatorOptimizedV2:
         assert result["results"]["subprocess_error_handled"]
 
     @pytest.mark.parametrize("cache_size", [5, 10, 100])
-    @staticmethod
-    def test_cache_size_variations(interpolator_test_components: dict[str, Any], cache_size: int) -> None:
+    def test_cache_size_variations(self, interpolator_test_components: dict[str, Any], cache_size: int) -> None:  # noqa: PLR6301
         """Test cache with different size configurations."""
         image_gen = interpolator_test_components["image_generator"]
 
@@ -562,8 +583,7 @@ class TestInterpolatorOptimizedV2:
         assert stats["size"] <= cache_size
 
     @pytest.mark.parametrize("max_files", [5, 20, 100])
-    @staticmethod
-    def test_batch_manager_file_limits(max_files: int) -> None:
+    def test_batch_manager_file_limits(self, max_files: int) -> None:  # noqa: PLR6301
         """Test batch manager with different file limits."""
         manager = BatchTempManager(max_files_per_dir=max_files)
 
@@ -593,22 +613,36 @@ class TestInterpolatorOptimizedV2:
         images = image_gen.create_image_sequence(3)
 
         with patch("subprocess.run") as mock_run:
-            mock_run.return_value = MagicMock(returncode=0)
+            mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
 
-            with patch("cv2.imread") as mock_imread:
-                # Return interpolated images
+            with patch("PIL.Image.open") as mock_pil_open, \
+                 patch("pathlib.Path.exists", return_value=True):
+                # Create mock PIL image
                 interp1 = image_gen.create_dummy_image(value=0.25)
                 interp2 = image_gen.create_dummy_image(value=0.75)
-                mock_imread.side_effect = [interp1, interp2]
+                # Convert to uint8 for PIL format
+                interp1_uint8 = (interp1 * 255).astype(np.uint8)
+                interp2_uint8 = (interp2 * 255).astype(np.uint8)
+                
+                mock_pil_img = MagicMock()
+                mock_pil_img.__enter__ = MagicMock(return_value=mock_pil_img)
+                mock_pil_img.__exit__ = MagicMock(return_value=None)
+                mock_pil_open.return_value = mock_pil_img
+                
+                # Mock numpy array conversion
+                with patch("numpy.array") as mock_np_array:
+                    # interpolate_three calls the interpolation multiple times
+                    mock_np_array.side_effect = [interp1_uint8, interp2_uint8, interp1_uint8]
 
-                # Create backend for interpolate_three
-                backend = OptimizedRifeBackend(exe_path)
-                results = interpolate_three(images[0], images[2], backend)
-                backend.cleanup()
+                    # Create backend for interpolate_three
+                    backend = OptimizedRifeBackend(exe_path)
+                    results = interpolate_three(images[0], images[2], backend)
+                    backend.cleanup()
 
-                # Should return 5 images (3 original + 2 interpolated)
+                # Should return 3 images (original + 2 interpolated)
                 assert len(results) == 3  # interpolate_three returns list of 3 images
-                assert mock_run.call_count == 2  # Two interpolations
+                # Note: mock_run.call_count includes capability detection calls
+                assert mock_run.call_count >= 2  # At least two interpolations
 
     @staticmethod
     def test_error_handling_scenarios(interpolator_test_components: dict[str, Any]) -> None:

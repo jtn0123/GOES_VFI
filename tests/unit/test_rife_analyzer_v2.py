@@ -15,7 +15,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from goesvfi.utils.rife_analyzer import RifeCapabilityDetector, analyze_rife_executable
+from goesvfi.utils.rife_analyzer import RifeCapabilityDetector, RifeCommandBuilder, analyze_rife_executable
 
 
 class TestRifeCapabilityDetectorV2:
@@ -31,7 +31,7 @@ class TestRifeCapabilityDetectorV2:
         return {
             "success": Mock(
                 returncode=0,
-                stdout="RIFE 4.6\n--model\n--multi\n--scale\n--ensemble\n--img\n--exp\n--imgseq\n--montage\n--fastmode\n--ensemble\n--UHD\n--img\n--fps",
+                stdout="RIFE version 4.6\n--model\n--multi\n--scale\n--ensemble\n--img\n--exp\n--imgseq\n--montage\n--fastmode\n--ensemble\n--UHD\n--img\n--fps",
                 stderr="",
             ),
             "failure": Mock(returncode=1, stdout="", stderr="Error"),
@@ -57,13 +57,13 @@ class TestRifeCapabilityDetectorV2:
         ):
             detector = RifeCapabilityDetector(rife_path)
 
-            assert detector.rife_path == rife_path
+            assert detector.exe_path == rife_path
             assert detector.version == "4.6"
-            assert detector.capabilities["multi"] is True
-            assert detector.capabilities["scale"] is True
-            assert detector.capabilities["ensemble"] is True
-            assert detector.capabilities["fastmode"] is True
-            assert detector.capabilities["UHD"] is True
+            assert detector.supports_uhd() is True
+            assert detector.supports_model_path() is True
+            assert detector.supports_tiling() is False
+            assert detector.supports_tta_spatial() is False
+            assert detector.supports_tta_temporal() is False
 
     def test_init_exe_not_found(self, rife_path: Path) -> None:  # noqa: PLR6301
         """Test initialization when executable not found."""
@@ -75,9 +75,14 @@ class TestRifeCapabilityDetectorV2:
         with (
             patch("subprocess.run", return_value=mock_subprocess["failure"]),
             patch("pathlib.Path.exists", return_value=True),
-            pytest.raises(RuntimeError, match="Failed to run"),
         ):
-            RifeCapabilityDetector(rife_path)
+            detector = RifeCapabilityDetector(rife_path)
+            # When help command fails, detector should still work but with no capabilities
+            assert detector.exe_path == rife_path
+            assert detector.version is None
+            assert detector.supports_uhd() is False
+            assert detector.supports_model_path() is False
+            assert detector.supports_tiling() is False
 
     def test_version_detection(self, rife_path: Path, mock_subprocess: dict[str, Any]) -> None:  # noqa: PLR6301, ARG002
         """Test version detection from various output formats."""
@@ -105,12 +110,11 @@ class TestRifeCapabilityDetectorV2:
             detector = RifeCapabilityDetector(rife_path)
 
             assert detector.version == "4.0"
-            assert detector.capabilities["model"] is True
-            assert detector.capabilities["scale"] is True
-            assert detector.capabilities["multi"] is False
-            assert detector.capabilities["ensemble"] is False
-            assert detector.capabilities["fastmode"] is False
-            assert detector.capabilities["UHD"] is False
+            assert detector.supports_model_path() is True
+            assert detector.supports_uhd() is False
+            assert detector.supports_tiling() is False
+            assert detector.supports_tta_spatial() is False
+            assert detector.supports_tta_temporal() is False
 
     def test_detect_capabilities_with_simulated_help(self, rife_path: Path) -> None:  # noqa: PLR6301
         """Test capability detection with various help output formats."""
@@ -128,19 +132,23 @@ class TestRifeCapabilityDetectorV2:
             with patch("subprocess.run", return_value=mock_result), patch("pathlib.Path.exists", return_value=True):
                 detector = RifeCapabilityDetector(rife_path)
 
-                # Should detect all three capabilities in each format
-                assert detector.capabilities["model"] is True
-                assert detector.capabilities["multi"] is True
-                assert detector.capabilities["scale"] is True
+                # Should detect model capability in each format
+                assert detector.supports_model_path() is True
+                # The other capabilities (multi, scale) don't map to the current analyzer's capabilities
+                # The analyzer looks for specific flags like -u (uhd), -t (tiling), etc.
 
     def test_help_command_timeout(self, rife_path: Path, mock_subprocess: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test handling of subprocess timeout."""
         with (
             patch("subprocess.run", side_effect=mock_subprocess["timeout"]),
             patch("pathlib.Path.exists", return_value=True),
-            pytest.raises(RuntimeError, match="Timeout"),
         ):
-            RifeCapabilityDetector(rife_path)
+            detector = RifeCapabilityDetector(rife_path)
+            # When timeout occurs, detector should still work but with no capabilities
+            assert detector.exe_path == rife_path
+            assert detector.version is None
+            assert detector.supports_uhd() is False
+            assert detector.supports_model_path() is False
 
     def test_build_command_basic(self, rife_path: Path, mock_subprocess: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test building basic RIFE command."""
@@ -148,25 +156,32 @@ class TestRifeCapabilityDetectorV2:
             patch("subprocess.run", return_value=mock_subprocess["success"]),
             patch("pathlib.Path.exists", return_value=True),
         ):
-            detector = RifeCapabilityDetector(rife_path)
+            builder = RifeCommandBuilder(rife_path)
 
-            cmd = detector.build_command(
-                model_path="/path/to/model",
-                img_path="/path/to/imgs",
-                output_path="/path/to/output",
-                multi=2,
-                scale=1.0,
+            # The actual build_command method has different parameters
+            # Let me check what parameters it expects
+            from pathlib import Path as PathType
+            cmd = builder.build_command(
+                input_frame1=PathType("/path/to/frame1.png"),
+                input_frame2=PathType("/path/to/frame2.png"),
+                output_path=PathType("/path/to/output.png"),
+                options={
+                    "model_path": "/path/to/model",
+                    "scale": 1.0,
+                    "multi": 2,
+                },
             )
 
             assert str(rife_path) in cmd
-            assert "--model" in cmd
+            assert "-0" in cmd
+            assert "/path/to/frame1.png" in cmd
+            assert "-1" in cmd
+            assert "/path/to/frame2.png" in cmd
+            assert "-o" in cmd
+            assert "/path/to/output.png" in cmd
+            # Model path should be included since detector supports it
+            assert "-m" in cmd
             assert "/path/to/model" in cmd
-            assert "--img" in cmd
-            assert "/path/to/imgs" in cmd
-            assert "--output" in cmd
-            assert "/path/to/output" in cmd
-            assert "--multi" in cmd
-            assert "2" in cmd
 
     def test_build_command_with_capabilities(self, rife_path: Path, mock_subprocess: dict[str, Any]) -> None:  # noqa: PLR6301
         """Test building command with optional capabilities."""
@@ -174,25 +189,31 @@ class TestRifeCapabilityDetectorV2:
             patch("subprocess.run", return_value=mock_subprocess["success"]),
             patch("pathlib.Path.exists", return_value=True),
         ):
-            detector = RifeCapabilityDetector(rife_path)
+            builder = RifeCommandBuilder(rife_path)
 
-            cmd = detector.build_command(
-                model_path="/model",
-                img_path="/imgs",
-                output_path="/output",
-                multi=4,
-                scale=2.0,
-                ensemble=True,
-                fastmode=True,
-                UHD=True,
+            from pathlib import Path as PathType
+            cmd = builder.build_command(
+                input_frame1=PathType("/path/to/frame1.png"),
+                input_frame2=PathType("/path/to/frame2.png"),
+                output_path=PathType("/path/to/output.png"),
+                options={
+                    "model_path": "/model",
+                    "uhd_mode": True,
+                    "num_frames": 4,
+                    "timestep": 0.5,
+                },
             )
 
-            # All supported capabilities should be included
-            assert "--ensemble" in cmd
-            assert "--fastmode" in cmd
-            assert "--UHD" in cmd
-            assert "--scale" in cmd
-            assert "2.0" in cmd
+            # Check basic command structure
+            assert str(rife_path) in cmd
+            assert "-0" in cmd
+            assert "-1" in cmd
+            assert "-o" in cmd
+            # Model path should be included
+            assert "-m" in cmd
+            assert "/model" in cmd
+            # UHD mode should be included if supported (and it is from the mock)
+            assert "-u" in cmd
 
     def test_build_command_ignores_unsupported(self, rife_path: Path) -> None:  # noqa: PLR6301
         """Test that unsupported capabilities are ignored."""
@@ -201,25 +222,34 @@ class TestRifeCapabilityDetectorV2:
         mock_result = Mock(returncode=0, stdout=limited_output, stderr="")
 
         with patch("subprocess.run", return_value=mock_result), patch("pathlib.Path.exists", return_value=True):
-            detector = RifeCapabilityDetector(rife_path)
+            builder = RifeCommandBuilder(rife_path)
 
-            cmd = detector.build_command(
-                model_path="/model",
-                img_path="/imgs",
-                output_path="/output",
-                multi=4,  # Not supported
-                ensemble=True,  # Not supported
-                UHD=True,  # Not supported
+            from pathlib import Path as PathType
+            cmd = builder.build_command(
+                input_frame1=PathType("/path/to/frame1.png"),
+                input_frame2=PathType("/path/to/frame2.png"),
+                output_path=PathType("/path/to/output.png"),
+                options={
+                    "model_path": "/model",
+                    "uhd_mode": True,  # Not supported in this mock
+                    "tta_spatial": True,  # Not supported
+                    "num_frames": 4,
+                },
             )
 
             # Unsupported options should not be in command
-            assert "--multi" not in cmd
-            assert "--ensemble" not in cmd
-            assert "--UHD" not in cmd
+            assert "-u" not in cmd  # UHD mode not supported
+            assert "-x" not in cmd  # TTA spatial not supported
 
             # Basic options should still be there
-            assert "--model" in cmd
-            assert "--img" in cmd
+            assert str(rife_path) in cmd
+            assert "-0" in cmd
+            assert "-1" in cmd
+            assert "-o" in cmd
+            assert "-m" in cmd  # Model path is supported
+            assert "/model" in cmd
+            assert "-n" in cmd  # num_frames
+            assert "4" in cmd
 
 
 class TestAnalyzeRifeExecutableV2:
@@ -234,60 +264,75 @@ class TestAnalyzeRifeExecutableV2:
         """
         detector = MagicMock(spec=RifeCapabilityDetector)
         detector.version = "4.6"
-        detector.capabilities = {
-            "model": True,
-            "multi": True,
-            "scale": True,
-            "ensemble": True,
-            "fastmode": True,
-            "UHD": True,
-            "montage": False,
-            "imgseq": False,
-        }
-        detector._help_output = "RIFE 4.6 help output"  # noqa: SLF001
+        detector.supports_tiling.return_value = False
+        detector.supports_uhd.return_value = True
+        detector.supports_tta_spatial.return_value = False
+        detector.supports_tta_temporal.return_value = False
+        detector.supports_thread_spec.return_value = False
+        detector.supports_batch_processing.return_value = False
+        detector.supports_timestep.return_value = False
+        detector.supports_model_path.return_value = True
+        detector.supports_gpu_id.return_value = False
+        detector.supported_args = {"m", "model"}
+        detector.help_text = "RIFE 4.6 help output"
         return detector
 
     def test_analyze_successful(self, mock_detector: MagicMock) -> None:  # noqa: PLR6301
         """Test successful analysis of RIFE executable."""
-        with patch("goesvfi.utils.rife_analyzer.RifeCapabilityDetector", return_value=mock_detector):
-            result = analyze_rife_executable("/path/to/rife")
+        with (
+            patch("goesvfi.utils.rife_analyzer.RifeCapabilityDetector", return_value=mock_detector),
+            patch("pathlib.Path.exists", return_value=True),
+        ):
+            from pathlib import Path
+            result = analyze_rife_executable(Path("/path/to/rife"))
 
             assert result["version"] == "4.6"
-            assert result["capabilities"] == mock_detector.capabilities
-            assert result["output"] == "RIFE 4.6 help output"
-            assert "supports_tiling" not in result  # Deprecated field
+            assert result["capabilities"]["uhd"] is True
+            assert result["capabilities"]["model_path"] is True
+            assert result["capabilities"]["tiling"] is False
+            assert result["help_text"] == "RIFE 4.6 help output"
+            assert set(result["supported_args"]) == {"m", "model"}
 
     def test_analyze_file_not_found(self) -> None:  # noqa: PLR6301
         """Test analysis when file not found."""
-        with patch("goesvfi.utils.rife_analyzer.RifeCapabilityDetector", side_effect=FileNotFoundError("Not found")):
-            result = analyze_rife_executable("/nonexistent/rife")
+        with patch("pathlib.Path.exists", return_value=False):
+            from pathlib import Path
+            result = analyze_rife_executable(Path("/nonexistent/rife"))
 
+            assert result["success"] is False
             assert result["version"] is None
             assert result["capabilities"] == {}
-            assert "not found" in result["output"].lower()
+            assert "not found" in result["error"].lower()
 
     def test_analyze_detection_error(self) -> None:  # noqa: PLR6301
         """Test analysis when detection fails."""
-        with patch("goesvfi.utils.rife_analyzer.RifeCapabilityDetector", side_effect=RuntimeError("Detection failed")):
-            result = analyze_rife_executable("/path/to/rife")
+        with (
+            patch("goesvfi.utils.rife_analyzer.RifeCapabilityDetector", side_effect=RuntimeError("Detection failed")),
+            patch("pathlib.Path.exists", return_value=True),
+        ):
+            from pathlib import Path
+            result = analyze_rife_executable(Path("/path/to/rife"))
 
+            assert result["success"] is False
             assert result["version"] is None
             assert result["capabilities"] == {}
-            assert "detection failed" in result["output"].lower()
+            assert "detection failed" in result["error"].lower()
 
-    def test_analyze_edge_cases(self, mock_detector: MagicMock) -> None:  # noqa: PLR6301
+    def test_analyze_edge_cases(self, mock_detector: MagicMock) -> None:  # noqa: PLR6301, ARG002
         """Test edge cases for analyze function."""
-        # Test with None path
-        result = analyze_rife_executable(None)
-        assert result["version"] is None
-        assert result["capabilities"] == {}
+        from pathlib import Path
+        
+        # Test with non-existent path
+        with patch("pathlib.Path.exists", return_value=False):
+            result = analyze_rife_executable(Path("/nonexistent"))
+            assert result["success"] is False
+            assert result["version"] is None
+            assert result["capabilities"] == {}
 
-        # Test with empty string path
-        result = analyze_rife_executable("")
-        assert result["version"] is None
-        assert result["capabilities"] == {}
-
-        # Test with Path object
-        with patch("goesvfi.utils.rife_analyzer.RifeCapabilityDetector", return_value=mock_detector):
+        # Test with valid Path object  
+        with (
+            patch("goesvfi.utils.rife_analyzer.RifeCapabilityDetector", return_value=mock_detector),
+            patch("pathlib.Path.exists", return_value=True),
+        ):
             result = analyze_rife_executable(Path("/path/to/rife"))
             assert result["version"] == "4.6"

@@ -7,6 +7,7 @@ These tests focus on the timeline visualization tab's ability to:
 3. Handle user interactions properly
 """
 
+import asyncio
 from datetime import UTC, datetime
 import unittest
 
@@ -17,7 +18,7 @@ from goesvfi.integrity_check.optimized_timeline_tab import OptimizedTimelineTab
 from goesvfi.integrity_check.view_model import MissingTimestamp
 
 # Import our test utilities
-from tests.utils.pyqt_async_test import AsyncSignalWaiter, PyQtAsyncTestCase, async_test
+from tests.utils.pyqt_async_test import PyQtAsyncTestCase, async_test
 
 
 class TestOptimizedTimelineTab(PyQtAsyncTestCase):
@@ -124,18 +125,31 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
     @async_test
     async def test_set_directory(self) -> None:
         """Test that set_directory emits the directorySelected signal."""
-        # Set up signal waiter
-        dir_waiter = AsyncSignalWaiter(self.tab.directorySelected)
+        # Use a simpler approach with a direct signal connection
+        received_directories = []
+
+        def capture_directory(directory: str) -> None:
+            received_directories.append(directory)
+
+        # Connect the signal directly
+        self.tab.directorySelected.connect(capture_directory)
+
+        # Process events to ensure connection
+        QApplication.processEvents()
 
         # Set the directory
         test_dir = "/test/directory"
         self.tab.set_directory(test_dir)
 
-        # Wait for the signal
-        received_dir = await dir_waiter.wait(timeout=1.0)
+        # Process events to ensure signal emission
+        QApplication.processEvents()
+
+        # Give a small delay for async processing
+        await asyncio.sleep(0.1)
 
         # Verify the signal was emitted with the correct directory
-        assert received_dir == test_dir, "Directory signal not emitted with correct directory"
+        assert len(received_directories) > 0, "Directory signal was not emitted"
+        assert received_directories[0] == test_dir, f"Expected '{test_dir}', got '{received_directories[0]}'"
 
     @async_test
     async def test_timestamp_selection(self) -> None:
@@ -143,18 +157,31 @@ class TestOptimizedTimelineTab(PyQtAsyncTestCase):
         # Set up the data first
         self.tab.set_data(self.missing_items, self.start_date, self.end_date, self.interval_minutes)
 
-        # Set up signal waiter
-        timestamp_waiter = AsyncSignalWaiter(self.tab.timestampSelected)
+        # Use a simpler approach with a direct signal connection
+        received_timestamps = []
+
+        def capture_timestamp(timestamp: datetime) -> None:
+            received_timestamps.append(timestamp)
+
+        # Connect the signal directly
+        self.tab.timestampSelected.connect(capture_timestamp)
+
+        # Process events to ensure connection
+        QApplication.processEvents()
 
         # Simulate selecting a timestamp by calling the handler directly
         test_timestamp = datetime(2023, 1, 1, 12, 0, tzinfo=UTC)
         self.tab._handle_timestamp_selected(test_timestamp)  # noqa: SLF001
 
-        # Wait for the signal
-        received_timestamp = await timestamp_waiter.wait(timeout=1.0)
+        # Process events to ensure signal emission
+        QApplication.processEvents()
+
+        # Give a small delay for async processing
+        await asyncio.sleep(0.1)
 
         # Verify the signal was emitted with the correct timestamp
-        assert received_timestamp == test_timestamp, "Timestamp signal not emitted with correct timestamp"
+        assert len(received_timestamps) > 0, "Timestamp signal was not emitted"
+        assert received_timestamps[0] == test_timestamp, f"Expected '{test_timestamp}', got '{received_timestamps[0]}'"
 
         # The selected timestamp should be stored
         assert self.tab.selected_timestamp == test_timestamp, "Selected timestamp not stored correctly"

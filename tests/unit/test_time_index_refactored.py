@@ -219,17 +219,17 @@ class TestScanDirectoryForTimestamps(unittest.TestCase):
 
     @patch("goesvfi.integrity_check.time_index_refactored._extract_timestamp_from_file")
     @patch("goesvfi.integrity_check.time_index_refactored._filter_timestamp_by_range")
-    def test_scan_files_for_timestamps(self, mock_filter, mock_extract) -> None:
+    def test_scan_files_for_timestamps(self, mock_filter, mock_extract, tmp_path) -> None:
         """Test the _scan_files_for_timestamps helper function."""
         # Setup mock files
-        mock_files = [Path(f"/tmp/file{i}.png") for i in range(3)]
+        mock_files = [tmp_path / f"file{i}.png" for i in range(3)]
 
         # Mock glob to return our mock files
         with patch("pathlib.Path.glob", return_value=mock_files):
             # Test with no timestamp matches
             mock_extract.side_effect = [None, None, None]
 
-            result = _scan_files_for_timestamps(Path("/tmp"), "GOES_16")
+            result = _scan_files_for_timestamps(tmp_path, "GOES_16")
             assert len(result) == 0
 
             # Test with some timestamp matches that pass filtering
@@ -242,7 +242,7 @@ class TestScanDirectoryForTimestamps(unittest.TestCase):
             mock_filter.return_value = True
 
             result = _scan_files_for_timestamps(
-                Path("/tmp"),
+                tmp_path,
                 "GOES_16",
                 start_time=datetime(2023, 6, 15, 0, 0, 0),
                 end_time=datetime(2023, 6, 16, 0, 0, 0),
@@ -254,16 +254,16 @@ class TestScanDirectoryForTimestamps(unittest.TestCase):
             mock_extract.side_effect = mock_timestamps
             mock_filter.side_effect = [True, False, True]
 
-            result = _scan_files_for_timestamps(Path("/tmp"), "GOES_16")
+            result = _scan_files_for_timestamps(tmp_path, "GOES_16")
             assert len(result) == 2
             assert result == [mock_timestamps[0], mock_timestamps[2]]
 
     @patch("goesvfi.integrity_check.time_index_refactored.extract_timestamp_from_directory_name")
     @patch("goesvfi.integrity_check.time_index_refactored._filter_timestamp_by_range")
-    def test_scan_subdirectories_for_timestamps(self, mock_filter, mock_extract) -> None:
+    def test_scan_subdirectories_for_timestamps(self, mock_filter, mock_extract, tmp_path) -> None:
         """Test the _scan_subdirectories_for_timestamps helper function."""
         # Setup mock subdirectories
-        mock_subdirs = [Path(f"/tmp/subdir{i}") for i in range(3)]
+        mock_subdirs = [tmp_path / f"subdir{i}" for i in range(3)]
 
         # Mock iterdir to return our mock subdirectories
         with patch("pathlib.Path.iterdir", return_value=mock_subdirs):
@@ -271,7 +271,7 @@ class TestScanDirectoryForTimestamps(unittest.TestCase):
                 # Test with no timestamp matches
                 mock_extract.side_effect = [None, None, None]
 
-                result = _scan_subdirectories_for_timestamps(Path("/tmp"))
+                result = _scan_subdirectories_for_timestamps(tmp_path)
                 assert len(result) == 0
 
                 # Test with some timestamp matches that pass filtering
@@ -295,7 +295,7 @@ class TestScanDirectoryForTimestamps(unittest.TestCase):
                 mock_extract.side_effect = mock_timestamps
                 mock_filter.side_effect = [True, False, True]
 
-                result = _scan_subdirectories_for_timestamps(Path("/tmp"))
+                result = _scan_subdirectories_for_timestamps(tmp_path)
                 assert len(result) == 2
                 assert result == [mock_timestamps[0], mock_timestamps[2]]
 

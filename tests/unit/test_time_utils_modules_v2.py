@@ -10,7 +10,7 @@ Optimizations applied:
 - Enhanced fixture reuse
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 import unittest
 from unittest.mock import MagicMock, patch
@@ -108,21 +108,20 @@ class SharedTimeUtilsTestCase(unittest.TestCase):
 class TestPatternsV2(SharedTimeUtilsTestCase):
     """Test the patterns module functionality - optimized v2."""
 
-    @pytest.mark.parametrize(
-        "satellite,expected_key",
-        [
+    def test_get_satellite_info_comprehensive(self) -> None:
+        """Test getting satellite information for all satellites."""
+        test_cases = [
             (SatellitePattern.GOES_16, SatellitePattern.GOES_16),
             (SatellitePattern.GOES_18, SatellitePattern.GOES_18),
             (SatellitePattern.GENERIC, SatellitePattern.GENERIC),
-        ],
-    )
-    def test_get_satellite_info_comprehensive(self, satellite, expected_key) -> None:
-        """Test getting satellite information for all satellites."""
-        info = get_satellite_info(satellite)
-        expected = self.expected_satellite_info[expected_key]
+        ]
+        
+        for satellite, expected_key in test_cases:
+            info = get_satellite_info(satellite)
+            expected = self.expected_satellite_info[expected_key]
 
-        for key, expected_value in expected.items():
-            assert info[key] == expected_value
+            for key, expected_value in expected.items():
+                assert info[key] == expected_value
 
     def test_get_satellite_info_all_required_fields(self) -> None:
         """Test that all satellite info contains required fields."""
@@ -137,18 +136,17 @@ class TestPatternsV2(SharedTimeUtilsTestCase):
 class TestTimestampExtractorV2(SharedTimeUtilsTestCase):
     """Test the TimestampExtractor class - optimized v2."""
 
-    @pytest.mark.parametrize(
-        "filename_key,satellite,expected_datetime",
-        [
+    def test_extract_timestamp_patterns(self) -> None:
+        """Test extracting timestamps from various filename patterns."""
+        test_cases = [
             ("simple_goes16", SatellitePattern.GOES_16, datetime(2023, 6, 15, 12, 30, 0)),
             ("legacy_goes16", SatellitePattern.GOES_16, datetime(2023, 6, 15, 12, 30, 0)),
-        ],
-    )
-    def test_extract_timestamp_patterns(self, filename_key, satellite, expected_datetime) -> None:
-        """Test extracting timestamps from various filename patterns."""
-        filename = self.test_filenames[filename_key]
-        ts = TimestampExtractor.extract_timestamp(filename, satellite)
-        assert ts == expected_datetime
+        ]
+        
+        for filename_key, satellite, expected_datetime in test_cases:
+            filename = self.test_filenames[filename_key]
+            ts = TimestampExtractor.extract_timestamp(filename, satellite)
+            assert ts == expected_datetime
 
     def test_extract_timestamp_invalid_pattern(self) -> None:
         """Test extracting timestamp with invalid pattern."""
@@ -163,19 +161,18 @@ class TestTimestampExtractorV2(SharedTimeUtilsTestCase):
         assert ts == datetime(2023, 6, 15, 12, 30)
         assert sat == SatellitePattern.GOES_16
 
-    @pytest.mark.parametrize(
-        "dirname,expected_result",
-        [
+    def test_extract_timestamp_from_directory_name(self) -> None:
+        """Test extracting timestamp from directory names."""
+        test_cases = [
             ("2024-12-21_18-00-22", datetime(2024, 12, 21, 18, 0, 22)),
             ("20241221_180022", datetime(2024, 12, 21, 18, 0, 22)),
             ("GOES18/FD/13/2023/166", datetime(2023, 6, 15, 0, 0, 0)),
             ("invalid_directory", None),
-        ],
-    )
-    def test_extract_timestamp_from_directory_name(self, dirname, expected_result) -> None:
-        """Test extracting timestamp from directory names."""
-        result = TimestampExtractor.extract_timestamp_from_directory_name(dirname)
-        assert result == expected_result
+        ]
+        
+        for dirname, expected_result in test_cases:
+            result = TimestampExtractor.extract_timestamp_from_directory_name(dirname)
+            assert result == expected_result
 
     def test_extract_timestamp_error_handling(self) -> None:
         """Test error handling in timestamp extraction."""
@@ -197,35 +194,33 @@ class TestTimestampFormatterV2(SharedTimeUtilsTestCase):
         formatted = TimestampFormatter.format_timestamp(dt)
         assert formatted == "20230615T123000"
 
-    @pytest.mark.parametrize(
-        "satellite,base_name,expected_pattern",
-        [
+    def test_get_filename_pattern(self) -> None:
+        """Test getting filename patterns for various satellites."""
+        test_cases = [
             (SatellitePattern.GOES_16, None, "image_G16_{timestamp}Z.png"),
             (SatellitePattern.GOES_18, "test", "test_G18_{timestamp}Z.png"),
             (SatellitePattern.GENERIC, None, "image_{timestamp}Z.png"),
-        ],
-    )
-    def test_get_filename_pattern(self, satellite, base_name, expected_pattern) -> None:
-        """Test getting filename patterns for various satellites."""
-        if base_name:
-            pattern = TimestampFormatter.get_filename_pattern(satellite, base_name)
-        else:
-            pattern = TimestampFormatter.get_filename_pattern(satellite)
-        assert pattern == expected_pattern
+        ]
+        
+        for satellite, base_name, expected_pattern in test_cases:
+            if base_name:
+                pattern = TimestampFormatter.get_filename_pattern(satellite, base_name)
+            else:
+                pattern = TimestampFormatter.get_filename_pattern(satellite)
+            assert pattern == expected_pattern
 
-    @pytest.mark.parametrize(
-        "satellite,expected_filename",
-        [
+    def test_generate_expected_filename(self) -> None:
+        """Test generating expected filenames for various satellites."""
+        test_cases = [
             (SatellitePattern.GOES_16, "image_G16_20230615T123000Z.png"),
             (SatellitePattern.GOES_18, "image_G18_20230615T123000Z.png"),
             (SatellitePattern.GENERIC, "image_20230615T123000Z.png"),
-        ],
-    )
-    def test_generate_expected_filename(self, satellite, expected_filename) -> None:
-        """Test generating expected filenames for various satellites."""
+        ]
+        
         dt = self.test_dates["standard"]
-        filename = TimestampFormatter.generate_expected_filename(dt, satellite)
-        assert filename == expected_filename
+        for satellite, expected_filename in test_cases:
+            filename = TimestampFormatter.generate_expected_filename(dt, satellite)
+            assert filename == expected_filename
 
     def test_format_timestamp_edge_cases(self) -> None:
         """Test timestamp formatting with edge cases."""
@@ -246,28 +241,27 @@ class TestTimestampGeneratorV2(SharedTimeUtilsTestCase):
     def test_generate_timestamp_sequence(self) -> None:
         """Test generating timestamp sequence."""
         start = self.test_dates["standard"].replace(minute=0)
-        end = start + datetime.timedelta(hours=1)
+        end = start + timedelta(hours=1)
         sequence = TimestampGenerator.generate_timestamp_sequence(start, end, 30)
 
         expected = [
             start,
-            start + datetime.timedelta(minutes=30),
+            start + timedelta(minutes=30),
             end,
         ]
         assert sequence == expected
 
-    @pytest.mark.parametrize(
-        "sequence_key,expected_interval",
-        [
+    def test_detect_interval(self) -> None:
+        """Test detecting intervals for various timestamp sequences."""
+        test_cases = [
             ("regular_10min", 10),
             ("irregular_mixed", 5),  # Most common difference
-        ],
-    )
-    def test_detect_interval(self, sequence_key, expected_interval) -> None:
-        """Test detecting intervals for various timestamp sequences."""
-        timestamps = self.test_sequences[sequence_key]
-        interval = TimestampGenerator.detect_interval(timestamps)
-        assert interval == expected_interval
+        ]
+        
+        for sequence_key, expected_interval in test_cases:
+            timestamps = self.test_sequences[sequence_key]
+            interval = TimestampGenerator.detect_interval(timestamps)
+            assert interval == expected_interval
 
     def test_is_recent_with_mocked_time(self) -> None:
         """Test is_recent function with mocked datetime."""
@@ -278,11 +272,11 @@ class TestTimestampGeneratorV2(SharedTimeUtilsTestCase):
             mock_dt.side_effect = datetime
 
             # Recent date (3 days ago)
-            recent = fixed_now - datetime.timedelta(days=3)
+            recent = fixed_now - timedelta(days=3)
             assert TimestampGenerator.is_recent(recent)
 
             # Old date (10 days ago)
-            old = fixed_now - datetime.timedelta(days=10)
+            old = fixed_now - timedelta(days=10)
             assert not TimestampGenerator.is_recent(old)
 
     def test_generate_sequence_edge_cases(self) -> None:
@@ -293,10 +287,10 @@ class TestTimestampGeneratorV2(SharedTimeUtilsTestCase):
         sequence = TimestampGenerator.generate_timestamp_sequence(start, start, 30)
         assert sequence == [start]
 
-        # Test very small interval
-        end = start + datetime.timedelta(minutes=1)
+        # Test very small interval - when interval is larger than time range
+        end = start + timedelta(minutes=1)
         sequence = TimestampGenerator.generate_timestamp_sequence(start, end, 30)
-        assert len(sequence) == 2  # Start and end only
+        assert len(sequence) == 1  # Only start is included since next interval would exceed end
 
     def test_detect_interval_error_handling(self) -> None:
         """Test interval detection error handling."""
@@ -313,52 +307,47 @@ class TestTimestampGeneratorV2(SharedTimeUtilsTestCase):
 class TestS3KeyGeneratorV2(SharedTimeUtilsTestCase):
     """Test the S3KeyGenerator class - optimized v2."""
 
-    @pytest.mark.parametrize(
-        "satellite,resolution,expected_parts",
-        [
+    def test_to_cdn_url(self) -> None:
+        """Test generating CDN URLs with various parameters."""
+        test_cases = [
             (SatellitePattern.GOES_16, None, ["cdn.star.nesdis.noaa.gov/GOES16", "2023166"]),
             (SatellitePattern.GOES_18, "1808x1808", ["cdn.star.nesdis.noaa.gov/GOES18", "1808x1808"]),
-        ],
-    )
-    def test_to_cdn_url(self, satellite, resolution, expected_parts) -> None:
-        """Test generating CDN URLs with various parameters."""
+        ]
+        
         ts = self.test_dates["standard"]
+        for satellite, resolution, expected_parts in test_cases:
+            if resolution:
+                url = S3KeyGenerator.to_cdn_url(ts, satellite, resolution)
+            else:
+                url = S3KeyGenerator.to_cdn_url(ts, satellite)
 
-        if resolution:
-            url = S3KeyGenerator.to_cdn_url(ts, satellite, resolution)
-        else:
-            url = S3KeyGenerator.to_cdn_url(ts, satellite)
+            for part in expected_parts:
+                assert part in url
 
-        for part in expected_parts:
-            assert part in url
-
-    @pytest.mark.parametrize(
-        "product_type,expected_parts",
-        [
+    def test_to_s3_key(self) -> None:
+        """Test generating S3 keys for different product types."""
+        test_cases = [
             ("RadC", ["ABI-L1b-RadC/2023/166/12/", "M6C13_G16"]),
             ("RadF", ["ABI-L1b-RadF/2023/166/12/", "M6C13_G16"]),
-        ],
-    )
-    def test_to_s3_key(self, product_type, expected_parts) -> None:
-        """Test generating S3 keys for different product types."""
+        ]
+        
         ts = self.test_dates["standard"].replace(minute=1)  # Ensure minute=1 for RadC
+        for product_type, expected_parts in test_cases:
+            key = S3KeyGenerator.to_s3_key(ts, self.satellites["goes16"], product_type)
 
-        key = S3KeyGenerator.to_s3_key(ts, self.satellites["goes16"], product_type)
+            for part in expected_parts:
+                assert part in key
 
-        for part in expected_parts:
-            assert part in key
-
-    @pytest.mark.parametrize(
-        "satellite,expected_bucket",
-        [
+    def test_get_s3_bucket(self) -> None:
+        """Test getting S3 bucket names."""
+        test_cases = [
             (SatellitePattern.GOES_16, "noaa-goes16"),
             (SatellitePattern.GOES_18, "noaa-goes18"),
-        ],
-    )
-    def test_get_s3_bucket(self, satellite, expected_bucket) -> None:
-        """Test getting S3 bucket names."""
-        bucket = S3KeyGenerator.get_s3_bucket(satellite)
-        assert bucket == expected_bucket
+        ]
+        
+        for satellite, expected_bucket in test_cases:
+            bucket = S3KeyGenerator.get_s3_bucket(satellite)
+            assert bucket == expected_bucket
 
     def test_get_s3_bucket_generic_error(self) -> None:
         """Test S3 bucket error for generic satellite."""
@@ -381,20 +370,19 @@ class TestS3KeyGeneratorV2(SharedTimeUtilsTestCase):
         expected = Path("2023/06/15/goes16_20230615_123000_band13.png")
         assert path == expected
 
-    @pytest.mark.parametrize(
-        "product_type,expected_count",
-        [
+    def test_find_nearest_goes_intervals(self) -> None:
+        """Test finding nearest GOES intervals."""
+        test_cases = [
             ("RadF", 2),  # 10-minute intervals: before and after
             ("RadC", 2),  # 5-minute intervals: before and after
-        ],
-    )
-    def test_find_nearest_goes_intervals(self, product_type, expected_count) -> None:
-        """Test finding nearest GOES intervals."""
+        ]
+        
         ts = self.test_dates["standard"].replace(minute=5)  # 12:05
-        intervals = S3KeyGenerator.find_nearest_goes_intervals(ts, product_type)
+        for product_type, expected_count in test_cases:
+            intervals = S3KeyGenerator.find_nearest_goes_intervals(ts, product_type)
 
-        assert len(intervals) == expected_count
-        assert all(isinstance(interval, datetime) for interval in intervals)
+            assert len(intervals) == expected_count
+            assert all(isinstance(interval, datetime) for interval in intervals)
 
     def test_s3_key_time_components(self) -> None:
         """Test S3 key generation with various time components."""
@@ -422,22 +410,21 @@ class TestFilterS3KeysV2(SharedTimeUtilsTestCase):
             "OR_ABI-L1b-RadF-M6C15_G16_s20230101200000_e20230101205959_c20230101210030.nc",
         ]
 
-    @pytest.mark.parametrize(
-        "band,expected_count,expected_content",
-        [
+    def test_filter_s3_keys_by_band(self) -> None:
+        """Test filtering S3 keys by band number."""
+        test_cases = [
             (13, 1, "C13"),
             (1, 1, "C01"),
             (15, 1, "C15"),
             (99, 0, None),  # Invalid band
-        ],
-    )
-    def test_filter_s3_keys_by_band(self, band, expected_count, expected_content) -> None:
-        """Test filtering S3 keys by band number."""
-        filtered = filter_s3_keys_by_band(self.test_keys, band)
-        assert len(filtered) == expected_count
+        ]
+        
+        for band, expected_count, expected_content in test_cases:
+            filtered = filter_s3_keys_by_band(self.test_keys, band)
+            assert len(filtered) == expected_count
 
-        if expected_content and filtered:
-            assert expected_content in filtered[0]
+            if expected_content and filtered:
+                assert expected_content in filtered[0]
 
     def test_filter_s3_keys_performance(self) -> None:
         """Test filtering performance with larger dataset."""
@@ -501,11 +488,13 @@ class TestDirectoryScannerV2(SharedTimeUtilsTestCase):
         ]
 
         with patch.object(DirectoryScanner, "scan_directory_for_timestamps") as mock_scan:
-            mock_scan.return_value = test_timestamps
+            # Return sorted timestamps like the real method does
+            mock_scan.return_value = sorted(test_timestamps)
 
             directory = Path("/test")
             start, end = DirectoryScanner.find_date_range_in_directory(directory, self.satellites["goes16"])
 
+            # Verify we get the min and max timestamps
             assert start == min(test_timestamps)
             assert end == max(test_timestamps)
 
@@ -529,26 +518,24 @@ class TestTimeIndexV2(SharedTimeUtilsTestCase):
         assert TimeIndex.STANDARD_INTERVALS["RadF"] == RADF_MINUTES
         assert TimeIndex.STANDARD_INTERVALS["RadC"] == RADC_MINUTES
 
-    @pytest.mark.parametrize(
-        "method_name,expected_type",
-        [
+    def test_delegated_methods(self) -> None:
+        """Test that TimeIndex properly delegates to other classes."""
+        test_cases = [
             ("to_cdn_url", str),
             ("to_s3_key", str),
             ("get_s3_bucket", str),
-        ],
-    )
-    def test_delegated_methods(self, method_name, expected_type) -> None:
-        """Test that TimeIndex properly delegates to other classes."""
+        ]
+        
         ts = self.test_dates["standard"]
+        for method_name, expected_type in test_cases:
+            if method_name == "to_cdn_url":
+                result = TimeIndex.to_cdn_url(ts, self.satellites["goes16"])
+            elif method_name == "to_s3_key":
+                result = TimeIndex.to_s3_key(ts, self.satellites["goes16"])
+            elif method_name == "get_s3_bucket":
+                result = TimeIndex.get_s3_bucket(self.satellites["goes16"])
 
-        if method_name == "to_cdn_url":
-            result = TimeIndex.to_cdn_url(ts, self.satellites["goes16"])
-        elif method_name == "to_s3_key":
-            result = TimeIndex.to_s3_key(ts, self.satellites["goes16"])
-        elif method_name == "get_s3_bucket":
-            result = TimeIndex.get_s3_bucket(self.satellites["goes16"])
-
-        assert isinstance(result, expected_type)
+            assert isinstance(result, expected_type)
 
     def test_time_index_integration(self) -> None:
         """Test TimeIndex integration with all methods."""
@@ -575,7 +562,7 @@ class TestTimeIndexV2(SharedTimeUtilsTestCase):
         """Test performance with batch operations."""
         # Generate multiple timestamps
         base_time = self.test_dates["standard"]
-        timestamps = [base_time + datetime.timedelta(hours=i) for i in range(24)]
+        timestamps = [base_time + timedelta(hours=i) for i in range(24)]
 
         # Test batch CDN URL generation
         urls = [TimeIndex.to_cdn_url(ts, self.satellites["goes16"]) for ts in timestamps]

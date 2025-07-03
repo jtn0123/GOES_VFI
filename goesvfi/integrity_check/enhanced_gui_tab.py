@@ -288,14 +288,60 @@ class EnhancedIntegrityCheckTab(IntegrityCheckTab):
                     if self.view_model and hasattr(self.view_model, "satellite")
                     else SatellitePattern.GOES_16
                 )
-                TimeIndex.find_date_range_in_directory(Path(self.view_model.base_directory), satellite)
-
+                
+                try:
+                    date_range = TimeIndex.find_date_range_in_directory(Path(self.view_model.base_directory), satellite)
+                    # If we got a valid date range, use it
+                    if date_range and len(date_range) == 2:
+                        start_date, end_date = date_range
+                        # Update the date edit widgets
+                        self.start_date_edit.setDateTime(QDateTime(start_date))
+                        self.end_date_edit.setDateTime(QDateTime(end_date))
+                        
+                        # Emit the date range changed signal
+                        self.date_range_changed.emit(start_date, end_date)
+                        
+                        # Show information dialog
+                        QMessageBox.information(
+                            self,
+                            "Date Range Detected",
+                            f"Detected date range: {start_date} to {end_date}",
+                        )
+                        return
+                except Exception as e:
+                    # If find_date_range_in_directory failed, check if there are any files
+                    LOGGER.debug("find_date_range_in_directory failed: %s", e)
+                    pass
+                
                 base_dir = Path(self.view_model.base_directory) if self.view_model else Path()
                 if base_dir.exists():
-                    # Check if directory is empty
-                    files = list(base_dir.rglob("*"))
-                    if not files or all(f.is_dir() for f in files):
+                    # Check if directory has any PNG files
+                    png_files = list(base_dir.rglob("*.png"))
+                    if not png_files:
                         # No files found
+                        QMessageBox.information(
+                            self,
+                            "No Valid Files Found",
+                            "No valid GOES files were found in the selected directory.",
+                        )
+                        return
+                    
+                    # Check if any PNG files have valid GOES filenames
+                    valid_files = False
+                    for png_file in png_files:
+                        filename = png_file.name.lower()
+                        if ("goes16" in filename or "goes18" in filename or "g16" in filename or "g18" in filename) and ("_" in filename):
+                            # Check if it has a timestamp pattern
+                            parts = filename.split("_")
+                            for part in parts:
+                                if len(part) >= 6 and part[:6].isdigit():
+                                    valid_files = True
+                                    break
+                            if valid_files:
+                                break
+                    
+                    if not valid_files:
+                        # No valid GOES files found
                         QMessageBox.information(
                             self,
                             "No Valid Files Found",

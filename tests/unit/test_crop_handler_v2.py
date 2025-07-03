@@ -1,4 +1,9 @@
-"""Tests for CropHandler functionality - Optimized V2 with 100%+ coverage."""
+"""Tests for CropHandler functionality - Optimized V2 with 100%+ coverage.
+
+These tests ensure that all GUI dialogs are properly mocked to prevent real
+dialogs from appearing during test execution. The CropSelectionDialog is
+mocked at the import point in the crop_handler module to ensure headless testing.
+"""
 
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -14,6 +19,22 @@ from PyQt6.QtWidgets import QApplication, QDialog
 import pytest
 
 from goesvfi.gui_components.crop_handler import CropHandler
+
+# Global patch to prevent any real CropSelectionDialog from being created during testing
+pytestmark = pytest.mark.usefixtures("_mock_crop_selection_dialog")
+
+
+@pytest.fixture(autouse=True)
+def _mock_crop_selection_dialog() -> Any:
+    """Auto-use fixture to mock CropSelectionDialog across all tests in this module."""
+    # Patch at the original source to prevent any real dialogs from being created
+    with patch("goesvfi.utils.gui_helpers.CropSelectionDialog") as mock_dialog_class:
+        # Create a default mock dialog that won't interfere with tests that provide their own
+        mock_dialog = Mock()
+        mock_dialog.exec.return_value = QDialog.DialogCode.Rejected
+        mock_dialog.get_selected_rect.return_value = None
+        mock_dialog_class.return_value = mock_dialog
+        yield mock_dialog_class
 
 
 class TestCropHandlerV2:  # noqa: PLR0904
@@ -194,7 +215,9 @@ class TestCropHandlerV2:  # noqa: PLR0904
         """Test successful crop dialog workflow."""
         mock_main_window.in_dir = temp_image_dir
 
-        with patch("goesvfi.gui_components.crop_handler.CropSelectionDialog") as mock_dialog_class:
+        # The CropSelectionDialog is already mocked by the auto-use fixture, 
+        # but we need to override it for this specific test
+        with patch("goesvfi.utils.gui_helpers.CropSelectionDialog") as mock_dialog_class:
             # Setup mock dialog
             mock_dialog = Mock()
             mock_dialog.exec.return_value = QDialog.DialogCode.Accepted
@@ -365,7 +388,9 @@ class TestCropHandlerV2:  # noqa: PLR0904
         """Test crop dialog with various outcomes."""
         test_pixmap = QPixmap(800, 600)
 
-        with patch("goesvfi.gui_components.crop_handler.CropSelectionDialog") as mock_dialog_class:
+        # The CropSelectionDialog is already mocked by the auto-use fixture, 
+        # but we need to override it for this specific test
+        with patch("goesvfi.utils.gui_helpers.CropSelectionDialog") as mock_dialog_class:
             # Test 1: Accepted with valid rect
             mock_dialog = Mock()
             mock_dialog.exec.return_value = QDialog.DialogCode.Accepted
@@ -394,7 +419,9 @@ class TestCropHandlerV2:  # noqa: PLR0904
         # Set existing crop rectangle
         mock_main_window.current_crop_rect = (5, 10, 200, 300)
 
-        with patch("goesvfi.gui_components.crop_handler.CropSelectionDialog") as mock_dialog_class:
+        # The CropSelectionDialog is already mocked by the auto-use fixture, 
+        # but we need to override it for this specific test
+        with patch("goesvfi.utils.gui_helpers.CropSelectionDialog") as mock_dialog_class:
             mock_dialog = Mock()
             mock_dialog.exec.return_value = QDialog.DialogCode.Rejected
             mock_dialog_class.return_value = mock_dialog
@@ -446,7 +473,7 @@ class TestCropHandlerV2:  # noqa: PLR0904
 
             mock_logger.reset_mock()
 
-            # Test show dialog logging
+            # Test show dialog logging - Mock the import at the point where it's used
             with patch("goesvfi.gui_components.crop_handler.CropSelectionDialog") as mock_dialog_class:
                 mock_dialog = Mock()
                 mock_dialog.exec.return_value = QDialog.DialogCode.Accepted
@@ -477,7 +504,9 @@ class TestCropHandlerV2:  # noqa: PLR0904
         mock_main_window.in_dir = temp_image_dir
         mock_main_window.current_crop_rect = None
 
-        with patch("goesvfi.gui_components.crop_handler.CropSelectionDialog") as mock_dialog_class:
+        # The CropSelectionDialog is already mocked by the auto-use fixture, 
+        # but we need to override it for this specific test
+        with patch("goesvfi.utils.gui_helpers.CropSelectionDialog") as mock_dialog_class:
             # Mock successful dialog
             mock_dialog = Mock()
             mock_dialog.exec.return_value = QDialog.DialogCode.Accepted
@@ -500,8 +529,8 @@ class TestCropHandlerV2:  # noqa: PLR0904
 
     def test_error_recovery(self, crop_handler: Any, mock_main_window: Any) -> None:  # noqa: PLR6301
         """Test error recovery in various scenarios."""
-        # Test dialog creation failure
-        with patch("goesvfi.gui_components.crop_handler.CropSelectionDialog") as mock_dialog_class:
+        # Test dialog creation failure - use the original source location
+        with patch("goesvfi.utils.gui_helpers.CropSelectionDialog") as mock_dialog_class:
             mock_dialog_class.side_effect = Exception("Dialog creation failed")
 
             test_pixmap = QPixmap(100, 100)
@@ -590,7 +619,9 @@ class TestCropHandlerV2:  # noqa: PLR0904
         """Test validation of crop rectangles."""
         test_pixmap = QPixmap(800, 600)
 
-        with patch("goesvfi.gui_components.crop_handler.CropSelectionDialog") as mock_dialog_class:
+        # The CropSelectionDialog is already mocked by the auto-use fixture, 
+        # but we need to override it for this specific test
+        with patch("goesvfi.utils.gui_helpers.CropSelectionDialog") as mock_dialog_class:
             mock_dialog = Mock()
             mock_dialog_class.return_value = mock_dialog
 
@@ -709,7 +740,9 @@ class TestCropHandlerV2:  # noqa: PLR0904
         """Test proper parent widget handling for dialogs."""
         test_pixmap = QPixmap(100, 100)
 
-        with patch("goesvfi.gui_components.crop_handler.CropSelectionDialog") as mock_dialog_class:
+        # The CropSelectionDialog is already mocked by the auto-use fixture, 
+        # but we need to override it for this specific test
+        with patch("goesvfi.utils.gui_helpers.CropSelectionDialog") as mock_dialog_class:
             mock_dialog = Mock()
             mock_dialog.exec.return_value = QDialog.DialogCode.Rejected
             mock_dialog_class.return_value = mock_dialog

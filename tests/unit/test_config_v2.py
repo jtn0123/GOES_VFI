@@ -28,15 +28,15 @@ class TestConfigOptimizedV2:
             str: Sample TOML configuration content.
         """
         return """
-output_dir = "/temp/goesvfi_output"
-cache_dir = "/temp/goesvfi_cache"
+output_dir = "/tmp/goesvfi_output"
+cache_dir = "/tmp/goesvfi_cache"
 
 [pipeline]
 default_tile_size = 2048
 supported_extensions = [".png"]
 
 [sanchez]
-bin_dir = "/temp/sanchez"
+bin_dir = "/tmp/sanchez"
 
 [logging]
 level = "INFO"
@@ -51,7 +51,7 @@ level = "INFO"
             str: Minimal TOML configuration content.
         """
         return """
-output_dir = "/temp/out"
+output_dir = "/tmp/out"
 [pipeline]
 default_tile_size = 512
 """
@@ -90,11 +90,11 @@ default_tile_size = 512
         config._load_config.cache_clear()  # noqa: SLF001
 
         cfg = config._load_config()  # noqa: SLF001
-        assert cfg["output_dir"] == "/temp/goesvfi_output"
-        assert cfg["cache_dir"] == "/temp/goesvfi_cache"
+        assert cfg["output_dir"] == "/tmp/goesvfi_output"
+        assert cfg["cache_dir"] == "/tmp/goesvfi_cache"
         assert cfg["pipeline"]["default_tile_size"] == 2048
         assert cfg["pipeline"]["supported_extensions"] == [".png"]
-        assert cfg["sanchez"]["bin_dir"] == "/temp/sanchez"
+        assert cfg["sanchez"]["bin_dir"] == "/tmp/sanchez"
         assert cfg["logging"]["level"] == "INFO"
 
         # Verify directories are created
@@ -115,7 +115,7 @@ default_tile_size = 512
         config._load_config.cache_clear()  # noqa: SLF001
 
         cfg = config._load_config()  # noqa: SLF001
-        assert cfg["output_dir"] == "/temp/goesvfi_output"
+        assert cfg["output_dir"] == "/tmp/goesvfi_output"
 
         # Test CONFIG_DIR override
         cfg_dir = tmp_path / "conf"
@@ -126,7 +126,7 @@ default_tile_size = 512
         config._load_config.cache_clear()  # noqa: SLF001
 
         cfg = config._load_config()  # noqa: SLF001
-        assert cfg["output_dir"] == "/temp/goesvfi_output"
+        assert cfg["output_dir"] == "/tmp/goesvfi_output"
 
     def test_config_partial_merge_and_defaults(  # noqa: PLR6301
         self,
@@ -143,7 +143,7 @@ default_tile_size = 512
         cfg = config._load_config()  # noqa: SLF001
 
         # Test overridden values
-        assert cfg["output_dir"] == "/temp/out"
+        assert cfg["output_dir"] == "/tmp/out"
         assert cfg["pipeline"]["default_tile_size"] == 512
 
         # Test defaults filled in for missing keys
@@ -195,12 +195,12 @@ default_tile_size = 512
         # Test get_output_dir
         output_dir = config.get_output_dir()
         assert isinstance(output_dir, pathlib.Path)
-        assert str(output_dir) == "/temp/goesvfi_output"
+        assert str(output_dir) == "/tmp/goesvfi_output"
 
         # Test get_cache_dir
         cache_dir = config.get_cache_dir()
         assert isinstance(cache_dir, pathlib.Path)
-        assert str(cache_dir) == "/temp/goesvfi_cache"
+        assert str(cache_dir) == "/tmp/goesvfi_cache"
 
     @pytest.mark.parametrize(
         "which_result,bin_exists,model_exists,expected_pattern",
@@ -280,8 +280,8 @@ default_tile_size = 512
         """Test complete configuration module integration."""
         # Create comprehensive config
         config_content = """
-output_dir = "/temp/integration_test/output"
-cache_dir = "/temp/integration_test/cache"
+output_dir = "/tmp/integration_test/output"
+cache_dir = "/tmp/integration_test/cache"
 
 [pipeline]
 default_tile_size = 4096
@@ -307,8 +307,8 @@ default_model = "rife-v4.6"
         cfg = config._load_config()  # noqa: SLF001
 
         # Verify all sections loaded correctly
-        assert cfg["output_dir"] == "/temp/integration_test/output"
-        assert cfg["cache_dir"] == "/temp/integration_test/cache"
+        assert cfg["output_dir"] == "/tmp/integration_test/output"
+        assert cfg["cache_dir"] == "/tmp/integration_test/cache"
         assert cfg["pipeline"]["default_tile_size"] == 4096
         assert cfg["pipeline"]["supported_extensions"] == [".png", ".jpg", ".tiff"]
         assert cfg["sanchez"]["bin_dir"] == "/usr/local/bin/sanchez"
@@ -320,8 +320,8 @@ default_model = "rife-v4.6"
         output_dir = config.get_output_dir()
         cache_dir = config.get_cache_dir()
 
-        assert str(output_dir) == "/temp/integration_test/output"
-        assert str(cache_dir) == "/temp/integration_test/cache"
+        assert str(output_dir) == "/tmp/integration_test/output"
+        assert str(cache_dir) == "/tmp/integration_test/cache"
         assert output_dir.exists()
         assert cache_dir.exists()
 
@@ -345,7 +345,7 @@ default_model = "rife-v4.6"
 
         # Should be the same object due to caching
         assert cfg1 is cfg2
-        assert cfg1["output_dir"] == "/temp/goesvfi_output"
+        assert cfg1["output_dir"] == "/tmp/goesvfi_output"
 
         # Clear cache and verify new load
         config._load_config.cache_clear()  # noqa: SLF001

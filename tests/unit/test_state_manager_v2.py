@@ -78,7 +78,7 @@ class TestStateManager:
         [
             ("new_path", True, True),  # New path - full update
             ("existing_path", False, False),  # Same path - minimal update
-            ("none_path", True, False),  # Clear path - cache clear only
+            ("none_path", True, True),  # Clear path - cache clear and UI update
         ],
     )
     def test_set_input_directory(
@@ -96,6 +96,9 @@ class TestStateManager:
         # Set existing path for comparison test
         if path_scenario == "existing_path":
             mock_main_window.in_dir = path
+        elif path_scenario == "none_path":
+            # For none_path test, we need to have a non-None initial value
+            mock_main_window.in_dir = Path("/some/existing/path")
 
         state_manager.set_input_directory(path)
 
@@ -114,18 +117,23 @@ class TestStateManager:
             mock_main_window.main_tab._update_start_button_state.assert_called_once()
         else:
             mock_main_window.request_previews_update.emit.assert_not_called()
+            # When path doesn't change, _update_start_button_state is not called
+            if path_scenario == "existing_path":
+                mock_main_window.main_tab._update_start_button_state.assert_not_called()
 
         # Crop buttons should always be updated
         mock_main_window.main_tab._update_crop_buttons_state.assert_called_once()
 
         # Check saving behavior
-        if path is not None:
+        if path is not None and path_scenario != "existing_path":
+            # Save is only called when path changes and is not None
             mock_main_window._save_input_directory.assert_called_once_with(path)
             mock_main_window.main_tab.in_dir_edit.setText.assert_called_once_with(str(path))
             mock_main_window.main_tab.save_settings.assert_called_once()
         else:
             mock_main_window._save_input_directory.assert_not_called()
-            mock_main_window.main_tab.in_dir_edit.setText.assert_not_called()
+            if path_scenario != "existing_path":
+                mock_main_window.main_tab.in_dir_edit.setText.assert_not_called()
 
     @pytest.mark.parametrize("save_success", [True, False])
     def test_set_input_directory_save_handling(
@@ -166,6 +174,9 @@ class TestStateManager:
         # Set existing rect for comparison test
         if crop_scenario == "existing_rect":
             mock_main_window.current_crop_rect = rect
+        elif crop_scenario == "none_rect":
+            # For none_rect test, we need to have a non-None initial value
+            mock_main_window.current_crop_rect = (1, 2, 3, 4)
 
         state_manager.set_crop_rect(rect)
 
@@ -178,6 +189,9 @@ class TestStateManager:
             mock_main_window.main_tab._update_crop_buttons_state.assert_called_once()
         else:
             mock_main_window.request_previews_update.emit.assert_not_called()
+            # When rect doesn't change, _update_crop_buttons_state is not called  
+            if crop_scenario == "existing_rect":
+                mock_main_window.main_tab._update_crop_buttons_state.assert_not_called()
 
         # Check saving behavior
         if should_save:
@@ -281,8 +295,8 @@ class TestStateManager:
                 mock_main_window._save_input_directory.assert_called_with(old_path)
                 mock_logger.warning.assert_called_once()
             else:
-                # Should log error for save failure
-                mock_logger.error.assert_called_once()
+                # Should log error for save failure (exception uses LOGGER.exception)
+                mock_logger.exception.assert_called_once()
 
     @pytest.mark.parametrize(
         "settings_save_success,verification_success",
@@ -325,8 +339,8 @@ class TestStateManager:
                 mock_main_window._save_crop_rect.assert_called_with(old_rect)
                 mock_logger.warning.assert_called_once()
             else:
-                # Should log error for save failure
-                mock_logger.error.assert_called_once()
+                # Should log error for save failure (exception uses LOGGER.exception)
+                mock_logger.exception.assert_called_once()
 
     def test_missing_main_tab_save_settings(self, state_manager, mock_main_window) -> None:
         """Test handling when main_tab doesn't have save_settings method."""
@@ -356,21 +370,28 @@ class TestStateManager:
         # Both should be properly configured
         assert mock_main_window.main_tab.save_settings.call_count == 1
 
-    def test_state_manager_with_minimal_main_window(self, mock_main_window) -> None:
+    def test_state_manager_with_minimal_main_window(self) -> None:
         """Test StateManager with minimal main window setup."""
-        # Remove optional components
-        delattr(mock_main_window, "main_tab")
-        delattr(mock_main_window, "ffmpeg_settings_tab")
+        # Create a minimal main window without optional components
+        minimal_window = Mock()
+        minimal_window.in_dir = None
+        minimal_window.current_crop_rect = None
+        minimal_window.sanchez_preview_cache = Mock()
+        minimal_window.request_previews_update = Mock()
+        minimal_window._save_input_directory = Mock(return_value=True)
+        minimal_window._save_crop_rect = Mock(return_value=True)
+        minimal_window.settings = Mock()
+        # Note: no main_tab or ffmpeg_settings_tab
 
-        manager = StateManager(mock_main_window)
+        manager = StateManager(minimal_window)
 
         # Should not raise exceptions
         manager.set_input_directory(Path("/test"))
         manager.set_crop_rect((10, 20, 300, 400))
 
         # Basic state should still be updated
-        assert mock_main_window.in_dir == Path("/test")
-        assert mock_main_window.current_crop_rect == (10, 20, 300, 400)
+        assert minimal_window.in_dir == Path("/test")
+        assert minimal_window.current_crop_rect == (10, 20, 300, 400)
 
     @pytest.mark.parametrize(
         "operation_sequence",

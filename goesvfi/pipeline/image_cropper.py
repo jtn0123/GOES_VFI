@@ -42,13 +42,14 @@ class ImageCropper(ImageProcessor):
             msg = f"Invalid crop area: {crop_area} for image dimensions {width}x{height}"
             raise ValueError(msg)
 
-        # Perform crop
-        cropped_array = image_array[top:bottom, left:right]
+        # Perform crop - make a copy to ensure independence from original
+        cropped_array = image_array[top:bottom, left:right].copy()
 
         # Create new ImageData object
         new_metadata: dict[str, Any] = image_data.metadata.copy()
         new_metadata["width"] = cropped_array.shape[1]
         new_metadata["height"] = cropped_array.shape[0]
+        new_metadata["crop_rect"] = crop_area
 
         # Update processing steps
         if "processing_steps" not in new_metadata:
@@ -58,28 +59,107 @@ class ImageCropper(ImageProcessor):
         return ImageData(image_data=cropped_array, metadata=new_metadata)
 
     def load(self, source_path: str) -> ImageData:
-        """Not implemented. ImageCropper does not support loading images.
+        """Load image data from a numpy file.
+
+        Args:
+            source_path (str): Path to the numpy file to load.
+
+        Returns:
+            ImageData: Loaded image data with metadata.
 
         Raises:
-            NotImplementedError: Always.
+            FileNotFoundError: If the file doesn't exist.
+            ValueError: If the file cannot be loaded as an image.
         """
-        msg = "ImageCropper does not implement load."
-        raise NotImplementedError(msg)
+        from pathlib import Path
+        import numpy as np
+        
+        path = Path(source_path)
+        if not path.exists():
+            raise FileNotFoundError(f"File not found: {source_path}")
+        
+        try:
+            image_array = np.load(source_path)
+            if image_array.ndim < 2:
+                raise ValueError(f"Invalid image dimensions: {image_array.ndim}")
+            
+            metadata: dict[str, Any] = {
+                "filename": path.name,
+                "width": image_array.shape[1],
+                "height": image_array.shape[0],
+            }
+            
+            if image_array.ndim == 3:
+                metadata["channels"] = image_array.shape[2]
+            
+            return ImageData(image_data=image_array, metadata=metadata)
+        except Exception as e:
+            raise ValueError(f"Failed to load image: {e}") from e
 
-    def process(self, image_data: ImageData, **kwargs: Any) -> ImageData:
-        """Not implemented. ImageCropper does not support processing images.
+    def process(self, image_data: ImageData | dict[str, Any], **kwargs: Any) -> ImageData | dict[str, Any]:
+        """Process image data based on provided parameters.
 
-        Raises:
-            NotImplementedError: Always.
+        This method can be called in two ways:
+        1. With a params dict directly: process(params)
+        2. With ImageData and kwargs: process(image_data, **kwargs)
+
+        Args:
+            image_data: Either ImageData or params dict with:
+                - input_path: Path to input numpy file
+                - output_path: Path to save output numpy file
+                - crop_rect: Tuple of (left, top, right, bottom)
+            **kwargs: Additional parameters (not used in pipeline mode)
+
+        Returns:
+            ImageData or dict: Result dictionary with success status when params provided.
         """
-        msg = "ImageCropper does not implement process."
+        # Check if this is being called with params dict
+        if isinstance(image_data, dict):
+            params = image_data
+            
+            result = {"success": False, "error": None}
+            
+            # Validate parameters
+            required_keys = {"input_path", "output_path", "crop_rect"}
+            if not all(key in params for key in required_keys):
+                result["error"] = f"Missing required parameters. Need: {required_keys}"
+                return result
+            
+            try:
+                # Load input image
+                loaded_data = self.load(params["input_path"])
+                
+                # Crop the image
+                cropped_data = self.crop(loaded_data, params["crop_rect"])
+                
+                # Save the cropped image
+                self.save(cropped_data, params["output_path"])
+                
+                result["success"] = True
+                result["output_path"] = params["output_path"]
+                
+            except Exception as e:
+                result["error"] = str(e)
+            
+            return result
+        
+        # Original interface - not implemented
+        msg = "ImageCropper.process() with ImageData not implemented"
         raise NotImplementedError(msg)
 
     def save(self, image_data: ImageData, destination_path: str) -> None:
-        """Not implemented. ImageCropper does not support saving images.
+        """Save image data to a numpy file.
+
+        Args:
+            image_data (ImageData): The image data to save.
+            destination_path (str): Path where to save the numpy file.
 
         Raises:
-            NotImplementedError: Always.
+            IOError: If the file cannot be saved.
         """
-        msg = "ImageCropper does not implement save."
-        raise NotImplementedError(msg)
+        import numpy as np
+        
+        try:
+            np.save(destination_path, image_data.image_data)
+        except Exception as e:
+            raise IOError(f"Failed to save image: {e}") from e

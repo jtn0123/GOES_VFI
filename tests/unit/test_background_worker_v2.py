@@ -187,20 +187,19 @@ class TestBackgroundProcessManager:
     """Test BackgroundProcessManager with mocked dependencies."""
 
     @patch("goesvfi.integrity_check.background_worker.UIFreezeMonitor")
-    @patch("goesvfi.integrity_check.background_worker.ThreadPoolExecutor")
+    @patch("goesvfi.integrity_check.background_worker.QThreadPool")
     @patch("time.sleep", return_value=None)  # Mock time.sleep for faster tests
     def test_background_worker_task_execution(  # noqa: PLR6301
         self,
         mock_sleep: Any,  # noqa: ARG002
-        mock_executor_class: Any,
+        mock_threadpool_class: Any,
         mock_monitor_class: Any,  # noqa: ARG002
     ) -> None:
         """Test background worker task execution with mocked components."""
-        # Setup mock executor
-        mock_executor = Mock()
-        mock_executor_class.return_value = mock_executor
-        mock_future = Mock()
-        mock_executor.submit.return_value = mock_future
+        # Setup mock thread pool
+        mock_threadpool = Mock()
+        mock_threadpool_class.globalInstance.return_value = mock_threadpool
+        mock_threadpool.maxThreadCount.return_value = 8
 
         # Create worker
         worker = BackgroundProcessManager()
@@ -214,11 +213,11 @@ class TestBackgroundProcessManager:
 
         # Verify task was submitted
         assert task_id is not None
-        assert mock_executor.submit.called
+        assert mock_threadpool.start.called
 
         # Verify cleanup works
         worker.cleanup()
-        assert mock_executor.shutdown.called
+        assert mock_threadpool.waitForDone.called
 
     @patch("goesvfi.integrity_check.background_worker.UIFreezeMonitor")
     def test_worker_initialization(self, mock_monitor_class: Any) -> None:  # noqa: PLR6301
@@ -233,11 +232,12 @@ class TestBackgroundProcessManager:
         worker.cleanup()
 
     @patch("goesvfi.integrity_check.background_worker.UIFreezeMonitor")
-    @patch("goesvfi.integrity_check.background_worker.ThreadPoolExecutor")
-    def test_multiple_task_submission(self, mock_executor_class: Any, mock_monitor_class: Any) -> None:  # noqa: PLR6301, ARG002
+    @patch("goesvfi.integrity_check.background_worker.QThreadPool")
+    def test_multiple_task_submission(self, mock_threadpool_class: Any, mock_monitor_class: Any) -> None:  # noqa: PLR6301, ARG002
         """Test submitting multiple tasks."""
-        mock_executor = Mock()
-        mock_executor_class.return_value = mock_executor
+        mock_threadpool = Mock()
+        mock_threadpool_class.globalInstance.return_value = mock_threadpool
+        mock_threadpool.maxThreadCount.return_value = 8
 
         worker = BackgroundProcessManager()
 
@@ -251,6 +251,6 @@ class TestBackgroundProcessManager:
         assert len(set(task_ids)) == 5
 
         # Should have submitted 5 tasks
-        assert mock_executor.submit.call_count == 5
+        assert mock_threadpool.start.call_count == 5
 
         worker.cleanup()

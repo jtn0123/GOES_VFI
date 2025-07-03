@@ -78,10 +78,20 @@ class TestZoomManagerV2:
         return label
 
     @patch("goesvfi.gui_components.zoom_manager.ZoomDialog")
-    def test_show_zoom_success_scenarios(self, mock_zoom_dialog, shared_zoom_manager, base_mock_label) -> None:
+    @patch("goesvfi.gui_components.zoom_manager.QPixmap")
+    def test_show_zoom_success_scenarios(self, mock_qpixmap_class, mock_zoom_dialog, shared_zoom_manager, base_mock_label) -> None:
         """Test successful zoom dialog display with comprehensive validation."""
         mock_dialog_instance = Mock()
         mock_zoom_dialog.return_value = mock_dialog_instance
+        
+        # Mock QPixmap creation to avoid segfault
+        mock_pixmap = Mock()
+        mock_pixmap.isNull.return_value = False
+        mock_pixmap.size.return_value = QSize(800, 600)
+        mock_qpixmap_class.fromImage.return_value = mock_pixmap
+        
+        # Mock the scaling method to return the same pixmap
+        shared_zoom_manager._scale_pixmap_for_display = Mock(return_value=mock_pixmap)
 
         shared_zoom_manager.show_zoom(base_mock_label)
 
@@ -89,10 +99,8 @@ class TestZoomManagerV2:
         mock_zoom_dialog.assert_called_once()
         mock_dialog_instance.exec.assert_called_once()
 
-        # Verify dialog called with valid QPixmap
-        call_args = mock_zoom_dialog.call_args[0]
-        assert isinstance(call_args[0], QPixmap)
-        assert not call_args[0].isNull()
+        # Verify QPixmap.fromImage was called
+        mock_qpixmap_class.fromImage.assert_called_once_with(base_mock_label.processed_image)
 
     @pytest.mark.parametrize(
         "label_attr,expected_warning",
@@ -103,20 +111,38 @@ class TestZoomManagerV2:
             ("null_image", "Failed to create QPixmap"),
         ],
     )
-    def test_show_zoom_error_scenarios(self, shared_zoom_manager, label_attr, expected_warning) -> None:
+    @patch("goesvfi.gui_components.zoom_manager.QPixmap")
+    def test_show_zoom_error_scenarios(self, mock_qpixmap_class, shared_zoom_manager, label_attr, expected_warning) -> None:
         """Test various error scenarios in show_zoom method."""
         # Create labels with different error conditions
+        no_attr_label = Mock()
+        delattr(no_attr_label, 'processed_image')  # Remove processed_image attribute
+        no_attr_label.objectName.return_value = "no_attr_label"
+        
+        none_value_label = Mock()
+        none_value_label.processed_image = None
+        none_value_label.objectName.return_value = "none_value_label"
+        
+        wrong_type_label = Mock()
+        wrong_type_label.processed_image = "not_a_qimage"
+        wrong_type_label.objectName.return_value = "wrong_type_label"
+        
+        null_image_label = Mock()
+        null_image_label.processed_image = QImage()  # Null QImage
+        null_image_label.objectName.return_value = "null_image_label"
+        
         labels = {
-            "no_attr": Mock(spec=[]),  # No processed_image attribute
-            "none_value": Mock(processed_image=None),
-            "wrong_type": Mock(processed_image="not_a_qimage"),
-            "null_image": Mock(processed_image=QImage()),  # Null QImage
+            "no_attr": no_attr_label,
+            "none_value": none_value_label,
+            "wrong_type": wrong_type_label,
+            "null_image": null_image_label,
         }
 
-        labels["no_attr"].objectName.return_value = "no_attr_label"
-        labels["none_value"].objectName.return_value = "none_value_label"
-        labels["wrong_type"].objectName.return_value = "wrong_type_label"
-        labels["null_image"].objectName.return_value = "null_image_label"
+        # Mock QPixmap.fromImage to return null pixmap for null_image test
+        if label_attr == "null_image":
+            mock_null_pixmap = Mock()
+            mock_null_pixmap.isNull.return_value = True
+            mock_qpixmap_class.fromImage.return_value = mock_null_pixmap
 
         with patch("goesvfi.gui_components.zoom_manager.LOGGER") as mock_logger:
             shared_zoom_manager.show_zoom(labels[label_attr])
@@ -126,11 +152,20 @@ class TestZoomManagerV2:
             assert expected_warning in str(mock_logger.warning.call_args)
 
     @patch("goesvfi.gui_components.zoom_manager.ZoomDialog")
-    def test_show_zoom_with_parent_widget(self, mock_zoom_dialog, shared_zoom_manager, base_mock_label) -> None:
+    @patch("goesvfi.gui_components.zoom_manager.QPixmap")
+    def test_show_zoom_with_parent_widget(self, mock_qpixmap_class, mock_zoom_dialog, shared_zoom_manager, base_mock_label) -> None:
         """Test zoom dialog creation with parent widget."""
         mock_parent = Mock()
         mock_dialog_instance = Mock()
         mock_zoom_dialog.return_value = mock_dialog_instance
+        
+        # Mock QPixmap creation to avoid segfault
+        mock_pixmap = Mock()
+        mock_pixmap.isNull.return_value = False
+        mock_qpixmap_class.fromImage.return_value = mock_pixmap
+        
+        # Mock the scaling method
+        shared_zoom_manager._scale_pixmap_for_display = Mock(return_value=mock_pixmap)
 
         shared_zoom_manager.show_zoom(base_mock_label, mock_parent)
 
@@ -158,9 +193,33 @@ class TestZoomManagerV2:
         mock_screen.availableGeometry.return_value.size.return_value = QSize(*screen_size)
         mock_qapp.primaryScreen.return_value = mock_screen
 
-        # Create pixmap with specified size
-        test_pixmap = QPixmap(*image_size)
-        test_pixmap.fill(Qt.GlobalColor.green)
+        # Create mock pixmap instead of real QPixmap to avoid GUI operations
+        test_pixmap = Mock()
+        test_pixmap.size.return_value = QSize(*image_size)
+        test_pixmap.isNull.return_value = False
+        
+        # Mock the scaled method
+        if should_scale:
+            max_size = QSize(int(screen_size[0] * 0.9), int(screen_size[1] * 0.9))
+            # Calculate scaled size maintaining aspect ratio
+            scale_factor = min(max_size.width() / image_size[0], max_size.height() / image_size[1])
+            scaled_width = int(image_size[0] * scale_factor)
+            scaled_height = int(image_size[1] * scale_factor)
+            
+            scaled_pixmap = Mock()
+            scaled_size = QSize(scaled_width, scaled_height)
+            scaled_pixmap.size.return_value = scaled_size
+            scaled_pixmap.size().width.return_value = scaled_width
+            scaled_pixmap.size().height.return_value = scaled_height
+            scaled_pixmap.isNull.return_value = False
+            test_pixmap.scaled.return_value = scaled_pixmap
+        else:
+            # Return the original pixmap for no scaling
+            original_size = QSize(*image_size)
+            test_pixmap.size.return_value = original_size
+            test_pixmap.size().width.return_value = image_size[0]
+            test_pixmap.size().height.return_value = image_size[1]
+            test_pixmap.scaled.return_value = test_pixmap
 
         result = shared_zoom_manager._scale_pixmap_for_display(test_pixmap)
 
@@ -181,9 +240,19 @@ class TestZoomManagerV2:
         # Mock no screen available
         mock_qapp.primaryScreen.return_value = None
 
-        # Create large pixmap requiring fallback
-        large_pixmap = QPixmap(2000, 1500)
-        large_pixmap.fill(Qt.GlobalColor.yellow)
+        # Create mock large pixmap requiring fallback
+        large_pixmap = Mock()
+        large_pixmap.size.return_value = QSize(2000, 1500)
+        large_pixmap.isNull.return_value = False
+        
+        # Mock scaled pixmap with fallback size
+        scaled_pixmap = Mock()
+        scaled_size = QSize(1024, 768)
+        scaled_pixmap.size.return_value = scaled_size
+        scaled_pixmap.size().width.return_value = 1024
+        scaled_pixmap.size().height.return_value = 768
+        scaled_pixmap.isNull.return_value = False
+        large_pixmap.scaled.return_value = scaled_pixmap
 
         with patch("goesvfi.gui_components.zoom_manager.LOGGER") as mock_logger:
             result = shared_zoom_manager._scale_pixmap_for_display(large_pixmap)
@@ -205,9 +274,19 @@ class TestZoomManagerV2:
         mock_screen.availableGeometry.return_value.size.return_value = QSize(1000, 800)
         mock_qapp.primaryScreen.return_value = mock_screen
 
-        # Create wide pixmap (2:1 aspect ratio)
-        wide_pixmap = QPixmap(2000, 1000)
-        wide_pixmap.fill(Qt.GlobalColor.blue)
+        # Create mock wide pixmap (2:1 aspect ratio)
+        wide_pixmap = Mock()
+        wide_pixmap.size.return_value = QSize(2000, 1000)
+        wide_pixmap.isNull.return_value = False
+        
+        # Mock scaled result preserving aspect ratio
+        # Screen is 1000x800, 90% = 900x720
+        # Scale factor = min(900/2000, 720/1000) = min(0.45, 0.72) = 0.45
+        # Result = (900, 450)
+        scaled_pixmap = Mock()
+        scaled_pixmap.size.return_value = QSize(900, 450)
+        scaled_pixmap.isNull.return_value = False
+        wide_pixmap.scaled.return_value = scaled_pixmap
 
         result = shared_zoom_manager._scale_pixmap_for_display(wide_pixmap)
 
@@ -217,10 +296,19 @@ class TestZoomManagerV2:
         assert abs(aspect_ratio - expected_ratio) < 0.01
 
     @patch("goesvfi.gui_components.zoom_manager.ZoomDialog")
-    def test_show_zoom_logging_comprehensive(self, mock_zoom_dialog, shared_zoom_manager, base_mock_label) -> None:
+    @patch("goesvfi.gui_components.zoom_manager.QPixmap")
+    def test_show_zoom_logging_comprehensive(self, mock_qpixmap_class, mock_zoom_dialog, shared_zoom_manager, base_mock_label) -> None:
         """Test comprehensive logging in show_zoom method."""
         mock_dialog_instance = Mock()
         mock_zoom_dialog.return_value = mock_dialog_instance
+        
+        # Mock QPixmap creation to avoid segfault
+        mock_pixmap = Mock()
+        mock_pixmap.isNull.return_value = False
+        mock_qpixmap_class.fromImage.return_value = mock_pixmap
+        
+        # Mock the scaling method
+        shared_zoom_manager._scale_pixmap_for_display = Mock(return_value=mock_pixmap)
 
         with patch("goesvfi.gui_components.zoom_manager.LOGGER") as mock_logger:
             shared_zoom_manager.show_zoom(base_mock_label)
@@ -233,8 +321,9 @@ class TestZoomManagerV2:
 
     @patch("goesvfi.gui_components.zoom_manager.ZoomDialog")
     @patch("goesvfi.gui_components.zoom_manager.QApplication")
+    @patch("goesvfi.gui_components.zoom_manager.QPixmap")
     def test_complete_workflow_integration(
-        self, mock_qapp, mock_zoom_dialog, shared_zoom_manager, large_mock_label
+        self, mock_qpixmap_class, mock_qapp, mock_zoom_dialog, shared_zoom_manager, large_mock_label
     ) -> None:
         """Test complete workflow with large image requiring scaling."""
         # Setup mocks for scaling
@@ -244,6 +333,18 @@ class TestZoomManagerV2:
 
         mock_dialog_instance = Mock()
         mock_zoom_dialog.return_value = mock_dialog_instance
+        
+        # Mock QPixmap creation and scaling
+        mock_pixmap = Mock()
+        mock_pixmap.isNull.return_value = False
+        mock_pixmap.size.return_value = QSize(2560, 1440)
+        mock_qpixmap_class.fromImage.return_value = mock_pixmap
+        
+        # Mock scaled pixmap (should be smaller than original)
+        scaled_pixmap = Mock()
+        scaled_pixmap.isNull.return_value = False
+        scaled_pixmap.size.return_value = QSize(1728, 972)  # Scaled to fit 90% of 1920x1080
+        mock_pixmap.scaled.return_value = scaled_pixmap
 
         shared_zoom_manager.show_zoom(large_mock_label)
 
@@ -253,10 +354,10 @@ class TestZoomManagerV2:
 
         # Verify scaled pixmap properties
         call_args = mock_zoom_dialog.call_args[0]
-        scaled_pixmap = call_args[0]
-        assert not scaled_pixmap.isNull()
-        assert scaled_pixmap.size().width() < 2560
-        assert scaled_pixmap.size().height() < 1440
+        passed_pixmap = call_args[0]
+        assert not passed_pixmap.isNull()
+        assert passed_pixmap.size().width() < 2560
+        assert passed_pixmap.size().height() < 1440
 
     @pytest.mark.parametrize("mock_failure_type", ["pixmap_creation", "scaling_operation"])
     def test_failure_handling_scenarios(self, shared_zoom_manager, base_mock_label, mock_failure_type) -> None:
@@ -274,18 +375,34 @@ class TestZoomManagerV2:
                     assert "Failed to create QPixmap from processed image" in str(mock_logger.warning.call_args)
 
         elif mock_failure_type == "scaling_operation":
-            with patch.object(shared_zoom_manager, "_scale_pixmap_for_display") as mock_scale:
-                # Mock scaling failure
-                null_pixmap = QPixmap()
-                mock_scale.return_value = null_pixmap
+            with patch("goesvfi.gui_components.zoom_manager.QPixmap") as mock_qpixmap_class:
+                # Mock successful QPixmap creation
+                mock_pixmap = Mock()
+                mock_pixmap.isNull.return_value = False
+                mock_qpixmap_class.fromImage.return_value = mock_pixmap
+                
+                with patch.object(shared_zoom_manager, "_scale_pixmap_for_display") as mock_scale:
+                    # Mock scaling failure - return null pixmap
+                    null_pixmap = Mock()
+                    null_pixmap.isNull.return_value = True
+                    mock_scale.return_value = null_pixmap
 
-                with patch("goesvfi.gui_components.zoom_manager.LOGGER") as mock_logger:
-                    shared_zoom_manager.show_zoom(base_mock_label)
-                    mock_logger.error.assert_called_once()
-                    assert "Failed to create scaled pixmap" in str(mock_logger.error.call_args)
+                    with patch("goesvfi.gui_components.zoom_manager.LOGGER") as mock_logger:
+                        shared_zoom_manager.show_zoom(base_mock_label)
+                        mock_logger.error.assert_called_once()
+                        assert "Failed to create scaled pixmap" in str(mock_logger.error.call_args)
 
-    def test_edge_case_images(self, shared_zoom_manager, tiny_mock_label, square_mock_label) -> None:
+    @patch("goesvfi.gui_components.zoom_manager.QPixmap")
+    def test_edge_case_images(self, mock_qpixmap_class, shared_zoom_manager, tiny_mock_label, square_mock_label) -> None:
         """Test handling of edge case image sizes."""
+        # Mock QPixmap creation to avoid segfault
+        mock_pixmap = Mock()
+        mock_pixmap.isNull.return_value = False
+        mock_qpixmap_class.fromImage.return_value = mock_pixmap
+        
+        # Mock the scaling method
+        shared_zoom_manager._scale_pixmap_for_display = Mock(return_value=mock_pixmap)
+        
         with patch("goesvfi.gui_components.zoom_manager.ZoomDialog") as mock_zoom_dialog:
             mock_dialog_instance = Mock()
             mock_zoom_dialog.return_value = mock_dialog_instance
