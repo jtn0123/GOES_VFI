@@ -43,7 +43,7 @@ class TestCounts:
 
     def to_dict(self) -> dict[str, int]:
         """Convert to dictionary for compatibility.
-        
+
         Returns:
             Dictionary containing test count statistics.
         """
@@ -72,7 +72,7 @@ class TestResult:
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for compatibility.
-        
+
         Returns:
             Dictionary containing test result data.
         """
@@ -1191,7 +1191,9 @@ class TestRunner:
     def run(self) -> int:
         """Run all tests and return exit code."""
         # Discover tests
+        print("🔍 Discovering test files...")  # noqa: T201
         test_files = self._discover_tests()
+        print(f"📁 Found {len(test_files)} test files")  # noqa: T201
         if not test_files:
             print("No test files found!")  # noqa: T201
             return 1
@@ -1341,10 +1343,12 @@ def parse_arguments() -> RunnerConfig:
 
 def main() -> int:
     """Main entry point.
-    
+
     Returns:
         Exit code (0 for success, 1 for failure).
     """
+    print("🚀 Starting test runner...", flush=True)  # noqa: T201
+    
     # Quick dependency check
     try:
         import pytest  # noqa: F401
@@ -1352,14 +1356,18 @@ def main() -> int:
         print("Error: pytest not found. Please activate the virtual environment:")  # noqa: T201
         print("  source .venv/bin/activate")  # noqa: T201
         return 1
-    
+
+    print("✅ Parsing arguments...", flush=True)  # noqa: T201
     config = parse_arguments()
+    print("✅ Arguments parsed", flush=True)  # noqa: T201
 
     # Debug mode forces sequential execution
     if config.debug_mode:
         config.parallel = 1
 
+    print("✅ Creating test runner...", flush=True)  # noqa: T201
     runner = TestRunner(config)
+    print("✅ Running tests...", flush=True)  # noqa: T201
     return runner.run()
 
 
