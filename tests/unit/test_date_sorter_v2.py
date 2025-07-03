@@ -21,8 +21,9 @@ import importlib.util
 import os
 
 # Get the path to the sorter module
-sorter_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 
-                          'goesvfi', 'date_sorter', 'sorter.py')
+sorter_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "goesvfi", "date_sorter", "sorter.py"
+)
 
 # Load the module directly
 spec = importlib.util.spec_from_file_location("sorter", sorter_path)

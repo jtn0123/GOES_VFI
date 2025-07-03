@@ -10,13 +10,13 @@ from __future__ import annotations
 import argparse
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 import glob
 import operator
 import os
 from pathlib import Path
 import re
-import subprocess
+import subprocess  # noqa: S404
 import sys
 import time
 from typing import Any
@@ -42,7 +42,11 @@ class TestCounts:
         return self.passed + self.failed + self.skipped + self.error + self.crashed + self.timeout
 
     def to_dict(self) -> dict[str, int]:
-        """Convert to dictionary for compatibility."""
+        """Convert to dictionary for compatibility.
+        
+        Returns:
+            Dictionary containing test count statistics.
+        """
         return {
             "passed": self.passed,
             "failed": self.failed,
@@ -67,7 +71,11 @@ class TestResult:
     log_path: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary for compatibility."""
+        """Convert to dictionary for compatibility.
+        
+        Returns:
+            Dictionary containing test result data.
+        """
         return {
             "path": self.path,
             "status": self.status,
@@ -158,18 +166,20 @@ class PytestOutputParser:
         """Extract test counts from pytest output."""
         counts = TestCounts()
 
-        # Extract counts from test lines
+        # First try to extract from summary lines (most accurate)
+        summary_counts = self._extract_summary_counts(output)
+        if summary_counts:
+            counts.passed = summary_counts.get("passed", 0)
+            counts.failed = summary_counts.get("failed", 0)
+            counts.skipped = summary_counts.get("skipped", 0)
+            counts.error = summary_counts.get("error", 0)
+            return counts
+
+        # Fallback: Extract counts from test lines (less reliable for complex tests)
         counts.passed = len(re.findall(r"test_\w+.*?PASSED", output))
         counts.failed = len(re.findall(r"test_\w+.*?FAILED", output))
         counts.skipped = len(re.findall(r"test_\w+.*?SKIPPED", output))
         counts.error = len(re.findall(r"test_\w+.*?ERROR", output))
-
-        # Also check summary lines for more accurate counts
-        summary_counts = self._extract_summary_counts(output)
-        counts.passed = max(counts.passed, summary_counts.get("passed", 0))
-        counts.failed = max(counts.failed, summary_counts.get("failed", 0))
-        counts.skipped = max(counts.skipped, summary_counts.get("skipped", 0))
-        counts.error = max(counts.error, summary_counts.get("error", 0))
 
         return counts
 
@@ -202,46 +212,66 @@ class PytestOutputParser:
 
     def determine_status(self, output: str, counts: TestCounts, collected: int) -> str:
         """Determine overall test status from output."""
-        passed = "PASSED" in output
-        failed = "FAILED " in output
-        skipped = "SKIPPED" in output
-        fatal_error = "Fatal Python error: Aborted" in output
-        segfault = "Segmentation fault" in output
-
-        # Check for timeout (handled by caller)
+        # Check for timeout first
         if "Test timed out after" in output:
             return "TIMEOUT"
 
-        # Check counts to determine status more accurately
-        # If ANY tests failed, the file status is FAILED
+        # Check test counts first (most reliable indicator)
+        status_from_counts = self._determine_status_from_counts(counts)
+        if status_from_counts:
+            return self._add_crash_modifiers(status_from_counts, output)
+
+        # Fall back to output analysis
+        return self._determine_status_from_output(output, collected)
+
+    def _determine_status_from_counts(self, counts: TestCounts) -> str | None:
+        """Determine status based on test counts."""
         if counts.failed > 0:
             return "FAILED"
-
-        # If ANY tests had errors, the file status is ERROR
         if counts.error > 0:
             return "ERROR"
-
-        # Test passes if it reports PASSED and doesn't report FAILED
-        if passed and not failed:
-            if fatal_error:
-                return "PASSED (with teardown error)"
-            if segfault:
-                return "PASSED (with crash)"
-            return "PASSED"
-
-        # Only skipped tests
         if counts.skipped > 0 and counts.total() == counts.skipped:
             return "SKIPPED"
+        if counts.passed > 0:
+            return "PASSED"
+        return None
 
-        # No tests collected
+    def _add_crash_modifiers(self, base_status: str, output: str) -> str:
+        """Add crash modifiers to base status."""
+        if base_status != "PASSED":
+            return base_status
+
+        if "Fatal Python error: Aborted" in output:
+            return "PASSED (with teardown error)"
+        if "Segmentation fault" in output:
+            return "PASSED (with crash)"
+        return base_status
+
+    def _determine_status_from_output(self, output: str, collected: int) -> str:
+        """Determine status from output when counts are unavailable."""
         if collected == 0 and "collected 0 items" in output:
             return "SKIPPED"
 
-        # Tests crashed before reporting
-        if collected > 0 and fatal_error and not passed and not failed and not skipped:
+        # Check for crashes
+        if self._is_crashed(output, collected):
             return "CRASHED"
 
-        # Default to failed
+        # Check basic output patterns
+        return self._check_output_patterns(output)
+
+    def _is_crashed(self, output: str, collected: int) -> bool:
+        """Check if tests crashed before completion."""
+        has_fatal_error = "Fatal Python error: Aborted" in output
+        has_results = any(x in output for x in ["PASSED", "FAILED ", "SKIPPED"])
+        return collected > 0 and has_fatal_error and not has_results
+
+    def _check_output_patterns(self, output: str) -> str:
+        """Check basic output patterns for status."""
+        passed = "PASSED" in output
+        failed = "FAILED " in output
+
+        if passed and not failed:
+            return "PASSED"
         return "FAILED"
 
     def _extract_collected_count(self, output: str) -> int:
@@ -253,19 +283,33 @@ class PytestOutputParser:
         """Extract counts from summary lines."""
         counts = {}
 
-        # Look for summary lines
-        re.findall(r"={5,}\s*(.*?)\s*in\s+[\d.]+s\s*={5,}", output)
+        # Look for pytest summary lines like "14 passed in 0.94s" or "12 passed, 2 failed in 1.5s"
+        summary_matches = re.findall(r"={5,}\s*(.*?)\s*in\s+[\d.]+s\s*={5,}", output)
 
-        # Also check for simple count patterns
-        for pattern, key in [
-            (r"(\d+)\s+passed", "passed"),
-            (r"(\d+)\s+failed", "failed"),
-            (r"(\d+)\s+skipped", "skipped"),
-            (r"(\d+)\s+error(?:s)?", "error"),
-        ]:
-            match = re.search(pattern, output, re.IGNORECASE)
-            if match:
-                counts[key] = int(match.group(1))
+        # Parse the summary content
+        for summary_line in summary_matches:
+            # Extract counts from summary line like "12 passed, 2 failed"
+            for pattern, key in [
+                (r"(\d+)\s+passed", "passed"),
+                (r"(\d+)\s+failed", "failed"),
+                (r"(\d+)\s+skipped", "skipped"),
+                (r"(\d+)\s+error(?:s)?", "error"),
+            ]:
+                match = re.search(pattern, summary_line, re.IGNORECASE)
+                if match:
+                    counts[key] = int(match.group(1))
+
+        # Also check for simple count patterns in full output as fallback
+        if not counts:
+            for pattern, key in [
+                (r"(\d+)\s+passed", "passed"),
+                (r"(\d+)\s+failed", "failed"),
+                (r"(\d+)\s+skipped", "skipped"),
+                (r"(\d+)\s+error(?:s)?", "error"),
+            ]:
+                match = re.search(pattern, output, re.IGNORECASE)
+                if match:
+                    counts[key] = int(match.group(1))
 
         return counts
 
@@ -431,20 +475,27 @@ class PytestOutputParser:
             if total_accounted < collected:
                 counts.error += collected - total_accounted
 
-        # If we collected tests but have no counts, use collected count
+        # If we collected tests but have no counts, be conservative
+        # Don't assume collected count equals actual test results for complex tests
         if collected > 0 and counts.total() == 0:
-            if "PASSED" in output and "passed" in output.lower():
+            # Only use collected count for simple cases where we have clear evidence
+            if (
+                status == "PASSED"
+                and "passed" in output.lower()
+                and not any(x in output for x in ["failed", "error", "parametrize", "for i in", "range("])
+            ):
                 counts.passed = collected
-            elif "FAILED" in output and "failed" in output.lower():
-                counts.failed = collected
-            elif "SKIPPED" in output and "skipped" in output.lower():
+            elif status == "SKIPPED" and "skipped" in output.lower():
                 counts.skipped = collected
-            elif "ERROR" in output:
-                counts.error = collected
+            # For complex cases or when uncertain, default to 1 test per file
             elif status == "PASSED":
-                counts.passed = collected
+                counts.passed = 1
+            elif status == "FAILED":
+                counts.failed = 1
+            elif status == "ERROR":
+                counts.error = 1
             else:
-                counts.failed = collected
+                counts.failed = 1
 
         return counts
 
@@ -605,12 +656,10 @@ class ProgressReporter:
         elif result.counts.error > 0 and result.status not in {"CRASHED", "TIMEOUT"}:
             display_status = "ERROR"
 
-        emoji = self.emojis.get(display_status, "❓")
+        self.emojis.get(display_status, "❓")
         # Determine color based on overall test file health
-        color = self._get_file_status_color(result)
-        count_summary = self._build_count_summary(result)
-
-        print(f"{self.colors.bright_magenta}[{index}/{total}]{self.colors.reset} {color}{emoji} {display_status}{self.colors.reset} {self.colors.bright_magenta}{result.path}{self.colors.reset} ({count_summary}) {self.colors.bright_magenta}[{result.duration:.1f}s]{self.colors.reset}")  # noqa: T201
+        self._get_file_status_color(result)
+        self._build_count_summary(result)
 
     def report_error(self, index: int, total: int, path: str, error: str) -> None:
         """Report error running test."""
@@ -623,9 +672,6 @@ class ProgressReporter:
         """Report starting tests."""
         if self.config.quiet:
             return
-
-        workers = self.config.parallel
-        print(f"{self.colors.bright_magenta}🚀 Running {total} test files with {workers} parallel workers...{self.colors.reset}")  # noqa: T201
 
     def _build_count_summary(self, result: TestResult) -> str:
         """Build count summary string."""
@@ -682,38 +728,44 @@ class ProgressReporter:
         return fallbacks.get(status, "1 test")
 
     def _get_file_status_color(self, result: TestResult) -> str:
-        """Get color for file based on overall test health, not just status.
+        """Get color for file based on test health priority.
 
-        Priority:
-        1. If ANY tests failed -> RED (failed is worst)
-        2. If ANY tests had errors but none failed -> YELLOW (errors are concerning)
-        3. If ALL tests passed -> GREEN (everything is good)
-        4. If ALL tests were skipped -> BLUE (neutral)
+        Priority: failed > error > passed > skipped
         """
         counts = result.counts
 
-        # Check for failures first (highest priority)
-        if counts.failed > 0 or result.status == "FAILED":
+        # Check by priority (failed is worst)
+        if self._has_failures(counts, result.status):
             return self.colors.failed
 
-        # Check for errors next
-        if counts.error > 0 or result.status in {"ERROR", "CRASHED", "TIMEOUT"}:
+        if self._has_errors(counts, result.status):
             return self.colors.error
 
-        # Check if all passed
-        if counts.passed > 0 and counts.failed == 0 and counts.error == 0:
+        if self._has_only_passed(counts):
             return self.colors.passed
 
-        # Check if all skipped
-        if counts.skipped > 0 and counts.passed == 0 and counts.failed == 0 and counts.error == 0:
+        if self._has_only_skipped(counts):
             return self.colors.skipped
 
-        # For special statuses like "PASSED (with teardown error)"
-        if "error" in result.status.lower():
-            return self.colors.error
+        # Default fallback
+        return self.colors.get(result.status) or self.colors.failed
 
-        # Default to status color
-        return self.colors.get(result.status)
+    def _has_failures(self, counts: TestCounts, status: str) -> bool:
+        """Check if there are any test failures."""
+        return counts.failed > 0 or status == "FAILED"
+
+    def _has_errors(self, counts: TestCounts, status: str) -> bool:
+        """Check if there are any errors or problematic statuses."""
+        error_statuses = {"ERROR", "CRASHED", "TIMEOUT"}
+        return counts.error > 0 or status in error_statuses or "error" in status.lower()
+
+    def _has_only_passed(self, counts: TestCounts) -> bool:
+        """Check if all tests passed with no failures or errors."""
+        return counts.passed > 0 and counts.failed == 0 and counts.error == 0
+
+    def _has_only_skipped(self, counts: TestCounts) -> bool:
+        """Check if all tests were skipped."""
+        return counts.skipped > 0 and counts.passed == 0 and counts.failed == 0 and counts.error == 0
 
 
 # ============================================================================
@@ -1092,8 +1144,9 @@ class LogManager:
             return None
 
         # Only save logs for failed/errored tests
-        if (result.status not in {"FAILED", "ERROR", "CRASHED", "TIMEOUT"} 
-            and ("PASSED" not in result.status or "error" not in result.status)):
+        if result.status not in {"FAILED", "ERROR", "CRASHED", "TIMEOUT"} and (
+            "PASSED" not in result.status or "error" not in result.status
+        ):
             return None
 
         # Create log directory
@@ -1105,8 +1158,7 @@ class LogManager:
         log_path = log_dir / f"{filename}.log"
 
         # Write log file
-        from datetime import timezone
-        timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+        timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M:%S")
         with open(log_path, "w", encoding="utf-8") as f:
             f.write(f"=== Test Log for {result.path} ===\n")
             f.write(f"Generated: {timestamp}\n")

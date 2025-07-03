@@ -323,18 +323,17 @@ class TestInterpolatorOptimizedV2:
                     mock_run.return_value = MagicMock(returncode=0)
 
                     # Test interpolation
-                    with patch("PIL.Image.open") as mock_pil_open, \
-                         patch("pathlib.Path.exists", return_value=True):
+                    with patch("PIL.Image.open") as mock_pil_open, patch("pathlib.Path.exists", return_value=True):
                         # Create mock PIL image
                         result_img = self.image_generator.create_dummy_image(value=0.75)
                         # Convert to uint8 for PIL format
                         result_img_uint8 = (result_img * 255).astype(np.uint8)
-                        
+
                         mock_pil_img = MagicMock()
                         mock_pil_img.__enter__ = MagicMock(return_value=mock_pil_img)
                         mock_pil_img.__exit__ = MagicMock(return_value=None)
                         mock_pil_open.return_value = mock_pil_img
-                        
+
                         # Mock numpy array conversion
                         with patch("numpy.array", return_value=result_img_uint8):
                             result = backend.interpolate_pair(img1, img2)
@@ -372,18 +371,17 @@ class TestInterpolatorOptimizedV2:
                 with patch("subprocess.run") as mock_run:
                     mock_run.return_value = MagicMock(returncode=0)
 
-                    with patch("PIL.Image.open") as mock_pil_open, \
-                         patch("pathlib.Path.exists", return_value=True):
+                    with patch("PIL.Image.open") as mock_pil_open, patch("pathlib.Path.exists", return_value=True):
                         # Create mock PIL image
                         result_img = self.image_generator.create_dummy_image(value=0.75)
                         # Convert to uint8 for PIL format
                         result_img_uint8 = (result_img * 255).astype(np.uint8)
-                        
+
                         mock_pil_img = MagicMock()
                         mock_pil_img.__enter__ = MagicMock(return_value=mock_pil_img)
                         mock_pil_img.__exit__ = MagicMock(return_value=None)
                         mock_pil_open.return_value = mock_pil_img
-                        
+
                         # Mock numpy array conversion
                         with patch("numpy.array", return_value=result_img_uint8):
                             # First call
@@ -422,6 +420,7 @@ class TestInterpolatorOptimizedV2:
                 with patch("subprocess.run") as mock_run:
                     # Mock subprocess.CalledProcessError to be raised
                     import subprocess
+
                     error = subprocess.CalledProcessError(1, ["rife-cli"], stderr="Mock error")
                     mock_run.side_effect = error
 
@@ -615,20 +614,19 @@ class TestInterpolatorOptimizedV2:
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
 
-            with patch("PIL.Image.open") as mock_pil_open, \
-                 patch("pathlib.Path.exists", return_value=True):
+            with patch("PIL.Image.open") as mock_pil_open, patch("pathlib.Path.exists", return_value=True):
                 # Create mock PIL image
                 interp1 = image_gen.create_dummy_image(value=0.25)
                 interp2 = image_gen.create_dummy_image(value=0.75)
                 # Convert to uint8 for PIL format
                 interp1_uint8 = (interp1 * 255).astype(np.uint8)
                 interp2_uint8 = (interp2 * 255).astype(np.uint8)
-                
+
                 mock_pil_img = MagicMock()
                 mock_pil_img.__enter__ = MagicMock(return_value=mock_pil_img)
                 mock_pil_img.__exit__ = MagicMock(return_value=None)
                 mock_pil_open.return_value = mock_pil_img
-                
+
                 # Mock numpy array conversion
                 with patch("numpy.array") as mock_np_array:
                     # interpolate_three calls the interpolation multiple times

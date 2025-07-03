@@ -167,12 +167,12 @@ class TestFormatSatellitePathV2:
     def test_format_satellite_path(self) -> None:  # noqa: PLR6301
         """Test basic format_satellite_path functionality."""
         date = datetime.date(2023, 10, 27)
-        
+
         # Test default format (calendar)
         result = format_satellite_path(date)
         assert isinstance(result, str)
         assert result == "2023-10-27"
-        
+
         # Test doy format
         result_doy = format_satellite_path(date, "doy")
         assert result_doy == "2023/300"  # Day 300
@@ -180,11 +180,11 @@ class TestFormatSatellitePathV2:
     def test_format_satellite_path_default_values(self) -> None:  # noqa: PLR6301
         """Test format_satellite_path with default parameters."""
         date = datetime.date(2023, 6, 15)
-        
+
         # Test with invalid format_type
         with pytest.raises(ValueError, match="Invalid format_type: invalid"):
             format_satellite_path(date, "invalid")
-            
+
         # Test compact_doy format
         result = format_satellite_path(date, "compact_doy")
         assert result == "2023166"  # Day 166
@@ -192,42 +192,42 @@ class TestFormatSatellitePathV2:
     def test_format_satellite_path_string_base(self) -> None:  # noqa: PLR6301
         """Test format_satellite_path with different format types."""
         date = datetime.date(2023, 7, 4)
-        
+
         # Test all format types
         calendar_result = format_satellite_path(date, "calendar")
         assert calendar_result == "2023-07-04"
-        
+
         doy_result = format_satellite_path(date, "doy")
         assert doy_result == "2023/185"  # Day 185
-        
+
         compact_result = format_satellite_path(date, "compact_doy")
         assert compact_result == "2023185"
 
     def test_format_satellite_path_leap_year(self) -> None:  # noqa: PLR6301
         """Test format_satellite_path with leap year dates."""
         date = datetime.date(2024, 2, 29)
-        
+
         # Test leap year date formatting
         calendar_result = format_satellite_path(date)
         assert calendar_result == "2024-02-29"
-        
+
         doy_result = format_satellite_path(date, "doy")
         assert doy_result == "2024/060"  # Day 60 in leap year
-        
+
         compact_result = format_satellite_path(date, "compact_doy")
         assert compact_result == "2024060"
 
     def test_format_satellite_path_end_of_year(self) -> None:  # noqa: PLR6301
         """Test format_satellite_path with end of year date."""
         date = datetime.date(2023, 12, 31)
-        
+
         # Test end of year date formatting
         calendar_result = format_satellite_path(date)
         assert calendar_result == "2023-12-31"
-        
+
         doy_result = format_satellite_path(date, "doy")
         assert doy_result == "2023/365"  # Day 365
-        
+
         compact_result = format_satellite_path(date, "compact_doy")
         assert compact_result == "2023365"
 
@@ -243,9 +243,9 @@ class TestGetAllDateFormatsV2:
         # Verify it returns a tuple of 3 strings
         assert isinstance(formats, tuple)
         assert len(formats) == 3
-        
+
         calendar_format, doy_format, compact_doy_format = formats
-        
+
         # Verify the expected format values
         assert calendar_format == "2023-10-27"
         assert doy_format == "2023/300"  # Day 300
@@ -255,17 +255,17 @@ class TestGetAllDateFormatsV2:
         """Test get_all_date_formats with different dates."""
         # Test with different dates
         test_dates = [
-            datetime.date(2023, 1, 1),   # Start of year
-            datetime.date(2023, 12, 31), # End of year
+            datetime.date(2023, 1, 1),  # Start of year
+            datetime.date(2023, 12, 31),  # End of year
             datetime.date(2024, 2, 29),  # Leap year
         ]
-        
+
         for test_date in test_dates:
             formats = get_all_date_formats(test_date)
-            
+
             # Verify all formats are strings
             assert all(isinstance(fmt, str) for fmt in formats)
-            
+
             # Verify they contain the year
             year_str = str(test_date.year)
             assert all(year_str in fmt for fmt in formats)
