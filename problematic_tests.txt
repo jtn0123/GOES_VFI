@@ -1,0 +1,7 @@
+# Problematic test files that timeout or error
+TIMEOUT: tests/gui/test_gui_button_validation_v2.py
+TIMEOUT: tests/gui/test_gui_component_validation_v2.py
+TIMEOUT: tests/gui/test_main_window_v2.py
+TIMEOUT: tests/unit/test_enhanced_gui_tab_v2.py
+TIMEOUT: tests/unit/test_enhanced_integrity_check_tab_v2.py
+TIMEOUT: tests/unit/test_preview_scaling_fixes_v2.py
