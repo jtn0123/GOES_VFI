@@ -138,8 +138,12 @@ class SanchezProcessor(ImageProcessor):
             finally:
                 # Clean up temporary files
                 for temp_file in [input_temp, output_temp]:
-                    if temp_file.exists():
-                        temp_file.unlink()
+                    try:
+                        if temp_file.exists():
+                            temp_file.unlink()
+                    except (OSError, FileNotFoundError):
+                        # File may have been removed by another process or never created
+                        pass
 
         except Exception as e:
             error_msg = f"Sanchez processing failed: {e}"
@@ -147,8 +151,21 @@ class SanchezProcessor(ImageProcessor):
             if self._progress_callback:
                 self._progress_callback(error_msg, 1.0)
 
-            # Return original image if processing fails
-            return image_data
+            # Return original image with metadata indicating failure
+            res_km = kwargs.get("res_km", 4)
+            failed_data = ImageData(
+                image_data=image_data.image_data,
+                source_path=image_data.source_path,
+                metadata={
+                    **image_data.metadata,
+                    "processed_by": "sanchez",
+                    "processing_failed": True,
+                    "processing_error": str(e),
+                    "processing_time": time.time() - start_time,
+                    "sanchez_res_km": res_km,
+                },
+            )
+            return failed_data
 
     def process_image(self, image_data: ImageData, **kwargs: Any) -> ImageData:
         """Alias for process method for compatibility."""

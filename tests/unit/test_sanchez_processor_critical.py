@@ -188,8 +188,11 @@ class TestSanchezProcessorCritical:
                 # Process should handle error gracefully and return original image
                 result = processor.process(image_data)
 
-                # Should return original image data when processing fails
-                assert result is image_data
+                # Should return image data with failure metadata when processing fails
+                assert result.source_path == image_data.source_path
+                assert np.array_equal(result.image_data, image_data.image_data)
+                assert result.metadata["processed_by"] == "sanchez"
+                assert result.metadata.get("processing_failed") is True
 
                 # Verify error was logged and progress callback was notified
                 assert len(progress_tracker.calls) > 0
@@ -220,8 +223,11 @@ class TestSanchezProcessorCritical:
                 # Process image (should fail but clean up)
                 result = processor.process(image_data)
 
-                # Should return original image due to failure
-                assert result is image_data
+                # Should return image data with failure metadata due to failure
+                assert result.source_path == image_data.source_path
+                assert np.array_equal(result.image_data, image_data.image_data)
+                assert result.metadata["processed_by"] == "sanchez"
+                assert result.metadata.get("processing_failed") is True
 
                 # Verify temporary files were cleaned up
                 for temp_file in temp_files_created:
@@ -413,15 +419,21 @@ class TestSanchezProcessorCritical:
                     # Mock PIL save to raise error
                     with patch("PIL.Image.Image.save", side_effect=exception):
                         result = processor.process(image_data)
-                        # Should return original image when save fails
-                        assert result is image_data
+                        # Should return image data with failure metadata when save fails
+                        assert result.source_path == image_data.source_path
+                        assert np.array_equal(result.image_data, image_data.image_data)
+                        assert result.metadata["processed_by"] == "sanchez"
+                        assert result.metadata.get("processing_failed") is True
 
                 elif method_to_patch == "open":
                     # Mock PIL open to raise error
                     with patch("PIL.Image.open", side_effect=exception):
                         result = processor.process(image_data)
-                        # Should return original image when loading output fails
-                        assert result is image_data
+                        # Should return image data with failure metadata when loading output fails
+                        assert result.source_path == image_data.source_path
+                        assert np.array_equal(result.image_data, image_data.image_data)
+                        assert result.metadata["processed_by"] == "sanchez"
+                        assert result.metadata.get("processing_failed") is True
 
     def test_temp_directory_management(self, temp_dir: Path, image_test_generator: Any) -> None:
         """Test temporary directory creation and management."""
@@ -474,15 +486,17 @@ class TestSanchezProcessorCritical:
             fake_output = temp_dir / "metadata_test.png"
             fake_output.touch()
 
-            with patch("PIL.Image.open") as mock_pil_open:
-                mock_result_img = Mock()
-                mock_result_img.size = (50, 50)
-                mock_pil_open.return_value = mock_result_img
+            # Mock Path.exists to return True for any output file
+            with patch("pathlib.Path.exists", return_value=True):
+                with patch("PIL.Image.open") as mock_pil_open:
+                    mock_result_img = Mock()
+                    mock_result_img.size = (50, 50)
+                    mock_pil_open.return_value = mock_result_img
 
-                result_array = np.random.randint(0, 256, (50, 50, 3), dtype=np.uint8)
+                    result_array = np.random.randint(0, 256, (50, 50, 3), dtype=np.uint8)
 
-                with patch("numpy.array", return_value=result_array):
-                    result = processor.process(image_data, res_km=8)
+                    with patch("numpy.array", return_value=result_array):
+                        result = processor.process(image_data, res_km=8)
 
         # Verify original metadata is preserved
         for key, value in original_metadata.items():
