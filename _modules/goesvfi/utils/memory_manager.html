@@ -1,0 +1,702 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>goesvfi.utils.memory_manager &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">goesvfi.utils.memory_manager</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for goesvfi.utils.memory_manager</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Memory management utilities for GOES_VFI.</span>
+
+<span class="sd">This module provides memory monitoring, optimization, and management capabilities</span>
+<span class="sd">to prevent out-of-memory errors and optimize performance.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">gc</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span>
+
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># Try to import psutil for memory monitoring</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">psutil</span>
+
+    <span class="n">PSUTIL_AVAILABLE</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">PSUTIL_AVAILABLE</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;psutil not available - memory monitoring will be limited&quot;</span><span class="p">)</span>
+
+<span class="c1"># Memory thresholds</span>
+<span class="n">LOW_MEMORY_THRESHOLD_MB</span> <span class="o">=</span> <span class="mi">500</span>
+<span class="n">CRITICAL_MEMORY_THRESHOLD_MB</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">LOW_MEMORY_PERCENT_THRESHOLD</span> <span class="o">=</span> <span class="mi">85</span>
+<span class="n">CRITICAL_MEMORY_PERCENT_THRESHOLD</span> <span class="o">=</span> <span class="mi">95</span>
+
+<span class="c1"># Time intervals</span>
+<span class="n">WARNING_INTERVAL_SECONDS</span> <span class="o">=</span> <span class="mi">30</span>
+<span class="n">CRITICAL_WARNING_INTERVAL_SECONDS</span> <span class="o">=</span> <span class="mi">60</span>
+
+<span class="c1"># Garbage collection threshold</span>
+<span class="n">DEFAULT_GC_THRESHOLD_PERCENT</span> <span class="o">=</span> <span class="mi">80</span>
+
+<span class="c1"># Numeric type limits for array optimization</span>
+<span class="n">UINT8_MAX</span> <span class="o">=</span> <span class="mi">255</span>
+<span class="n">INT8_MIN</span> <span class="o">=</span> <span class="o">-</span><span class="mi">128</span>
+<span class="n">INT8_MAX</span> <span class="o">=</span> <span class="mi">127</span>
+<span class="n">UINT16_MAX</span> <span class="o">=</span> <span class="mi">65535</span>
+<span class="n">INT16_MIN</span> <span class="o">=</span> <span class="o">-</span><span class="mi">32768</span>
+<span class="n">INT16_MAX</span> <span class="o">=</span> <span class="mi">32767</span>
+<span class="n">INT32_MIN</span> <span class="o">=</span> <span class="o">-</span><span class="mi">2147483648</span>
+<span class="n">INT32_MAX</span> <span class="o">=</span> <span class="mi">2147483647</span>
+
+<span class="c1"># Default chunk size for array processing</span>
+<span class="n">DEFAULT_CHUNK_SIZE_MB</span> <span class="o">=</span> <span class="mi">100</span>
+
+
+<div class="viewcode-block" id="MemoryStats">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.MemoryStats">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">MemoryStats</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Container for memory statistics.&quot;&quot;&quot;</span>
+
+    <span class="n">total_mb</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">available_mb</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">used_mb</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">percent_used</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">process_mb</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">process_percent</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_low_memory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if memory is running low.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_mb</span> <span class="o">&lt;</span> <span class="n">LOW_MEMORY_THRESHOLD_MB</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">percent_used</span> <span class="o">&gt;</span> <span class="n">LOW_MEMORY_PERCENT_THRESHOLD</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_critical_memory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if memory is critically low.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">available_mb</span> <span class="o">&lt;</span> <span class="n">CRITICAL_MEMORY_THRESHOLD_MB</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">percent_used</span> <span class="o">&gt;</span> <span class="n">CRITICAL_MEMORY_PERCENT_THRESHOLD</span></div>
+
+
+
+<div class="viewcode-block" id="MemoryMonitor">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.MemoryMonitor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MemoryMonitor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Monitor system and process memory usage.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="MemoryMonitor.__init__">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.MemoryMonitor.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">warning_threshold_mb</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">LOW_MEMORY_THRESHOLD_MB</span><span class="p">,</span>
+        <span class="n">critical_threshold_mb</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">CRITICAL_MEMORY_THRESHOLD_MB</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize memory monitor.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            warning_threshold_mb: Available memory threshold for warnings</span>
+<span class="sd">            critical_threshold_mb: Available memory threshold for critical alerts</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">warning_threshold_mb</span> <span class="o">=</span> <span class="n">warning_threshold_mb</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">critical_threshold_mb</span> <span class="o">=</span> <span class="n">critical_threshold_mb</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_monitoring</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_thread</span><span class="p">:</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">MemoryStats</span><span class="p">],</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span></div>
+
+
+<div class="viewcode-block" id="MemoryMonitor.get_memory_stats">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.MemoryMonitor.get_memory_stats">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_memory_stats</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MemoryStats</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get current memory statistics.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            MemoryStats object with current memory information</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">stats</span> <span class="o">=</span> <span class="n">MemoryStats</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">PSUTIL_AVAILABLE</span><span class="p">:</span>
+            <span class="c1"># System memory</span>
+            <span class="n">vm</span> <span class="o">=</span> <span class="n">psutil</span><span class="o">.</span><span class="n">virtual_memory</span><span class="p">()</span>
+            <span class="n">stats</span><span class="o">.</span><span class="n">total_mb</span> <span class="o">=</span> <span class="n">vm</span><span class="o">.</span><span class="n">total</span> <span class="o">//</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">)</span>
+            <span class="n">stats</span><span class="o">.</span><span class="n">available_mb</span> <span class="o">=</span> <span class="n">vm</span><span class="o">.</span><span class="n">available</span> <span class="o">//</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">)</span>
+            <span class="n">stats</span><span class="o">.</span><span class="n">used_mb</span> <span class="o">=</span> <span class="n">vm</span><span class="o">.</span><span class="n">used</span> <span class="o">//</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">)</span>
+            <span class="n">stats</span><span class="o">.</span><span class="n">percent_used</span> <span class="o">=</span> <span class="n">vm</span><span class="o">.</span><span class="n">percent</span>
+
+            <span class="c1"># Process memory</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">process</span> <span class="o">=</span> <span class="n">psutil</span><span class="o">.</span><span class="n">Process</span><span class="p">()</span>
+                <span class="n">process_info</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">memory_info</span><span class="p">()</span>
+                <span class="n">stats</span><span class="o">.</span><span class="n">process_mb</span> <span class="o">=</span> <span class="n">process_info</span><span class="o">.</span><span class="n">rss</span> <span class="o">//</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">)</span>
+                <span class="n">stats</span><span class="o">.</span><span class="n">process_percent</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">memory_percent</span><span class="p">()</span>
+            <span class="k">except</span> <span class="p">(</span><span class="n">psutil</span><span class="o">.</span><span class="n">NoSuchProcess</span><span class="p">,</span> <span class="n">psutil</span><span class="o">.</span><span class="n">AccessDenied</span><span class="p">):</span>
+                <span class="k">pass</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Fallback - try to get basic info</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="kn">import</span><span class="w"> </span><span class="nn">resource</span>
+
+                <span class="n">usage</span> <span class="o">=</span> <span class="n">resource</span><span class="o">.</span><span class="n">getrusage</span><span class="p">(</span><span class="n">resource</span><span class="o">.</span><span class="n">RUSAGE_SELF</span><span class="p">)</span>
+                <span class="n">stats</span><span class="o">.</span><span class="n">process_mb</span> <span class="o">=</span> <span class="n">usage</span><span class="o">.</span><span class="n">ru_maxrss</span> <span class="o">//</span> <span class="mi">1024</span>  <span class="c1"># Convert KB to MB</span>
+            <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+                <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="n">stats</span></div>
+
+
+<div class="viewcode-block" id="MemoryMonitor.start_monitoring">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.MemoryMonitor.start_monitoring">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start_monitoring</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Start background memory monitoring.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            interval: Check interval in seconds</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitoring</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_monitoring</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_monitor_loop</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">interval</span><span class="p">,),</span> <span class="n">daemon</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Started memory monitoring with </span><span class="si">%s</span><span class="s2">s interval&quot;</span><span class="p">,</span> <span class="n">interval</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MemoryMonitor.stop_monitoring">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.MemoryMonitor.stop_monitoring">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop_monitoring</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop background memory monitoring.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_monitoring</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_thread</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_monitor_thread</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Stopped memory monitoring&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MemoryMonitor.add_callback">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.MemoryMonitor.add_callback">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">MemoryStats</span><span class="p">],</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a callback for memory status updates.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            callback: Function to call with MemoryStats</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">callback</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_monitor_loop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Background monitoring loop.&quot;&quot;&quot;</span>
+        <span class="n">last_warning_time</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_monitoring</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">stats</span> <span class="o">=</span> <span class="n">MemoryMonitor</span><span class="o">.</span><span class="n">get_memory_stats</span><span class="p">()</span>
+
+                <span class="c1"># Check thresholds</span>
+                <span class="n">current_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">stats</span><span class="o">.</span><span class="n">is_critical_memory</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">current_time</span> <span class="o">-</span> <span class="n">last_warning_time</span> <span class="o">&gt;</span> <span class="n">WARNING_INTERVAL_SECONDS</span><span class="p">:</span>
+                        <span class="n">LOGGER</span><span class="o">.</span><span class="n">critical</span><span class="p">(</span>
+                            <span class="s2">&quot;CRITICAL: Low memory! Available: </span><span class="si">%s</span><span class="s2">MB (</span><span class="si">%s%%</span><span class="s2"> used)&quot;</span><span class="p">,</span>
+                            <span class="n">stats</span><span class="o">.</span><span class="n">available_mb</span><span class="p">,</span>
+                            <span class="nb">round</span><span class="p">(</span><span class="n">stats</span><span class="o">.</span><span class="n">percent_used</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                        <span class="p">)</span>
+                        <span class="n">last_warning_time</span> <span class="o">=</span> <span class="n">current_time</span>
+                <span class="k">elif</span> <span class="n">stats</span><span class="o">.</span><span class="n">is_low_memory</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">current_time</span> <span class="o">-</span> <span class="n">last_warning_time</span> <span class="o">&gt;</span> <span class="n">CRITICAL_WARNING_INTERVAL_SECONDS</span><span class="p">:</span>
+                        <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                            <span class="s2">&quot;Low memory warning: Available: </span><span class="si">%s</span><span class="s2">MB (</span><span class="si">%s%%</span><span class="s2"> used)&quot;</span><span class="p">,</span>
+                            <span class="n">stats</span><span class="o">.</span><span class="n">available_mb</span><span class="p">,</span>
+                            <span class="nb">round</span><span class="p">(</span><span class="n">stats</span><span class="o">.</span><span class="n">percent_used</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                        <span class="p">)</span>
+                        <span class="n">last_warning_time</span> <span class="o">=</span> <span class="n">current_time</span>
+
+                <span class="c1"># Call callbacks</span>
+                <span class="k">for</span> <span class="n">callback</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">callback</span><span class="p">(</span><span class="n">stats</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                        <span class="n">LOGGER</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Error in memory callback: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">interval</span><span class="p">)</span>
+
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Error in memory monitoring: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">interval</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="MemoryOptimizer">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.MemoryOptimizer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MemoryOptimizer</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Optimize memory usage for large data processing.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="MemoryOptimizer.__init__">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.MemoryOptimizer.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize memory optimizer.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span> <span class="o">=</span> <span class="n">MemoryMonitor</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gc_threshold</span> <span class="o">=</span> <span class="n">DEFAULT_GC_THRESHOLD_PERCENT</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_last_gc_time</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_gc_interval</span> <span class="o">=</span> <span class="mf">30.0</span>  <span class="c1"># Minimum seconds between GC runs</span></div>
+
+
+<div class="viewcode-block" id="MemoryOptimizer.optimize_array_dtype">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.MemoryOptimizer.optimize_array_dtype">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">optimize_array_dtype</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">preserve_range</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Optimize numpy array dtype to use less memory.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            array: Input numpy array</span>
+<span class="sd">            preserve_range: Whether to preserve the value range</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Optimized array with smaller dtype if possible</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">array</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">:</span>
+            <span class="c1"># Check if float32 is sufficient</span>
+            <span class="k">if</span> <span class="n">preserve_range</span><span class="p">:</span>
+                <span class="n">min_val</span><span class="p">,</span> <span class="n">max_val</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">array</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">min_val</span> <span class="o">&gt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">min</span> <span class="ow">and</span> <span class="n">max_val</span> <span class="o">&lt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">finfo</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span><span class="o">.</span><span class="n">max</span><span class="p">:</span>
+                    <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Converting array from float64 to float32 (saves 50</span><span class="si">%%</span><span class="s2"> memory)&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="n">array</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">array</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">array</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">:</span>
+            <span class="c1"># Check if smaller int type is sufficient</span>
+            <span class="n">min_val</span><span class="p">,</span> <span class="n">max_val</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="n">array</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">min_val</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">max_val</span> <span class="o">&lt;=</span> <span class="n">UINT8_MAX</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Converting array from int64 to uint8 (saves 87.5</span><span class="si">%%</span><span class="s2"> memory)&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">array</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">min_val</span> <span class="o">&gt;=</span> <span class="n">INT8_MIN</span> <span class="ow">and</span> <span class="n">max_val</span> <span class="o">&lt;=</span> <span class="n">INT8_MAX</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Converting array from int64 to int8 (saves 87.5</span><span class="si">%%</span><span class="s2"> memory)&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">array</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">min_val</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">max_val</span> <span class="o">&lt;=</span> <span class="n">UINT16_MAX</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Converting array from int64 to uint16 (saves 75</span><span class="si">%%</span><span class="s2"> memory)&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">array</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint16</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">min_val</span> <span class="o">&gt;=</span> <span class="n">INT16_MIN</span> <span class="ow">and</span> <span class="n">max_val</span> <span class="o">&lt;=</span> <span class="n">INT16_MAX</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Converting array from int64 to int16 (saves 75</span><span class="si">%%</span><span class="s2"> memory)&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">array</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">min_val</span> <span class="o">&gt;=</span> <span class="n">INT32_MIN</span> <span class="ow">and</span> <span class="n">max_val</span> <span class="o">&lt;=</span> <span class="n">INT32_MAX</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Converting array from int64 to int32 (saves 50</span><span class="si">%%</span><span class="s2"> memory)&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">array</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">array</span></div>
+
+
+<div class="viewcode-block" id="MemoryOptimizer.chunk_large_array">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.MemoryOptimizer.chunk_large_array">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">chunk_large_array</span><span class="p">(</span><span class="n">array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">max_chunk_mb</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_CHUNK_SIZE_MB</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Split large array into chunks for processing.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            array: Large numpy array to chunk</span>
+<span class="sd">            max_chunk_mb: Maximum chunk size in MB</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List of array chunks</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">array_mb</span> <span class="o">=</span> <span class="n">array</span><span class="o">.</span><span class="n">nbytes</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">array_mb</span> <span class="o">&lt;=</span> <span class="n">max_chunk_mb</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">array</span><span class="p">]</span>
+
+        <span class="c1"># Calculate number of chunks needed</span>
+        <span class="n">n_chunks</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">array_mb</span> <span class="o">/</span> <span class="n">max_chunk_mb</span><span class="p">))</span>
+
+        <span class="c1"># Split along first axis</span>
+        <span class="n">chunk_size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">array</span><span class="p">)</span> <span class="o">//</span> <span class="n">n_chunks</span>
+        <span class="n">chunks</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_chunks</span><span class="p">):</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">i</span> <span class="o">*</span> <span class="n">chunk_size</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="n">start</span> <span class="o">+</span> <span class="n">chunk_size</span> <span class="k">if</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">n_chunks</span> <span class="o">-</span> <span class="mi">1</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">array</span><span class="p">)</span>
+            <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">array</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">])</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;Split </span><span class="si">%s</span><span class="s2">MB array into </span><span class="si">%s</span><span class="s2"> chunks of ~</span><span class="si">%s</span><span class="s2">MB each&quot;</span><span class="p">,</span>
+            <span class="nb">round</span><span class="p">(</span><span class="n">array_mb</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="n">n_chunks</span><span class="p">,</span>
+            <span class="n">max_chunk_mb</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">chunks</span></div>
+
+
+<div class="viewcode-block" id="MemoryOptimizer.optimize_array_chunks">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.MemoryOptimizer.optimize_array_chunks">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">optimize_array_chunks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">max_chunk_mb</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Yield copies of array chunks to keep peak memory low.</span>
+
+<span class="sd">        This method iterates over ``array`` in pieces and yields a copy of each</span>
+<span class="sd">        chunk so the original array can be released after processing.  It also</span>
+<span class="sd">        triggers garbage collection between chunks.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            array: Large numpy array to process in chunks.</span>
+<span class="sd">            max_chunk_mb: Maximum chunk size in megabytes.</span>
+
+<span class="sd">        Yields:</span>
+<span class="sd">            NumPy arrays containing contiguous chunks of ``array``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">chunk_size</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_chunk_mb</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">//</span> <span class="n">array</span><span class="o">.</span><span class="n">itemsize</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">start</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">array</span><span class="p">),</span> <span class="n">chunk_size</span><span class="p">):</span>
+            <span class="n">chunk</span> <span class="o">=</span> <span class="n">array</span><span class="p">[</span><span class="n">start</span> <span class="p">:</span> <span class="n">start</span> <span class="o">+</span> <span class="n">chunk_size</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">yield</span> <span class="n">chunk</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">free_memory</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="MemoryOptimizer.free_memory">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.MemoryOptimizer.free_memory">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">free_memory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Free memory by running garbage collection.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            force: Force immediate GC regardless of thresholds</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">current_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="n">stats</span> <span class="o">=</span> <span class="n">MemoryMonitor</span><span class="o">.</span><span class="n">get_memory_stats</span><span class="p">()</span>
+
+        <span class="n">should_gc</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">force</span> <span class="ow">or</span> <span class="n">stats</span><span class="o">.</span><span class="n">percent_used</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gc_threshold</span> <span class="ow">or</span> <span class="p">(</span><span class="n">current_time</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_last_gc_time</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gc_interval</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">should_gc</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                <span class="s2">&quot;Running garbage collection (memory: </span><span class="si">%s%%</span><span class="s2">)&quot;</span><span class="p">,</span>
+                <span class="nb">round</span><span class="p">(</span><span class="n">stats</span><span class="o">.</span><span class="n">percent_used</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="n">gc</span><span class="o">.</span><span class="n">collect</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_last_gc_time</span> <span class="o">=</span> <span class="n">current_time</span></div>
+
+
+<div class="viewcode-block" id="MemoryOptimizer.check_available_memory">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.MemoryOptimizer.check_available_memory">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_available_memory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">required_mb</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if sufficient memory is available.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            required_mb: Required memory in MB</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple of (has_memory, message)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">stats</span> <span class="o">=</span> <span class="n">MemoryMonitor</span><span class="o">.</span><span class="n">get_memory_stats</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">stats</span><span class="o">.</span><span class="n">available_mb</span> <span class="o">&lt;</span> <span class="n">required_mb</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Insufficient memory: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">available_mb</span><span class="si">}</span><span class="s2">MB available, </span><span class="si">{</span><span class="n">required_mb</span><span class="si">}</span><span class="s2">MB required&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">stats</span><span class="o">.</span><span class="n">available_mb</span> <span class="o">&lt;</span> <span class="n">required_mb</span> <span class="o">*</span> <span class="mf">1.5</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;Low memory for operation: </span><span class="si">%s</span><span class="s2">MB available, </span><span class="si">%s</span><span class="s2">MB required&quot;</span><span class="p">,</span>
+                <span class="n">stats</span><span class="o">.</span><span class="n">available_mb</span><span class="p">,</span>
+                <span class="n">required_mb</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;OK&quot;</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="estimate_memory_requirement">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.estimate_memory_requirement">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">estimate_memory_requirement</span><span class="p">(</span><span class="n">shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Estimate memory requirement for array.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        shape: Array shape</span>
+<span class="sd">        dtype: Array data type</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Estimated memory in MB</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Calculate number of elements</span>
+    <span class="n">n_elements</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">shape</span><span class="p">:</span>
+        <span class="n">n_elements</span> <span class="o">*=</span> <span class="n">dim</span>
+
+    <span class="c1"># Get bytes per element</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">dtype</span><span class="p">,</span> <span class="nb">type</span><span class="p">):</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">bytes_per_element</span> <span class="o">=</span> <span class="n">dtype</span><span class="o">.</span><span class="n">itemsize</span>
+
+    <span class="c1"># Calculate total bytes and convert to MB</span>
+    <span class="n">total_bytes</span> <span class="o">=</span> <span class="n">n_elements</span> <span class="o">*</span> <span class="n">bytes_per_element</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">total_bytes</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">)))</span></div>
+
+
+
+<div class="viewcode-block" id="log_memory_usage">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.log_memory_usage">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">log_memory_usage</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Log current memory usage.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        context: Optional context string</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">MemoryMonitor</span><span class="p">()</span>
+    <span class="n">stats</span> <span class="o">=</span> <span class="n">MemoryMonitor</span><span class="o">.</span><span class="n">get_memory_stats</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">context</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> - Memory: </span><span class="si">%s</span><span class="s2">MB used (</span><span class="si">%s%%</span><span class="s2">), </span><span class="si">%s</span><span class="s2">MB available&quot;</span><span class="p">,</span>
+            <span class="n">context</span><span class="p">,</span>
+            <span class="n">stats</span><span class="o">.</span><span class="n">used_mb</span><span class="p">,</span>
+            <span class="nb">round</span><span class="p">(</span><span class="n">stats</span><span class="o">.</span><span class="n">percent_used</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="n">stats</span><span class="o">.</span><span class="n">available_mb</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;Memory: </span><span class="si">%s</span><span class="s2">MB used (</span><span class="si">%s%%</span><span class="s2">), </span><span class="si">%s</span><span class="s2">MB available&quot;</span><span class="p">,</span>
+            <span class="n">stats</span><span class="o">.</span><span class="n">used_mb</span><span class="p">,</span>
+            <span class="nb">round</span><span class="p">(</span><span class="n">stats</span><span class="o">.</span><span class="n">percent_used</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="n">stats</span><span class="o">.</span><span class="n">available_mb</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+
+<span class="c1"># Global singleton monitor</span>
+<span class="n">_memory_monitor</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<div class="viewcode-block" id="get_memory_monitor">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.get_memory_monitor">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_memory_monitor</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MemoryMonitor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the global memory monitor instance.&quot;&quot;&quot;</span>
+    <span class="k">global</span> <span class="n">_memory_monitor</span>
+    <span class="k">if</span> <span class="n">_memory_monitor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_memory_monitor</span> <span class="o">=</span> <span class="n">MemoryMonitor</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">_memory_monitor</span></div>
+
+
+
+<div class="viewcode-block" id="ObjectPool">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.ObjectPool">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ObjectPool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Object pool for reusing expensive objects.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ObjectPool.__init__">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.ObjectPool.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">factory</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">max_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize object pool.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            factory: Function to create new objects</span>
+<span class="sd">            max_size: Maximum pool size</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">factory</span> <span class="o">=</span> <span class="n">factory</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_size</span> <span class="o">=</span> <span class="n">max_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Lock</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ObjectPool.acquire">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.ObjectPool.acquire">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">acquire</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Acquire an object from the pool.&quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">factory</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="ObjectPool.release">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.ObjectPool.release">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">release</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Release an object back to the pool.&quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lock</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_size</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">pool</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="StreamingProcessor">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.StreamingProcessor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StreamingProcessor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Process large data in streaming fashion.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="StreamingProcessor.__init__">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.StreamingProcessor.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk_size_mb</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize streaming processor.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            chunk_size_mb: Size of each chunk in MB</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">chunk_size_mb</span> <span class="o">=</span> <span class="n">chunk_size_mb</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span> <span class="o">=</span> <span class="n">MemoryOptimizer</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="StreamingProcessor.process_array">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.StreamingProcessor.process_array">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">process_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">array</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">process_func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process array in chunks.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            array: Input array</span>
+<span class="sd">            process_func: Function to process each chunk</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Processed array</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">optimize_array_chunks</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">chunk_size_mb</span><span class="p">):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">process_func</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+            <span class="n">results</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+        <span class="k">del</span> <span class="n">array</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">optimizer</span><span class="o">.</span><span class="n">free_memory</span><span class="p">(</span><span class="n">force</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">results</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="StreamingProcessor.estimate_memory_usage">
+<a class="viewcode-back" href="../../../api/utils_memory_manager.html#goesvfi.utils.memory_manager.StreamingProcessor.estimate_memory_usage">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">estimate_memory_usage</span><span class="p">(</span><span class="n">array_shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MemoryStats</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Estimate memory usage for processing an array.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            array_shape: Shape of the array</span>
+<span class="sd">            dtype: Data type of the array</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            MemoryStats with estimated usage</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Calculate array size</span>
+        <span class="n">num_elements</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">array_shape</span><span class="p">)</span>
+        <span class="n">bytes_per_element</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span><span class="o">.</span><span class="n">itemsize</span>
+        <span class="n">array_size_mb</span> <span class="o">=</span> <span class="p">(</span><span class="n">num_elements</span> <span class="o">*</span> <span class="n">bytes_per_element</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">)</span>
+
+        <span class="c1"># Get current memory stats</span>
+        <span class="n">get_memory_monitor</span><span class="p">()</span>
+        <span class="n">current_stats</span> <span class="o">=</span> <span class="n">MemoryMonitor</span><span class="o">.</span><span class="n">get_memory_stats</span><span class="p">()</span>
+
+        <span class="c1"># Estimate if processing would fit in memory</span>
+        <span class="n">estimated_usage_mb</span> <span class="o">=</span> <span class="n">current_stats</span><span class="o">.</span><span class="n">used_mb</span> <span class="o">+</span> <span class="n">array_size_mb</span>
+        <span class="n">estimated_percent</span> <span class="o">=</span> <span class="p">(</span><span class="n">estimated_usage_mb</span> <span class="o">/</span> <span class="n">current_stats</span><span class="o">.</span><span class="n">total_mb</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span>
+
+        <span class="k">return</span> <span class="n">MemoryStats</span><span class="p">(</span>
+            <span class="n">total_mb</span><span class="o">=</span><span class="n">current_stats</span><span class="o">.</span><span class="n">total_mb</span><span class="p">,</span>
+            <span class="n">available_mb</span><span class="o">=</span><span class="n">current_stats</span><span class="o">.</span><span class="n">available_mb</span> <span class="o">-</span> <span class="n">array_size_mb</span><span class="p">,</span>
+            <span class="n">used_mb</span><span class="o">=</span><span class="n">estimated_usage_mb</span><span class="p">,</span>
+            <span class="n">percent_used</span><span class="o">=</span><span class="n">estimated_percent</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

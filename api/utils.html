@@ -1,0 +1,1025 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Utilities API &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Exceptions" href="exceptions.html" />
+    <link rel="prev" title="Pipeline API" href="pipeline.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quick Start Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="gui.html">Gui</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html">Pipeline API</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Utilities API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#module-goesvfi.utils.config">Configuration</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.get_config_path"><code class="docutils literal notranslate"><span class="pre">get_config_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.FfmpegProfile"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.get_output_dir"><code class="docutils literal notranslate"><span class="pre">get_output_dir()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.get_cache_dir"><code class="docutils literal notranslate"><span class="pre">get_cache_dir()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.get_default_tile_size"><code class="docutils literal notranslate"><span class="pre">get_default_tile_size()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.get_sanchez_bin_dir"><code class="docutils literal notranslate"><span class="pre">get_sanchez_bin_dir()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.get_logging_level"><code class="docutils literal notranslate"><span class="pre">get_logging_level()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.get_supported_extensions"><code class="docutils literal notranslate"><span class="pre">get_supported_extensions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.get_project_root"><code class="docutils literal notranslate"><span class="pre">get_project_root()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.find_rife_executable"><code class="docutils literal notranslate"><span class="pre">find_rife_executable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.get_available_rife_models"><code class="docutils literal notranslate"><span class="pre">get_available_rife_models()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.get_user_config_dir"><code class="docutils literal notranslate"><span class="pre">get_user_config_dir()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.get_theme_name"><code class="docutils literal notranslate"><span class="pre">get_theme_name()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.get_theme_custom_overrides"><code class="docutils literal notranslate"><span class="pre">get_theme_custom_overrides()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.get_theme_density_scale"><code class="docutils literal notranslate"><span class="pre">get_theme_density_scale()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.config.get_theme_fallback_enabled"><code class="docutils literal notranslate"><span class="pre">get_theme_fallback_enabled()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id0"><code class="docutils literal notranslate"><span class="pre">get_output_dir()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id1"><code class="docutils literal notranslate"><span class="pre">get_cache_dir()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id2"><code class="docutils literal notranslate"><span class="pre">get_available_rife_models()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id3"><code class="docutils literal notranslate"><span class="pre">find_rife_executable()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#resource-management">Resource Management</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#resourcelimits">ResourceLimits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#resourcemonitor">ResourceMonitor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#resourcelimitedcontext">ResourceLimitedContext</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#security">Security</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#inputvalidator">InputValidator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#securefilehandler">SecureFileHandler</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#memory-management">Memory Management</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#memoryoptimizer">MemoryOptimizer</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#gui-helpers">GUI Helpers</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#clickablelabel">ClickableLabel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#cropselectiondialog">CropSelectionDialog</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#imageviewerdialog">ImageViewerDialog</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#date-and-time-utilities">Date and Time Utilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rife-analyzer">RIFE Analyzer</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#rifecapabilitydetector">RifeCapabilityDetector</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#ui-security-indicators">UI Security Indicators</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#securitystatusindicator">SecurityStatusIndicator</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#secureinputwidget">SecureInputWidget</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#error-handling">Error Handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#performance-considerations">Performance Considerations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#thread-safety">Thread Safety</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#testing-utilities">Testing Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_main_tab.html">Main Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_ffmpeg_settings_tab.html">Ffmpeg Settings Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_resource_limits_tab.html">Resource Limits Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_model_library_tab.html">Model Library Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_operation_history_tab.html">Operation History Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_image_loader.html">Image Loader</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_image_cropper.html">Image Cropper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_sanchez_processor.html">Sanchez Processor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_encode.html">Encode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_interpolate.html">Interpolate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_run_vfi.html">Run Vfi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_ffmpeg_builder.html">Ffmpeg Builder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_view_model.html">View Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_goes_imagery.html">Goes Imagery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_time_index.html">Time Index</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_cache_db.html">Cache Db</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_remote_store.html">Remote Store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html">Config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_log.html">Log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_date_utils.html">Date Utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_gui_helpers.html">Gui Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_memory_manager.html">Memory Manager</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_security.html">Security</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#core-components">Core Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#common-usage-patterns">Common Usage Patterns</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">API Reference</a></li>
+      <li class="breadcrumb-item active">Utilities API</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/utils.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="utilities-api">
+<h1>Utilities API<a class="headerlink" href="#utilities-api" title="Link to this heading"></a></h1>
+<p>The utils module provides shared utilities and helper functions used throughout GOES_VFI.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The utilities module contains essential functionality for:</p>
+<ul class="simple">
+<li><p><strong>Configuration Management</strong>: Application settings and preferences</p></li>
+<li><p><strong>Logging</strong>: Structured logging with multiple outputs</p></li>
+<li><p><strong>Resource Management</strong>: System resource monitoring and limits</p></li>
+<li><p><strong>Security</strong>: Input validation and sanitization</p></li>
+<li><p><strong>Memory Management</strong>: Memory optimization and monitoring</p></li>
+<li><p><strong>GUI Helpers</strong>: Common UI components and utilities</p></li>
+</ul>
+</section>
+<section id="module-goesvfi.utils.config">
+<span id="configuration"></span><h2>Configuration<a class="headerlink" href="#module-goesvfi.utils.config" title="Link to this heading"></a></h2>
+<p>goesvfi.utils.config – user paths and TOML config loader.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_config_path">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_config_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_config_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_config_path" title="Link to this definition"></a></dt>
+<dd><p>Return config file path honoring environment variables.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">FfmpegProfile</span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#FfmpegProfile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypedDict" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypedDict</span></code></a></p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.use_ffmpeg_interp">
+<span class="sig-name descname"><span class="pre">use_ffmpeg_interp</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.use_ffmpeg_interp" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.mi_mode">
+<span class="sig-name descname"><span class="pre">mi_mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.mi_mode" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.mc_mode">
+<span class="sig-name descname"><span class="pre">mc_mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.mc_mode" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.me_mode">
+<span class="sig-name descname"><span class="pre">me_mode</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.me_mode" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.vsbmc">
+<span class="sig-name descname"><span class="pre">vsbmc</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.vsbmc" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.scd">
+<span class="sig-name descname"><span class="pre">scd</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.scd" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.me_algo">
+<span class="sig-name descname"><span class="pre">me_algo</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.me_algo" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.search_param">
+<span class="sig-name descname"><span class="pre">search_param</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.search_param" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.scd_threshold">
+<span class="sig-name descname"><span class="pre">scd_threshold</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.scd_threshold" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.mb_size">
+<span class="sig-name descname"><span class="pre">mb_size</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.mb_size" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.apply_unsharp">
+<span class="sig-name descname"><span class="pre">apply_unsharp</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.apply_unsharp" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.unsharp_lx">
+<span class="sig-name descname"><span class="pre">unsharp_lx</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.unsharp_lx" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.unsharp_ly">
+<span class="sig-name descname"><span class="pre">unsharp_ly</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.unsharp_ly" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.unsharp_la">
+<span class="sig-name descname"><span class="pre">unsharp_la</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.unsharp_la" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.unsharp_cx">
+<span class="sig-name descname"><span class="pre">unsharp_cx</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.unsharp_cx" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.unsharp_cy">
+<span class="sig-name descname"><span class="pre">unsharp_cy</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.unsharp_cy" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.unsharp_ca">
+<span class="sig-name descname"><span class="pre">unsharp_ca</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.unsharp_ca" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.preset_text">
+<span class="sig-name descname"><span class="pre">preset_text</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.preset_text" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.crf">
+<span class="sig-name descname"><span class="pre">crf</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.crf" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.bitrate">
+<span class="sig-name descname"><span class="pre">bitrate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.bitrate" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.bufsize">
+<span class="sig-name descname"><span class="pre">bufsize</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.bufsize" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.pix_fmt">
+<span class="sig-name descname"><span class="pre">pix_fmt</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.pix_fmt" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.config.FfmpegProfile.filter_preset">
+<span class="sig-name descname"><span class="pre">filter_preset</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.utils.config.FfmpegProfile.filter_preset" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_output_dir">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_output_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_output_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_output_dir" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_cache_dir">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_cache_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_cache_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_cache_dir" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_default_tile_size">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_default_tile_size</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_default_tile_size"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_default_tile_size" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_sanchez_bin_dir">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_sanchez_bin_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_sanchez_bin_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_sanchez_bin_dir" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_logging_level">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_logging_level</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_logging_level"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_logging_level" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_supported_extensions">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_supported_extensions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_supported_extensions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_supported_extensions" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_project_root">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_project_root</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_project_root"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_project_root" title="Link to this definition"></a></dt>
+<dd><p>Returns the root directory of the project.
+Assumes this config.py file is located within a subdirectory of the project root
+(e.g., goesvfi/utils/).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.find_rife_executable">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">find_rife_executable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#find_rife_executable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.find_rife_executable" title="Link to this definition"></a></dt>
+<dd><p>Locate the RIFE CLI executable.
+Searches in order:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>System PATH for ‘rife-ncnn-vulkan’ (or .exe)</p></li>
+</ol>
+</div></blockquote>
+<ol class="arabic simple" start="2">
+<li><p>Project ‘goesvfi/bin/’ directory for ‘rife-cli’ (or .exe)</p></li>
+<li><p>Project ‘goesvfi/models/&lt;model_key&gt;/’ directory for ‘rife-cli’ (or .exe).</p></li>
+</ol>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_available_rife_models">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_available_rife_models</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_available_rife_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_available_rife_models" title="Link to this definition"></a></dt>
+<dd><p>Scans the ‘goesvfi/models/’ directory for available RIFE models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A sorted list of model directory names found.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_user_config_dir">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_user_config_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_user_config_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_user_config_dir" title="Link to this definition"></a></dt>
+<dd><p>Returns the directory for user-specific configuration files.</p>
+<p>Uses CONFIG_DIR from the module, which defaults to ~/.config/goesvfi</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Path to the user’s configuration directory</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_theme_name">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_theme_name</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_theme_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_theme_name" title="Link to this definition"></a></dt>
+<dd><p>Get the current theme name from configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Theme name string (defaults to ‘dark_blue’)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_theme_custom_overrides">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_theme_custom_overrides</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_theme_custom_overrides"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_theme_custom_overrides" title="Link to this definition"></a></dt>
+<dd><p>Get whether custom theme overrides are enabled.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if custom overrides should be applied</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_theme_density_scale">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_theme_density_scale</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_theme_density_scale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_theme_density_scale" title="Link to this definition"></a></dt>
+<dd><p>Get the theme density scale setting.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Density scale string (defaults to ‘0’ for normal)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.config.get_theme_fallback_enabled">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_theme_fallback_enabled</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_theme_fallback_enabled"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.config.get_theme_fallback_enabled" title="Link to this definition"></a></dt>
+<dd><p>Get whether theme fallback is enabled.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if fallback to basic theme should be enabled on errors</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p>The configuration module manages application settings and provides access to configuration files.</p>
+<p><strong>Key Functions:</strong></p>
+<dl class="py function">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_output_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_output_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id0" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_cache_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_cache_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id1" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">get_available_rife_models</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#get_available_rife_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id2" title="Link to this definition"></a></dt>
+<dd><p>Scans the ‘goesvfi/models/’ directory for available RIFE models.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A sorted list of model directory names found.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="id3">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.config.</span></span><span class="sig-name descname"><span class="pre">find_rife_executable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/config.html#find_rife_executable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#id3" title="Link to this definition"></a></dt>
+<dd><p>Locate the RIFE CLI executable.
+Searches in order:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>System PATH for ‘rife-ncnn-vulkan’ (or .exe)</p></li>
+</ol>
+</div></blockquote>
+<ol class="arabic simple" start="2">
+<li><p>Project ‘goesvfi/bin/’ directory for ‘rife-cli’ (or .exe)</p></li>
+<li><p>Project ‘goesvfi/models/&lt;model_key&gt;/’ directory for ‘rife-cli’ (or .exe).</p></li>
+</ol>
+</dd></dl>
+
+<p><strong>Configuration Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+
+<span class="c1"># Get configuration paths</span>
+<span class="n">output_dir</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_output_dir</span><span class="p">()</span>
+<span class="n">cache_dir</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_cache_dir</span><span class="p">()</span>
+
+<span class="c1"># Find available models</span>
+<span class="n">models</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_available_rife_models</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Available RIFE models: </span><span class="si">{</span><span class="n">models</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Locate executables</span>
+<span class="n">rife_path</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">find_rife_executable</span><span class="p">(</span><span class="s2">&quot;rife-v4.6&quot;</span><span class="p">)</span>
+
+<span class="c1"># Get FFmpeg profiles</span>
+<span class="n">profiles</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">FFMPEG_PROFILES</span>
+<span class="n">optimal_profile</span> <span class="o">=</span> <span class="n">profiles</span><span class="p">[</span><span class="s2">&quot;Optimal&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p><strong>Configuration File Format:</strong></p>
+<p>GOES_VFI uses TOML configuration files stored in <code class="docutils literal notranslate"><span class="pre">~/.config/goesvfi/config.toml</span></code>:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[paths]</span>
+<span class="n">output_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;~/Documents/goesvfi&quot;</span>
+<span class="n">cache_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;~/Documents/goesvfi/cache&quot;</span>
+
+<span class="k">[pipeline]</span>
+<span class="n">default_tile_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2048</span>
+<span class="n">supported_extensions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;.png&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;.jpg&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;.jpeg&quot;</span><span class="p">]</span>
+
+<span class="k">[sanchez]</span>
+<span class="n">bin_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;./sanchez/bin&quot;</span>
+
+<span class="k">[logging]</span>
+<span class="n">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;INFO&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="logging">
+<h2>Logging<a class="headerlink" href="#logging" title="Link to this heading"></a></h2>
+<p>Provides structured logging with color output and multiple handlers.</p>
+<p><strong>Basic Usage:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span>
+
+<span class="c1"># Get logger for your module</span>
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># Log at different levels</span>
+<span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Debug information for developers&quot;</span><span class="p">)</span>
+<span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;General information&quot;</span><span class="p">)</span>
+<span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Something might be wrong&quot;</span><span class="p">)</span>
+<span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;An error occurred&quot;</span><span class="p">)</span>
+<span class="n">LOGGER</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Exception with full traceback&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Advanced Configuration:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span>
+
+<span class="c1"># Set global log level</span>
+<span class="n">log</span><span class="o">.</span><span class="n">set_global_log_level</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+
+<span class="c1"># Get logger with specific configuration</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="s2">&quot;my_module&quot;</span><span class="p">,</span> <span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+
+<span class="c1"># Log with structured data</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Processing started&quot;</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span>
+    <span class="s1">&#39;input_count&#39;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+    <span class="s1">&#39;output_format&#39;</span><span class="p">:</span> <span class="s1">&#39;mp4&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;encoder&#39;</span><span class="p">:</span> <span class="s1">&#39;RIFE&#39;</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+</section>
+<section id="resource-management">
+<h2>Resource Management<a class="headerlink" href="#resource-management" title="Link to this heading"></a></h2>
+<p>Provides system resource monitoring and limiting capabilities.</p>
+<p><strong>Core Classes:</strong></p>
+<section id="resourcelimits">
+<h3>ResourceLimits<a class="headerlink" href="#resourcelimits" title="Link to this heading"></a></h3>
+<p>Configuration for resource limits:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.resource_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResourceLimits</span>
+
+<span class="c1"># Basic limits</span>
+<span class="n">limits</span> <span class="o">=</span> <span class="n">ResourceLimits</span><span class="p">(</span>
+    <span class="n">max_memory_mb</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span>
+    <span class="n">max_processing_time_sec</span><span class="o">=</span><span class="mi">1800</span><span class="p">,</span>
+    <span class="n">max_cpu_percent</span><span class="o">=</span><span class="mf">80.0</span>
+<span class="p">)</span>
+
+<span class="c1"># Conservative limits for low-end systems</span>
+<span class="n">conservative_limits</span> <span class="o">=</span> <span class="n">ResourceLimits</span><span class="p">(</span>
+    <span class="n">max_memory_mb</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+    <span class="n">max_processing_time_sec</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
+    <span class="n">max_cpu_percent</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span>
+    <span class="n">max_open_files</span><span class="o">=</span><span class="mi">100</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="resourcemonitor">
+<h3>ResourceMonitor<a class="headerlink" href="#resourcemonitor" title="Link to this heading"></a></h3>
+<p>Real-time resource monitoring:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.resource_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResourceMonitor</span><span class="p">,</span> <span class="n">ResourceLimits</span>
+
+<span class="c1"># Create monitor</span>
+<span class="n">limits</span> <span class="o">=</span> <span class="n">ResourceLimits</span><span class="p">(</span><span class="n">max_memory_mb</span><span class="o">=</span><span class="mi">1024</span><span class="p">)</span>
+<span class="n">monitor</span> <span class="o">=</span> <span class="n">ResourceMonitor</span><span class="p">(</span><span class="n">limits</span><span class="p">,</span> <span class="n">check_interval</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+
+<span class="c1"># Add callbacks</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">on_usage_update</span><span class="p">(</span><span class="n">usage</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Memory: </span><span class="si">{</span><span class="n">usage</span><span class="o">.</span><span class="n">memory_mb</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">MB, CPU: </span><span class="si">{</span><span class="n">usage</span><span class="o">.</span><span class="n">cpu_percent</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">on_limit_exceeded</span><span class="p">(</span><span class="n">usage</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resource limit exceeded!&quot;</span><span class="p">)</span>
+
+<span class="n">monitor</span><span class="o">.</span><span class="n">add_callback</span><span class="p">(</span><span class="s1">&#39;usage_update&#39;</span><span class="p">,</span> <span class="n">on_usage_update</span><span class="p">)</span>
+<span class="n">monitor</span><span class="o">.</span><span class="n">add_callback</span><span class="p">(</span><span class="s1">&#39;limit_exceeded&#39;</span><span class="p">,</span> <span class="n">on_limit_exceeded</span><span class="p">)</span>
+
+<span class="c1"># Start monitoring</span>
+<span class="n">monitor</span><span class="o">.</span><span class="n">start_monitoring</span><span class="p">()</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># Your processing code here</span>
+    <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+<span class="k">finally</span><span class="p">:</span>
+    <span class="n">monitor</span><span class="o">.</span><span class="n">stop_monitoring</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="resourcelimitedcontext">
+<h3>ResourceLimitedContext<a class="headerlink" href="#resourcelimitedcontext" title="Link to this heading"></a></h3>
+<p>Context manager for applying resource limits:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.resource_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResourceLimitedContext</span><span class="p">,</span> <span class="n">ResourceLimits</span>
+
+<span class="n">limits</span> <span class="o">=</span> <span class="n">ResourceLimits</span><span class="p">(</span><span class="n">max_memory_mb</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span> <span class="n">max_processing_time_sec</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">ResourceLimitedContext</span><span class="p">(</span><span class="n">limits</span><span class="p">,</span> <span class="n">monitor</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">context</span><span class="p">:</span>
+    <span class="n">monitor</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">get_monitor</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">monitor</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Resource monitoring active&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Your processing code runs with resource limits applied</span>
+    <span class="n">process_large_dataset</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><strong>Utility Functions:</strong></p>
+</section>
+</section>
+<section id="security">
+<h2>Security<a class="headerlink" href="#security" title="Link to this heading"></a></h2>
+<p>Provides input validation and security utilities to prevent common vulnerabilities.</p>
+<p><strong>Core Classes:</strong></p>
+<section id="inputvalidator">
+<h3>InputValidator<a class="headerlink" href="#inputvalidator" title="Link to this heading"></a></h3>
+<p>Comprehensive input validation:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">InputValidator</span><span class="p">,</span> <span class="n">SecurityError</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># Validate file paths</span>
+    <span class="n">InputValidator</span><span class="o">.</span><span class="n">validate_file_path</span><span class="p">(</span>
+        <span class="s2">&quot;/path/to/file.mp4&quot;</span><span class="p">,</span>
+        <span class="n">allowed_extensions</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;.mp4&#39;</span><span class="p">,</span> <span class="s1">&#39;.avi&#39;</span><span class="p">],</span>
+        <span class="n">must_exist</span><span class="o">=</span><span class="kc">False</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Validate numeric ranges</span>
+    <span class="n">InputValidator</span><span class="o">.</span><span class="n">validate_numeric_range</span><span class="p">(</span>
+        <span class="n">value</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+        <span class="n">min_val</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">max_val</span><span class="o">=</span><span class="mi">120</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">&quot;fps&quot;</span>
+    <span class="p">)</span>
+
+    <span class="c1"># Validate FFmpeg encoder</span>
+    <span class="n">InputValidator</span><span class="o">.</span><span class="n">validate_ffmpeg_encoder</span><span class="p">(</span><span class="s2">&quot;Software x265&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Validate Sanchez arguments</span>
+    <span class="n">InputValidator</span><span class="o">.</span><span class="n">validate_sanchez_argument</span><span class="p">(</span><span class="s2">&quot;res_km&quot;</span><span class="p">,</span> <span class="s2">&quot;4&quot;</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;All validations passed&quot;</span><span class="p">)</span>
+
+<span class="k">except</span> <span class="n">SecurityError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Security validation failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="securefilehandler">
+<h3>SecureFileHandler<a class="headerlink" href="#securefilehandler" title="Link to this heading"></a></h3>
+<p>Secure file operations:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecureFileHandler</span>
+
+<span class="c1"># Create secure temporary file</span>
+<span class="n">temp_file</span> <span class="o">=</span> <span class="n">SecureFileHandler</span><span class="o">.</span><span class="n">create_secure_temp_file</span><span class="p">(</span>
+    <span class="n">suffix</span><span class="o">=</span><span class="s1">&#39;.tmp&#39;</span><span class="p">,</span>
+    <span class="n">prefix</span><span class="o">=</span><span class="s1">&#39;goesvfi_&#39;</span>
+<span class="p">)</span>
+
+<span class="c1"># Create secure config directory</span>
+<span class="n">config_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">()</span> <span class="o">/</span> <span class="s1">&#39;.config&#39;</span> <span class="o">/</span> <span class="s1">&#39;goesvfi&#39;</span>
+<span class="n">SecureFileHandler</span><span class="o">.</span><span class="n">create_secure_config_dir</span><span class="p">(</span><span class="n">config_dir</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Security Functions:</strong></p>
+<p>Secure subprocess execution:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">secure_subprocess_call</span><span class="p">,</span> <span class="n">SecurityError</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">secure_subprocess_call</span><span class="p">([</span>
+        <span class="s1">&#39;ffmpeg&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;-i&#39;</span><span class="p">,</span> <span class="s1">&#39;input.mp4&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;-c:v&#39;</span><span class="p">,</span> <span class="s1">&#39;libx264&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;output.mp4&#39;</span>
+    <span class="p">],</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Command output: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="k">except</span> <span class="n">SecurityError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Security validation failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="memory-management">
+<h2>Memory Management<a class="headerlink" href="#memory-management" title="Link to this heading"></a></h2>
+<p>Provides memory optimization and monitoring utilities.</p>
+<p><strong>Core Classes:</strong></p>
+<section id="memoryoptimizer">
+<h3>MemoryOptimizer<a class="headerlink" href="#memoryoptimizer" title="Link to this heading"></a></h3>
+<p>Automatic memory optimization:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.memory_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryOptimizer</span>
+
+<span class="c1"># Create optimizer with target memory usage</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">MemoryOptimizer</span><span class="p">(</span><span class="n">target_memory_mb</span><span class="o">=</span><span class="mi">1024</span><span class="p">)</span>
+
+<span class="c1"># Process data with automatic optimization</span>
+<span class="k">for</span> <span class="n">data_chunk</span> <span class="ow">in</span> <span class="n">large_dataset</span><span class="p">:</span>
+    <span class="c1"># Memory usage is automatically monitored and optimized</span>
+    <span class="n">processed</span> <span class="o">=</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">process_with_optimization</span><span class="p">(</span><span class="n">data_chunk</span><span class="p">)</span>
+    <span class="k">yield</span> <span class="n">processed</span>
+
+<span class="c1"># Process a large array in small pieces</span>
+<span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">optimizer</span><span class="o">.</span><span class="n">optimize_array_chunks</span><span class="p">(</span><span class="n">large_array</span><span class="p">,</span> <span class="n">max_chunk_mb</span><span class="o">=</span><span class="mi">64</span><span class="p">):</span>
+    <span class="n">heavy_compute</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Monitoring Functions:</strong></p>
+<p>Example usage:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.memory_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_memory_monitor</span><span class="p">,</span> <span class="n">log_memory_usage</span>
+
+<span class="c1"># Get memory monitor</span>
+<span class="n">monitor</span> <span class="o">=</span> <span class="n">get_memory_monitor</span><span class="p">()</span>
+<span class="n">monitor</span><span class="o">.</span><span class="n">start_monitoring</span><span class="p">()</span>
+
+<span class="c1"># Log current memory usage</span>
+<span class="n">log_memory_usage</span><span class="p">(</span><span class="s2">&quot;Before processing&quot;</span><span class="p">)</span>
+
+<span class="c1"># Your processing code</span>
+<span class="n">process_data</span><span class="p">()</span>
+
+<span class="n">log_memory_usage</span><span class="p">(</span><span class="s2">&quot;After processing&quot;</span><span class="p">)</span>
+<span class="n">monitor</span><span class="o">.</span><span class="n">stop_monitoring</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="gui-helpers">
+<h2>GUI Helpers<a class="headerlink" href="#gui-helpers" title="Link to this heading"></a></h2>
+<p>Common GUI components and utilities.</p>
+<p><strong>Key Classes:</strong></p>
+<section id="clickablelabel">
+<h3>ClickableLabel<a class="headerlink" href="#clickablelabel" title="Link to this heading"></a></h3>
+<p>Enhanced QLabel with click handling:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.gui_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClickableLabel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PyQt6.QtWidgets</span><span class="w"> </span><span class="kn">import</span> <span class="n">QVBoxLayout</span><span class="p">,</span> <span class="n">QWidget</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">MyWidget</span><span class="p">(</span><span class="n">QWidget</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="n">layout</span> <span class="o">=</span> <span class="n">QVBoxLayout</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="c1"># Create clickable label</span>
+        <span class="n">label</span> <span class="o">=</span> <span class="n">ClickableLabel</span><span class="p">(</span><span class="s2">&quot;Click me!&quot;</span><span class="p">)</span>
+        <span class="n">label</span><span class="o">.</span><span class="n">clicked</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">on_label_clicked</span><span class="p">)</span>
+        <span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">label</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_label_clicked</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Label was clicked!&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="cropselectiondialog">
+<h3>CropSelectionDialog<a class="headerlink" href="#cropselectiondialog" title="Link to this heading"></a></h3>
+<p>Dialog for selecting crop rectangles:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.gui_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">CropSelectionDialog</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PyQt6.QtCore</span><span class="w"> </span><span class="kn">import</span> <span class="n">QRect</span>
+
+<span class="c1"># Show crop selection dialog</span>
+<span class="n">dialog</span> <span class="o">=</span> <span class="n">CropSelectionDialog</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+<span class="n">dialog</span><span class="o">.</span><span class="n">set_image</span><span class="p">(</span><span class="n">image_pixmap</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">dialog</span><span class="o">.</span><span class="n">exec</span><span class="p">()</span> <span class="o">==</span> <span class="n">QDialog</span><span class="o">.</span><span class="n">DialogCode</span><span class="o">.</span><span class="n">Accepted</span><span class="p">:</span>
+    <span class="n">crop_rect</span> <span class="o">=</span> <span class="n">dialog</span><span class="o">.</span><span class="n">get_crop_rect</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Selected crop: </span><span class="si">{</span><span class="n">crop_rect</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="imageviewerdialog">
+<h3>ImageViewerDialog<a class="headerlink" href="#imageviewerdialog" title="Link to this heading"></a></h3>
+<p>Full-screen image viewer:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.gui_helpers</span><span class="w"> </span><span class="kn">import</span> <span class="n">ImageViewerDialog</span>
+
+<span class="c1"># Show image in viewer</span>
+<span class="n">viewer</span> <span class="o">=</span> <span class="n">ImageViewerDialog</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+<span class="n">viewer</span><span class="o">.</span><span class="n">set_image</span><span class="p">(</span><span class="n">image_pixmap</span><span class="p">)</span>
+<span class="n">viewer</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="date-and-time-utilities">
+<h2>Date and Time Utilities<a class="headerlink" href="#date-and-time-utilities" title="Link to this heading"></a></h2>
+<p>Utilities for handling dates and times in satellite data.</p>
+<p><strong>Key Functions:</strong></p>
+<p>Example usage:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.date_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_goes_timestamp</span><span class="p">,</span> <span class="n">get_date_range</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="c1"># Parse GOES timestamp</span>
+<span class="n">timestamp</span> <span class="o">=</span> <span class="n">parse_goes_timestamp</span><span class="p">(</span><span class="s2">&quot;OR_ABI-L1b-RadF-M6C01_G16_s20230661200000&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Image timestamp: </span><span class="si">{</span><span class="n">timestamp</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Get date range for scanning</span>
+<span class="n">start_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">end_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">date_range</span> <span class="o">=</span> <span class="n">get_date_range</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">end_date</span><span class="p">,</span> <span class="n">hours</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="rife-analyzer">
+<h2>RIFE Analyzer<a class="headerlink" href="#rife-analyzer" title="Link to this heading"></a></h2>
+<p>Utilities for analyzing and configuring RIFE models.</p>
+<p><strong>Key Classes:</strong></p>
+<section id="rifecapabilitydetector">
+<h3>RifeCapabilityDetector<a class="headerlink" href="#rifecapabilitydetector" title="Link to this heading"></a></h3>
+<p>Detect RIFE capabilities:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.rife_analyzer</span><span class="w"> </span><span class="kn">import</span> <span class="n">RifeCapabilityDetector</span>
+
+<span class="n">detector</span> <span class="o">=</span> <span class="n">RifeCapabilityDetector</span><span class="p">()</span>
+
+<span class="c1"># Analyze RIFE executable</span>
+<span class="n">capabilities</span> <span class="o">=</span> <span class="n">detector</span><span class="o">.</span><span class="n">analyze_executable</span><span class="p">(</span><span class="s2">&quot;/path/to/rife&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Supports UHD: </span><span class="si">{</span><span class="n">capabilities</span><span class="o">.</span><span class="n">supports_uhd</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Supports TTA: </span><span class="si">{</span><span class="n">capabilities</span><span class="o">.</span><span class="n">supports_tta</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Available models: </span><span class="si">{</span><span class="n">capabilities</span><span class="o">.</span><span class="n">available_models</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Analysis Functions:</strong></p>
+</section>
+</section>
+<section id="ui-security-indicators">
+<h2>UI Security Indicators<a class="headerlink" href="#ui-security-indicators" title="Link to this heading"></a></h2>
+<p>UI components for showing security validation status.</p>
+<p><strong>Key Classes:</strong></p>
+<section id="securitystatusindicator">
+<h3>SecurityStatusIndicator<a class="headerlink" href="#securitystatusindicator" title="Link to this heading"></a></h3>
+<p>Visual security status indicator:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.ui_security_indicators</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityStatusIndicator</span>
+
+<span class="c1"># Create status indicator</span>
+<span class="n">indicator</span> <span class="o">=</span> <span class="n">SecurityStatusIndicator</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+
+<span class="c1"># Set different statuses</span>
+<span class="n">indicator</span><span class="o">.</span><span class="n">set_status</span><span class="p">(</span><span class="s2">&quot;safe&quot;</span><span class="p">,</span> <span class="s2">&quot;Input validated successfully&quot;</span><span class="p">)</span>
+<span class="n">indicator</span><span class="o">.</span><span class="n">set_status</span><span class="p">(</span><span class="s2">&quot;warning&quot;</span><span class="p">,</span> <span class="s2">&quot;Input has minor issues&quot;</span><span class="p">)</span>
+<span class="n">indicator</span><span class="o">.</span><span class="n">set_status</span><span class="p">(</span><span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="s2">&quot;Input failed validation&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="secureinputwidget">
+<h3>SecureInputWidget<a class="headerlink" href="#secureinputwidget" title="Link to this heading"></a></h3>
+<p>Input widget with integrated security status:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.ui_security_indicators</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_security_enhanced_input</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PyQt6.QtWidgets</span><span class="w"> </span><span class="kn">import</span> <span class="n">QLineEdit</span><span class="p">,</span> <span class="n">QHBoxLayout</span>
+
+<span class="c1"># Create secure input widget</span>
+<span class="n">line_edit</span> <span class="o">=</span> <span class="n">QLineEdit</span><span class="p">()</span>
+<span class="n">secure_widget</span> <span class="o">=</span> <span class="n">create_security_enhanced_input</span><span class="p">(</span><span class="n">line_edit</span><span class="p">)</span>
+
+<span class="c1"># Add to layout</span>
+<span class="n">layout</span> <span class="o">=</span> <span class="n">QHBoxLayout</span><span class="p">()</span>
+<span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">secure_widget</span><span class="o">.</span><span class="n">get_input_widget</span><span class="p">())</span>
+<span class="n">layout</span><span class="o">.</span><span class="n">addWidget</span><span class="p">(</span><span class="n">secure_widget</span><span class="o">.</span><span class="n">get_security_indicator</span><span class="p">())</span>
+</pre></div>
+</div>
+<p><strong>Utility Functions:</strong></p>
+</section>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<p>All utility modules use consistent error handling:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">SecurityError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.resource_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResourceLimitExceeded</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigurationError</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># Utility operations</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">some_utility_function</span><span class="p">()</span>
+<span class="k">except</span> <span class="n">SecurityError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Security validation failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">ResourceLimitExceeded</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resource limit exceeded: </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">ConfigurationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Configuration issue: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unexpected error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading"></a></h2>
+<p>The utilities are designed for performance:</p>
+<ul class="simple">
+<li><p><strong>Lazy Loading</strong>: Modules are loaded only when needed</p></li>
+<li><p><strong>Caching</strong>: Configuration and resource information is cached</p></li>
+<li><p><strong>Efficient Monitoring</strong>: Resource monitoring uses minimal overhead</p></li>
+<li><p><strong>Async Operations</strong>: I/O operations use async when possible</p></li>
+</ul>
+<p><strong>Best Practices:</strong></p>
+<ul class="simple">
+<li><p>Reuse utility instances where possible</p></li>
+<li><p>Cache expensive operations (file system access, network calls)</p></li>
+<li><p>Use appropriate logging levels to avoid performance impact</p></li>
+<li><p>Monitor resource usage in production environments</p></li>
+</ul>
+</section>
+<section id="thread-safety">
+<h2>Thread Safety<a class="headerlink" href="#thread-safety" title="Link to this heading"></a></h2>
+<p>All utility modules are designed to be thread-safe:</p>
+<ul class="simple">
+<li><p><strong>Configuration</strong>: Read-only after initialization</p></li>
+<li><p><strong>Logging</strong>: Thread-safe loggers with proper synchronization</p></li>
+<li><p><strong>Resource Monitoring</strong>: Uses thread-safe data structures</p></li>
+<li><p><strong>Security Validation</strong>: Stateless functions safe for concurrent use</p></li>
+</ul>
+<p><strong>Thread-Safe Usage:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">threading</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span><span class="p">,</span> <span class="n">config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.security</span><span class="w"> </span><span class="kn">import</span> <span class="n">InputValidator</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">worker_function</span><span class="p">(</span><span class="n">worker_id</span><span class="p">):</span>
+    <span class="c1"># Each thread gets its own logger instance</span>
+    <span class="n">logger</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;worker_</span><span class="si">{</span><span class="n">worker_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Configuration access is thread-safe</span>
+    <span class="n">output_dir</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_output_dir</span><span class="p">()</span>
+
+    <span class="c1"># Security validation is stateless and thread-safe</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">InputValidator</span><span class="o">.</span><span class="n">validate_file_path</span><span class="p">(</span><span class="n">some_path</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">SecurityError</span><span class="p">:</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Validation failed&quot;</span><span class="p">)</span>
+
+<span class="c1"># Start multiple worker threads</span>
+<span class="n">threads</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">4</span><span class="p">):</span>
+    <span class="n">thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">worker_function</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">i</span><span class="p">,))</span>
+    <span class="n">threads</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">thread</span><span class="p">)</span>
+    <span class="n">thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+<span class="c1"># Wait for completion</span>
+<span class="k">for</span> <span class="n">thread</span> <span class="ow">in</span> <span class="n">threads</span><span class="p">:</span>
+    <span class="n">thread</span><span class="o">.</span><span class="n">join</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="testing-utilities">
+<h2>Testing Utilities<a class="headerlink" href="#testing-utilities" title="Link to this heading"></a></h2>
+<p>The utils module includes testing helpers:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.testing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">create_test_config</span><span class="p">,</span>
+    <span class="n">mock_resource_monitor</span><span class="p">,</span>
+    <span class="n">create_test_images</span>
+<span class="p">)</span>
+
+<span class="c1"># Create test configuration</span>
+<span class="n">test_config</span> <span class="o">=</span> <span class="n">create_test_config</span><span class="p">(</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;/tmp/test_output&quot;</span><span class="p">,</span>
+    <span class="n">cache_dir</span><span class="o">=</span><span class="s2">&quot;/tmp/test_cache&quot;</span>
+<span class="p">)</span>
+
+<span class="c1"># Mock resource monitor for testing</span>
+<span class="k">with</span> <span class="n">mock_resource_monitor</span><span class="p">()</span> <span class="k">as</span> <span class="n">monitor</span><span class="p">:</span>
+    <span class="c1"># Test code that uses resource monitoring</span>
+    <span class="k">pass</span>
+
+<span class="c1"># Create test images</span>
+<span class="n">test_images</span> <span class="o">=</span> <span class="n">create_test_images</span><span class="p">(</span>
+    <span class="n">count</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">640</span><span class="p">,</span> <span class="mi">480</span><span class="p">),</span>
+    <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;png&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>See the individual module documentation for more detailed information on specific utilities.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pipeline.html" class="btn btn-neutral float-left" title="Pipeline API" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="exceptions.html" class="btn btn-neutral float-right" title="Exceptions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

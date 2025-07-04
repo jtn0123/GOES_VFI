@@ -1,0 +1,472 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quick Start Guide &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Reference" href="api/index.html" />
+    <link rel="prev" title="Installation Guide" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Quick Start Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#first-run">First Run</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#basic-workflow">Basic Workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#example-processing-satellite-data">Example: Processing Satellite Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#command-line-usage">Command Line Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#common-issues-and-solutions">Common Issues and Solutions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Quick Start Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/quickstart.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="quick-start-guide">
+<h1>Quick Start Guide<a class="headerlink" href="#quick-start-guide" title="Link to this heading"></a></h1>
+<p>This guide will help you get up and running with GOES_VFI quickly.</p>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<p>Before starting, ensure you have:</p>
+<ul class="simple">
+<li><p>Python 3.13 or higher installed</p></li>
+<li><p>At least 4GB of available RAM</p></li>
+<li><p>1GB of free disk space</p></li>
+<li><p>Internet connection for downloading satellite data</p></li>
+</ul>
+</section>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<ol class="arabic">
+<li><p><strong>Clone the repository:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/username/GOES_VFI.git
+<span class="nb">cd</span><span class="w"> </span>GOES_VFI
+</pre></div>
+</div>
+</li>
+<li><p><strong>Create a virtual environment:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate<span class="w">  </span><span class="c1"># On Windows: .venv\Scripts\activate</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Install dependencies:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</pre></div>
+</div>
+</li>
+<li><p><strong>Verify installation:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import goesvfi; print(&#39;GOES_VFI installed successfully!&#39;)&quot;</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="first-run">
+<h2>First Run<a class="headerlink" href="#first-run" title="Link to this heading"></a></h2>
+<p><strong>Launch the GUI:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>goesvfi.gui
+</pre></div>
+</div>
+<p>This will open the GOES_VFI main window with several tabs:</p>
+<ul class="simple">
+<li><p><strong>Main</strong>: Core processing controls</p></li>
+<li><p><strong>FFmpeg Settings</strong>: Video encoding configuration</p></li>
+<li><p><strong>Resource Limits</strong>: System resource management</p></li>
+<li><p><strong>Model Library</strong>: RIFE model management</p></li>
+<li><p><strong>Satellite Integrity</strong>: Data validation tools</p></li>
+</ul>
+</section>
+<section id="basic-workflow">
+<h2>Basic Workflow<a class="headerlink" href="#basic-workflow" title="Link to this heading"></a></h2>
+<ol class="arabic">
+<li><p><strong>Select Input Directory</strong></p>
+<p>Click “Browse” next to “Input Directory” and select a folder containing your image sequence.</p>
+</li>
+<li><p><strong>Choose Output File</strong></p>
+<p>Click “Browse” next to “Output File” and specify where to save the resulting video.</p>
+</li>
+<li><p><strong>Configure Settings</strong></p>
+<ul class="simple">
+<li><p><strong>FPS</strong>: Set the output video frame rate (typically 30)</p></li>
+<li><p><strong>Multiplier</strong>: Number of intermediate frames to generate (2-4 recommended)</p></li>
+<li><p><strong>Encoder</strong>: Choose processing method:
+- <strong>RIFE</strong>: AI-powered interpolation (best quality)
+- <strong>FFmpeg</strong>: Traditional motion interpolation
+- <strong>Sanchez</strong>: False-color satellite processing</p></li>
+</ul>
+</li>
+<li><p><strong>Set Resource Limits</strong> (Optional)</p>
+<p>Switch to the “Resource Limits” tab to configure:
+- Memory usage limits
+- Processing time limits
+- CPU usage constraints</p>
+</li>
+<li><p><strong>Start Processing</strong></p>
+<p>Click “Start” in the Main tab. Progress will be shown in the status bar.</p>
+</li>
+</ol>
+</section>
+<section id="example-processing-satellite-data">
+<h2>Example: Processing Satellite Data<a class="headerlink" href="#example-processing-satellite-data" title="Link to this heading"></a></h2>
+<p>Here’s a complete example of processing GOES satellite imagery:</p>
+<p><strong>Step 1: Download Sample Data</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.integrity_check.remote.s3_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">S3Store</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">download_sample_data</span><span class="p">():</span>
+    <span class="n">store</span> <span class="o">=</span> <span class="n">S3Store</span><span class="p">()</span>
+
+    <span class="c1"># Download a few recent images</span>
+    <span class="n">date</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2024</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># Noon UTC</span>
+
+    <span class="k">for</span> <span class="n">hour</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>  <span class="c1"># 3 hours of data</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;ABI-L1b-RadF/2024/001/</span><span class="si">{</span><span class="n">hour</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">/OR_ABI-L1b-RadF-M6C13_G16_s20240011</span><span class="si">{</span><span class="n">hour</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">00000_e20240011</span><span class="si">{</span><span class="n">hour</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">59999_c20240011</span><span class="si">{</span><span class="n">hour</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">59999.nc&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">fetch_data</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;sample_</span><span class="si">{</span><span class="n">hour</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">.nc&quot;</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Downloaded </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to download </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Run the download</span>
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">download_sample_data</span><span class="p">())</span>
+</pre></div>
+</div>
+<p><strong>Step 2: Convert to Images</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.integrity_check.render.netcdf</span><span class="w"> </span><span class="kn">import</span> <span class="n">NetCDFRenderer</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">xr</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="c1"># Convert NetCDF files to PNG images</span>
+<span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;satellite_images&quot;</span><span class="p">)</span>
+<span class="n">output_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="n">renderer</span> <span class="o">=</span> <span class="n">NetCDFRenderer</span><span class="p">()</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">nc_file</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;sample_*.nc&quot;</span><span class="p">)):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Load NetCDF data</span>
+        <span class="n">dataset</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">open_dataset</span><span class="p">(</span><span class="n">nc_file</span><span class="p">)</span>
+
+        <span class="c1"># Render to image</span>
+        <span class="n">image_path</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;frame_</span><span class="si">{</span><span class="n">i</span><span class="si">:</span><span class="s2">03d</span><span class="si">}</span><span class="s2">.png&quot;</span>
+        <span class="n">renderer</span><span class="o">.</span><span class="n">render_to_file</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">image_path</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Converted </span><span class="si">{</span><span class="n">nc_file</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="n">image_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">dataset</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error converting </span><span class="si">{</span><span class="n">nc_file</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Step 3: Process with GOES_VFI</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.pipeline.run_vfi</span><span class="w"> </span><span class="kn">import</span> <span class="n">VfiWorker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.resource_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResourceLimits</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="c1"># Configure processing</span>
+<span class="n">input_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;satellite_images&quot;</span><span class="p">)</span>
+<span class="n">output_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;satellite_animation.mp4&quot;</span><span class="p">)</span>
+
+<span class="c1"># Set conservative resource limits</span>
+<span class="n">limits</span> <span class="o">=</span> <span class="n">ResourceLimits</span><span class="p">(</span>
+    <span class="n">max_memory_mb</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span>
+    <span class="n">max_processing_time_sec</span><span class="o">=</span><span class="mi">600</span><span class="p">,</span>
+    <span class="n">max_cpu_percent</span><span class="o">=</span><span class="mf">70.0</span>
+<span class="p">)</span>
+
+<span class="c1"># Create worker</span>
+<span class="n">worker</span> <span class="o">=</span> <span class="n">VfiWorker</span><span class="p">(</span>
+    <span class="n">in_dir</span><span class="o">=</span><span class="n">input_dir</span><span class="p">,</span>
+    <span class="n">out_file_path</span><span class="o">=</span><span class="n">output_file</span><span class="p">,</span>
+    <span class="n">fps</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>  <span class="c1"># 15 FPS for smooth animation</span>
+    <span class="n">mid_count</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>  <span class="c1"># Generate 3 intermediate frames</span>
+    <span class="n">encoder</span><span class="o">=</span><span class="s2">&quot;RIFE&quot;</span><span class="p">,</span>  <span class="c1"># Use AI interpolation</span>
+    <span class="n">resource_limits</span><span class="o">=</span><span class="n">limits</span><span class="p">,</span>
+
+    <span class="c1"># Additional parameters</span>
+    <span class="n">debug_mode</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">false_colour</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Enable false color for satellite data</span>
+    <span class="n">res_km</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>  <span class="c1"># 4km resolution</span>
+    <span class="n">crop_rect</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># No cropping</span>
+<span class="p">)</span>
+
+<span class="c1"># Connect progress callback</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">on_progress</span><span class="p">(</span><span class="n">current</span><span class="p">,</span> <span class="n">total</span><span class="p">,</span> <span class="n">eta</span><span class="p">):</span>
+    <span class="n">percent</span> <span class="o">=</span> <span class="nb">int</span><span class="p">((</span><span class="n">current</span> <span class="o">/</span> <span class="n">total</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Progress: </span><span class="si">{</span><span class="n">percent</span><span class="si">}</span><span class="s2">% (</span><span class="si">{</span><span class="n">current</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">total</span><span class="si">}</span><span class="s2">) ETA: </span><span class="si">{</span><span class="n">eta</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">on_finished</span><span class="p">(</span><span class="n">output_path</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing complete! Output: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">on_error</span><span class="p">(</span><span class="n">error_message</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error: </span><span class="si">{</span><span class="n">error_message</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">worker</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">on_progress</span><span class="p">)</span>
+<span class="n">worker</span><span class="o">.</span><span class="n">finished</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">on_finished</span><span class="p">)</span>
+<span class="n">worker</span><span class="o">.</span><span class="n">error</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">on_error</span><span class="p">)</span>
+
+<span class="c1"># Start processing</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Starting video processing...&quot;</span><span class="p">)</span>
+<span class="n">worker</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+<span class="c1"># Wait for completion (in a real GUI app, this would be handled by signals)</span>
+<span class="n">worker</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="command-line-usage">
+<h2>Command Line Usage<a class="headerlink" href="#command-line-usage" title="Link to this heading"></a></h2>
+<p>GOES_VFI can also be used from the command line:</p>
+<p><strong>Basic command:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>goesvfi.cli<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--input<span class="w"> </span>./satellite_images/<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span>./animation.mp4<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--fps<span class="w"> </span><span class="m">30</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--encoder<span class="w"> </span>RIFE<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--memory-limit<span class="w"> </span><span class="m">2048</span>
+</pre></div>
+</div>
+<p><strong>With advanced options:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>goesvfi.cli<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--input<span class="w"> </span>./images/<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span>./output.mp4<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--fps<span class="w"> </span><span class="m">30</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--multiplier<span class="w"> </span><span class="m">4</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--encoder<span class="w"> </span>FFmpeg<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--preset<span class="w"> </span>optimal<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--memory-limit<span class="w"> </span><span class="m">4096</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--time-limit<span class="w"> </span><span class="m">1800</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--debug
+</pre></div>
+</div>
+<p><strong>Batch processing:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Process multiple directories</span>
+<span class="k">for</span><span class="w"> </span>dir<span class="w"> </span><span class="k">in</span><span class="w"> </span>satellite_data_*/<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span>python<span class="w"> </span>-m<span class="w"> </span>goesvfi.cli<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--input<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$dir</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--output<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">dir</span><span class="p">%/</span><span class="si">}</span><span class="s2">.mp4&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--fps<span class="w"> </span><span class="m">15</span><span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--encoder<span class="w"> </span>Sanchez<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--false-colour
+<span class="k">done</span>
+</pre></div>
+</div>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h2>
+<p><strong>Create a configuration file</strong> at <code class="docutils literal notranslate"><span class="pre">~/.config/goesvfi/config.toml</span></code>:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[paths]</span>
+<span class="n">output_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;~/Videos/GOES_VFI&quot;</span>
+<span class="n">cache_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;~/Cache/GOES_VFI&quot;</span>
+
+<span class="k">[pipeline]</span>
+<span class="n">default_tile_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2048</span>
+<span class="n">supported_extensions</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;.png&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;.jpg&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;.jpeg&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;.nc&quot;</span><span class="p">]</span>
+
+<span class="k">[resource_limits]</span>
+<span class="n">default_memory_mb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2048</span>
+<span class="n">default_time_limit_sec</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1800</span>
+<span class="n">default_cpu_percent</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">80.0</span>
+
+<span class="k">[sanchez]</span>
+<span class="n">bin_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;./sanchez/bin&quot;</span>
+<span class="n">default_res_km</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span>
+
+<span class="k">[rife]</span>
+<span class="n">models_dir</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;./models&quot;</span>
+<span class="n">default_model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;rife-v4.6&quot;</span>
+
+<span class="k">[logging]</span>
+<span class="n">level</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;INFO&quot;</span>
+<span class="n">file_logging</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+</pre></div>
+</div>
+<p><strong>Load configuration in Python:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+
+<span class="c1"># Get configured paths</span>
+<span class="n">output_dir</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_output_dir</span><span class="p">()</span>
+<span class="n">cache_dir</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_cache_dir</span><span class="p">()</span>
+
+<span class="c1"># Get available models</span>
+<span class="n">models</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_available_rife_models</span><span class="p">()</span>
+
+<span class="c1"># Get FFmpeg profiles</span>
+<span class="n">profiles</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">FFMPEG_PROFILES</span>
+<span class="n">optimal_settings</span> <span class="o">=</span> <span class="n">profiles</span><span class="p">[</span><span class="s2">&quot;Optimal&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="common-issues-and-solutions">
+<h2>Common Issues and Solutions<a class="headerlink" href="#common-issues-and-solutions" title="Link to this heading"></a></h2>
+<p><strong>“No module named ‘PyQt6’” Error</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>PyQt6
+</pre></div>
+</div>
+<p><strong>“FFmpeg not found” Error</strong></p>
+<p>Install FFmpeg:</p>
+<ul class="simple">
+<li><p><strong>Windows</strong>: Download from <a class="reference external" href="https://ffmpeg.org/download.html">https://ffmpeg.org/download.html</a></p></li>
+<li><p><strong>macOS</strong>: <code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">ffmpeg</span></code></p></li>
+<li><p><strong>Ubuntu</strong>: <code class="docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">apt</span> <span class="pre">install</span> <span class="pre">ffmpeg</span></code></p></li>
+</ul>
+<p><strong>Memory Errors</strong></p>
+<p>Reduce memory usage:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use smaller tile sizes</span>
+<span class="n">config</span><span class="o">.</span><span class="n">default_tile_size</span> <span class="o">=</span> <span class="mi">1024</span>
+
+<span class="c1"># Set memory limits</span>
+<span class="n">limits</span> <span class="o">=</span> <span class="n">ResourceLimits</span><span class="p">(</span><span class="n">max_memory_mb</span><span class="o">=</span><span class="mi">512</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Slow Processing</strong></p>
+<p>Optimize settings:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use more CPU cores</span>
+<span class="n">worker</span> <span class="o">=</span> <span class="n">VfiWorker</span><span class="p">(</span>
+    <span class="n">max_workers</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">cpu_count</span><span class="p">(),</span>
+    <span class="c1"># ... other settings</span>
+<span class="p">)</span>
+
+<span class="c1"># Use hardware acceleration if available</span>
+<span class="n">ffmpeg_settings</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;encoder&#39;</span><span class="p">:</span> <span class="s1">&#39;Hardware HEVC (VideoToolbox)&#39;</span><span class="p">,</span>  <span class="c1"># macOS</span>
+    <span class="c1"># or &#39;encoder&#39;: &#39;Hardware H.264 (NVENC)&#39;,  # NVIDIA GPU</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>File Permission Errors</strong></p>
+<p>Ensure proper permissions:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>chmod<span class="w"> </span>+x<span class="w"> </span>goesvfi/bin/*
+chmod<span class="w"> </span><span class="m">755</span><span class="w"> </span>output_directory/
+</pre></div>
+</div>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<p>Now that you have GOES_VFI running:</p>
+<ol class="arabic simple">
+<li><p><strong>Explore the GUI</strong>: Try different encoders and settings</p></li>
+<li><p><strong>Read the tutorials</strong>: Check out <span class="xref std std-doc">tutorials/index</span> for detailed workflows</p></li>
+<li><p><strong>Join the community</strong>: Visit our GitHub discussions for tips and support</p></li>
+<li><p><strong>Customize settings</strong>: Explore the <span class="xref std std-doc">user_guide/index</span> for advanced configuration</p></li>
+</ol>
+<p>For more detailed information, see:</p>
+<ul class="simple">
+<li><p><span class="xref std std-doc">user_guide/index</span> - Comprehensive user guide</p></li>
+<li><p><span class="xref std std-doc">tutorials/index</span> - Step-by-step tutorials</p></li>
+<li><p><a class="reference internal" href="api/index.html"><span class="doc">API Reference</span></a> - API reference for developers</p></li>
+<li><p><span class="xref std std-doc">development/index</span> - Contributing and development guide</p></li>
+</ul>
+<p><strong>Need help?</strong> Check our <a class="reference external" href="https://github.com/username/GOES_VFI/issues">GitHub Issues</a> or start a discussion!</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation.html" class="btn btn-neutral float-left" title="Installation Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api/index.html" class="btn btn-neutral float-right" title="API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

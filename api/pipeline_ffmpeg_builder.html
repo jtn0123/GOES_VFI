@@ -1,0 +1,420 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ffmpeg Builder &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="View Model" href="integrity_check_view_model.html" />
+    <link rel="prev" title="Run Vfi" href="pipeline_run_vfi.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quick Start Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="gui.html">Gui</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html">Pipeline API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">Utilities API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_main_tab.html">Main Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_ffmpeg_settings_tab.html">Ffmpeg Settings Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_resource_limits_tab.html">Resource Limits Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_model_library_tab.html">Model Library Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_operation_history_tab.html">Operation History Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_image_loader.html">Image Loader</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_image_cropper.html">Image Cropper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_sanchez_processor.html">Sanchez Processor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_encode.html">Encode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_interpolate.html">Interpolate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_run_vfi.html">Run Vfi</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Ffmpeg Builder</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder"><code class="docutils literal notranslate"><span class="pre">FFmpegCommandBuilder</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.__init__"><code class="docutils literal notranslate"><span class="pre">FFmpegCommandBuilder.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_input"><code class="docutils literal notranslate"><span class="pre">FFmpegCommandBuilder.set_input()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_output"><code class="docutils literal notranslate"><span class="pre">FFmpegCommandBuilder.set_output()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_encoder"><code class="docutils literal notranslate"><span class="pre">FFmpegCommandBuilder.set_encoder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_crf"><code class="docutils literal notranslate"><span class="pre">FFmpegCommandBuilder.set_crf()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_bitrate"><code class="docutils literal notranslate"><span class="pre">FFmpegCommandBuilder.set_bitrate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_bufsize"><code class="docutils literal notranslate"><span class="pre">FFmpegCommandBuilder.set_bufsize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_pix_fmt"><code class="docutils literal notranslate"><span class="pre">FFmpegCommandBuilder.set_pix_fmt()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_preset"><code class="docutils literal notranslate"><span class="pre">FFmpegCommandBuilder.set_preset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_tune"><code class="docutils literal notranslate"><span class="pre">FFmpegCommandBuilder.set_tune()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_profile"><code class="docutils literal notranslate"><span class="pre">FFmpegCommandBuilder.set_profile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_two_pass"><code class="docutils literal notranslate"><span class="pre">FFmpegCommandBuilder.set_two_pass()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.build"><code class="docutils literal notranslate"><span class="pre">FFmpegCommandBuilder.build()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#processing-flow">Processing Flow</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_view_model.html">View Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_goes_imagery.html">Goes Imagery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_time_index.html">Time Index</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_cache_db.html">Cache Db</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_remote_store.html">Remote Store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html">Config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_log.html">Log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_date_utils.html">Date Utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_gui_helpers.html">Gui Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_memory_manager.html">Memory Manager</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_security.html">Security</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#core-components">Core Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#common-usage-patterns">Common Usage Patterns</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">API Reference</a></li>
+      <li class="breadcrumb-item active">Ffmpeg Builder</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/pipeline_ffmpeg_builder.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-goesvfi.pipeline.ffmpeg_builder">
+<span id="ffmpeg-builder"></span><h1>Ffmpeg Builder<a class="headerlink" href="#module-goesvfi.pipeline.ffmpeg_builder" title="Link to this heading"></a></h1>
+<p>ffmpeg_builder.py.</p>
+<p>Provides the FFmpegCommandBuilder class for constructing FFmpeg command-line
+arguments in a flexible and modular way, supporting various encoding options
+and hardware/software backends for the GOES_VFI pipeline.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">goesvfi.pipeline.ffmpeg_builder.</span></span><span class="sig-name descname"><span class="pre">FFmpegCommandBuilder</span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/ffmpeg_builder.html#FFmpegCommandBuilder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Builder for FFmpeg command-line arguments for video encoding.</p>
+<p>This class provides a fluent interface for specifying input/output files,
+encoder options, quality/bitrate settings, pixel format, and two-pass
+encoding parameters. It generates a command list suitable for subprocess
+execution.</p>
+<dl>
+<dt>Typical usage:</dt><dd><p>builder = FFmpegCommandBuilder()
+cmd = (</p>
+<blockquote>
+<div><p>builder.set_input(input_path)
+.set_output(output_path)
+.set_encoder(“Software x265”)
+.set_crf(20)
+.set_pix_fmt(“yuv420p10le”)
+.build()</p>
+</div></blockquote>
+<p>)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/ffmpeg_builder.html#FFmpegCommandBuilder.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initialize a new FFmpegCommandBuilder with default settings.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_input">
+<span class="sig-name descname"><span class="pre">set_input</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder"><span class="pre">FFmpegCommandBuilder</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/ffmpeg_builder.html#FFmpegCommandBuilder.set_input"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_input" title="Link to this definition"></a></dt>
+<dd><p>Set the input file path for the FFmpeg command.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><em>pathlib.Path</em></a>) – Path to the input video file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The builder instance (for chaining).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder">FFmpegCommandBuilder</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_output">
+<span class="sig-name descname"><span class="pre">set_output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder"><span class="pre">FFmpegCommandBuilder</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/ffmpeg_builder.html#FFmpegCommandBuilder.set_output"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_output" title="Link to this definition"></a></dt>
+<dd><p>Set the output file path for the FFmpeg command.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>output_path</strong> (<a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><em>pathlib.Path</em></a>) – Path to the output video file.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The builder instance (for chaining).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder">FFmpegCommandBuilder</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_encoder">
+<span class="sig-name descname"><span class="pre">set_encoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">encoder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder"><span class="pre">FFmpegCommandBuilder</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/ffmpeg_builder.html#FFmpegCommandBuilder.set_encoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_encoder" title="Link to this definition"></a></dt>
+<dd><p>Set the video encoder to use.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>encoder</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Encoder name (e.g., “Software x265”, “Hardware HEVC (VideoToolbox)”).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The builder instance (for chaining).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder">FFmpegCommandBuilder</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_crf">
+<span class="sig-name descname"><span class="pre">set_crf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">crf</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder"><span class="pre">FFmpegCommandBuilder</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/ffmpeg_builder.html#FFmpegCommandBuilder.set_crf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_crf" title="Link to this definition"></a></dt>
+<dd><p>Set the Constant Rate Factor (CRF) for quality-based encoding.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>crf</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – CRF value (lower is higher quality).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The builder instance (for chaining).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder">FFmpegCommandBuilder</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_bitrate">
+<span class="sig-name descname"><span class="pre">set_bitrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bitrate_kbps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder"><span class="pre">FFmpegCommandBuilder</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/ffmpeg_builder.html#FFmpegCommandBuilder.set_bitrate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_bitrate" title="Link to this definition"></a></dt>
+<dd><p>Set the target bitrate in kbps for bitrate-based encoding.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>bitrate_kbps</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Target bitrate in kilobits per second.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The builder instance (for chaining).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder">FFmpegCommandBuilder</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_bufsize">
+<span class="sig-name descname"><span class="pre">set_bufsize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bufsize_kb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder"><span class="pre">FFmpegCommandBuilder</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/ffmpeg_builder.html#FFmpegCommandBuilder.set_bufsize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_bufsize" title="Link to this definition"></a></dt>
+<dd><p>Set the buffer size in kb for bitrate-based encoding.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>bufsize_kb</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Buffer size in kilobytes.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The builder instance (for chaining).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder">FFmpegCommandBuilder</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_pix_fmt">
+<span class="sig-name descname"><span class="pre">set_pix_fmt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pix_fmt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder"><span class="pre">FFmpegCommandBuilder</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/ffmpeg_builder.html#FFmpegCommandBuilder.set_pix_fmt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_pix_fmt" title="Link to this definition"></a></dt>
+<dd><p>Set the pixel format for the output video.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pix_fmt</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Pixel format string (e.g., “yuv420p10le”).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The builder instance (for chaining).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder">FFmpegCommandBuilder</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_preset">
+<span class="sig-name descname"><span class="pre">set_preset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">preset</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder"><span class="pre">FFmpegCommandBuilder</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/ffmpeg_builder.html#FFmpegCommandBuilder.set_preset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_preset" title="Link to this definition"></a></dt>
+<dd><p>Set the encoding preset for the output video.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>preset</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Encoding preset (e.g., “slow”, “medium”, “fast”).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The builder instance (for chaining).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder">FFmpegCommandBuilder</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_tune">
+<span class="sig-name descname"><span class="pre">set_tune</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tune</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder"><span class="pre">FFmpegCommandBuilder</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/ffmpeg_builder.html#FFmpegCommandBuilder.set_tune"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_tune" title="Link to this definition"></a></dt>
+<dd><p>Set the encoding tune for the output video.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>tune</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Encoding tune (e.g., “animation”, “film”, “grain”).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The builder instance (for chaining).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder">FFmpegCommandBuilder</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_profile">
+<span class="sig-name descname"><span class="pre">set_profile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder"><span class="pre">FFmpegCommandBuilder</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/ffmpeg_builder.html#FFmpegCommandBuilder.set_profile"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_profile" title="Link to this definition"></a></dt>
+<dd><p>Set the encoding profile for the output video.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>profile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Encoding profile (e.g., “main”, “main10”, “high”).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The builder instance (for chaining).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder">FFmpegCommandBuilder</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_two_pass">
+<span class="sig-name descname"><span class="pre">set_two_pass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">is_two_pass</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">pass_log_prefix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">pass_number</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder"><span class="pre">FFmpegCommandBuilder</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/ffmpeg_builder.html#FFmpegCommandBuilder.set_two_pass"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_two_pass" title="Link to this definition"></a></dt>
+<dd><p>Configure two-pass encoding parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>is_two_pass</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><em>bool</em></a>) – Whether to use two-pass encoding.</p></li>
+<li><p><strong>pass_log_prefix</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a>) – Prefix for the two-pass log file.</p></li>
+<li><p><strong>pass_number</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><em>int</em></a>) – Pass number (1 or 2).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The builder instance (for chaining).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder" title="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder">FFmpegCommandBuilder</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.build">
+<span class="sig-name descname"><span class="pre">build</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/ffmpeg_builder.html#FFmpegCommandBuilder.build"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.build" title="Link to this definition"></a></dt>
+<dd><p>Build and return the FFmpeg command as a list of arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The FFmpeg command suitable for subprocess execution.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>List[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a>]</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.13)"><strong>ValueError</strong></a> – If required parameters are missing or invalid.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<section id="processing-flow">
+<h2>Processing Flow<a class="headerlink" href="#processing-flow" title="Link to this heading"></a></h2>
+<p>This module is part of the core processing pipeline for video frame interpolation.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="pipeline_run_vfi.html" class="btn btn-neutral float-left" title="Run Vfi" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="integrity_check_view_model.html" class="btn btn-neutral float-right" title="View Model" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

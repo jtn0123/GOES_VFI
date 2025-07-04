@@ -1,0 +1,759 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pipeline API &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Utilities API" href="utils.html" />
+    <link rel="prev" title="Gui" href="gui.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quick Start Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="gui.html">Gui</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Pipeline API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#core-components">Core Components</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#vfiworker">VfiWorker</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#image-processing-components">Image Processing Components</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#imageloader">ImageLoader</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#imagecropper">ImageCropper</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sanchezprocessor">SanchezProcessor</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-goesvfi.pipeline.image_processing_interfaces">Image Processing Interfaces</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.pipeline.image_processing_interfaces.ImageData"><code class="docutils literal notranslate"><span class="pre">ImageData</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.pipeline.image_processing_interfaces.ImageProcessor"><code class="docutils literal notranslate"><span class="pre">ImageProcessor</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#video-encoding">Video Encoding</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#ffmpegbuilder">FFmpegBuilder</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#utility-functions">Utility Functions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#processing-pipeline-flow">Processing Pipeline Flow</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#error-handling">Error Handling</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#performance-optimization">Performance Optimization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#configuration-options">Configuration Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#thread-safety">Thread Safety</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#testing-and-validation">Testing and Validation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">Utilities API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_main_tab.html">Main Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_ffmpeg_settings_tab.html">Ffmpeg Settings Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_resource_limits_tab.html">Resource Limits Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_model_library_tab.html">Model Library Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_operation_history_tab.html">Operation History Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_image_loader.html">Image Loader</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_image_cropper.html">Image Cropper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_sanchez_processor.html">Sanchez Processor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_encode.html">Encode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_interpolate.html">Interpolate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_run_vfi.html">Run Vfi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_ffmpeg_builder.html">Ffmpeg Builder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_view_model.html">View Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_goes_imagery.html">Goes Imagery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_time_index.html">Time Index</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_cache_db.html">Cache Db</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_remote_store.html">Remote Store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html">Config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_log.html">Log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_date_utils.html">Date Utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_gui_helpers.html">Gui Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_memory_manager.html">Memory Manager</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_security.html">Security</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#core-components">Core Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#common-usage-patterns">Common Usage Patterns</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">API Reference</a></li>
+      <li class="breadcrumb-item active">Pipeline API</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/pipeline.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pipeline-api">
+<h1>Pipeline API<a class="headerlink" href="#pipeline-api" title="Link to this heading"></a></h1>
+<p>The pipeline module contains the core processing components for video frame interpolation and image processing.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The pipeline architecture follows a modular design where each component has a specific responsibility:</p>
+<ul class="simple">
+<li><p><strong>Image Loading</strong>: Load and validate input images</p></li>
+<li><p><strong>Image Processing</strong>: Apply various transformations and effects</p></li>
+<li><p><strong>Frame Interpolation</strong>: Generate intermediate frames using AI or traditional methods</p></li>
+<li><p><strong>Video Encoding</strong>: Combine frames into output videos</p></li>
+<li><p><strong>Resource Management</strong>: Monitor and control resource usage</p></li>
+</ul>
+</section>
+<section id="core-components">
+<h2>Core Components<a class="headerlink" href="#core-components" title="Link to this heading"></a></h2>
+<section id="vfiworker">
+<h3>VfiWorker<a class="headerlink" href="#vfiworker" title="Link to this heading"></a></h3>
+<p>The main worker thread that orchestrates the entire video frame interpolation process.</p>
+<p><strong>Key Features:</strong></p>
+<ul class="simple">
+<li><p>Asynchronous processing with progress reporting</p></li>
+<li><p>Resource limit enforcement</p></li>
+<li><p>Multiple encoder support (RIFE, FFmpeg, Sanchez)</p></li>
+<li><p>Error handling and recovery</p></li>
+</ul>
+<p><strong>Example Usage:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.pipeline.run_vfi</span><span class="w"> </span><span class="kn">import</span> <span class="n">VfiWorker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.resource_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResourceLimits</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="c1"># Configure processing</span>
+<span class="n">worker</span> <span class="o">=</span> <span class="n">VfiWorker</span><span class="p">(</span>
+    <span class="n">in_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;input_frames/&quot;</span><span class="p">),</span>
+    <span class="n">out_file_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;output.mp4&quot;</span><span class="p">),</span>
+    <span class="n">fps</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">mid_count</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>  <span class="c1"># Generate 2 intermediate frames</span>
+    <span class="n">encoder</span><span class="o">=</span><span class="s2">&quot;RIFE&quot;</span><span class="p">,</span>
+    <span class="n">resource_limits</span><span class="o">=</span><span class="n">ResourceLimits</span><span class="p">(</span><span class="n">max_memory_mb</span><span class="o">=</span><span class="mi">2048</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="c1"># Connect signals</span>
+<span class="n">worker</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="n">current</span><span class="p">,</span> <span class="n">total</span><span class="p">,</span> <span class="n">eta</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Progress: </span><span class="si">{</span><span class="n">current</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">total</span><span class="si">}</span><span class="s2"> (ETA: </span><span class="si">{</span><span class="n">eta</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">s)&quot;</span><span class="p">))</span>
+<span class="n">worker</span><span class="o">.</span><span class="n">finished</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="n">path</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Complete: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
+<span class="n">worker</span><span class="o">.</span><span class="n">error</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error: </span><span class="si">{</span><span class="n">msg</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
+
+<span class="c1"># Start processing</span>
+<span class="n">worker</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="image-processing-components">
+<h2>Image Processing Components<a class="headerlink" href="#image-processing-components" title="Link to this heading"></a></h2>
+<section id="imageloader">
+<h3>ImageLoader<a class="headerlink" href="#imageloader" title="Link to this heading"></a></h3>
+<p>Handles loading and initial validation of input images.</p>
+<p><strong>Supported Formats:</strong></p>
+<ul class="simple">
+<li><p>PNG, JPEG, BMP, TIFF</p></li>
+<li><p>NetCDF files (for satellite data)</p></li>
+<li><p>RAW formats (with appropriate libraries)</p></li>
+</ul>
+</section>
+<section id="imagecropper">
+<h3>ImageCropper<a class="headerlink" href="#imagecropper" title="Link to this heading"></a></h3>
+<p>Provides image cropping functionality with various modes.</p>
+<p><strong>Cropping Modes:</strong></p>
+<ul class="simple">
+<li><p>Manual rectangle selection</p></li>
+<li><p>Automatic content-aware cropping</p></li>
+<li><p>Aspect ratio preservation</p></li>
+<li><p>Batch cropping with consistent parameters</p></li>
+</ul>
+</section>
+<section id="sanchezprocessor">
+<h3>SanchezProcessor<a class="headerlink" href="#sanchezprocessor" title="Link to this heading"></a></h3>
+<p>Integrates with the Sanchez tool for false-color satellite image processing.</p>
+<p><strong>Features:</strong></p>
+<ul class="simple">
+<li><p>False-color enhancement</p></li>
+<li><p>Geographic projection</p></li>
+<li><p>Resolution scaling</p></li>
+<li><p>Batch processing support</p></li>
+</ul>
+</section>
+</section>
+<section id="module-goesvfi.pipeline.image_processing_interfaces">
+<span id="image-processing-interfaces"></span><h2>Image Processing Interfaces<a class="headerlink" href="#module-goesvfi.pipeline.image_processing_interfaces" title="Link to this heading"></a></h2>
+<p>image_processing_interfaces.py.</p>
+<p>Defines abstract interfaces and data structures for image processing pipeline components
+in the GOES_VFI application. Provides a standard for how image data and processing steps
+are represented and interacted with, enabling modular and extensible pipeline design.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="goesvfi.pipeline.image_processing_interfaces.ImageData">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">goesvfi.pipeline.image_processing_interfaces.</span></span><span class="sig-name descname"><span class="pre">ImageData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image_data:</span> <span class="pre">ImageType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_path:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata:</span> <span class="pre">dict[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">~typing.Any]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/goesvfi/pipeline/image_processing_interfaces.html#ImageData"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.image_processing_interfaces.ImageData" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Container for image data and associated metadata in the processing pipeline.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.pipeline.image_processing_interfaces.ImageData.image_data">
+<span class="sig-name descname"><span class="pre">image_data</span></span><a class="headerlink" href="#goesvfi.pipeline.image_processing_interfaces.ImageData.image_data" title="Link to this definition"></a></dt>
+<dd><p>The core image pixel data (e.g., a NumPy array).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ImageType</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.pipeline.image_processing_interfaces.ImageData.source_path">
+<span class="sig-name descname"><span class="pre">source_path</span></span><a class="headerlink" href="#goesvfi.pipeline.image_processing_interfaces.ImageData.source_path" title="Link to this definition"></a></dt>
+<dd><p>The original file path of the image, if applicable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.pipeline.image_processing_interfaces.ImageData.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><a class="headerlink" href="#goesvfi.pipeline.image_processing_interfaces.ImageData.metadata" title="Link to this definition"></a></dt>
+<dd><p>Arbitrary metadata (e.g., dimensions, format,)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a>, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">processing</span> <span class="pre">history,</span> <span class="pre">timestamps,</span> <span class="pre">geospatial</span> <span class="pre">info).</span></span></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id0">
+<span class="sig-name descname"><span class="pre">image_data</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ImageType</span></em><a class="headerlink" href="#id0" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id1">
+<span class="sig-name descname"><span class="pre">source_path</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#id1" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id2">
+<span class="sig-name descname"><span class="pre">metadata</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id2" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="goesvfi.pipeline.image_processing_interfaces.ImageData.height">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">height</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em><a class="headerlink" href="#goesvfi.pipeline.image_processing_interfaces.ImageData.height" title="Link to this definition"></a></dt>
+<dd><p>Returns the height of the image if available in metadata or image_data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The height of the image, or None if unavailable.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Optional[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)">int</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="goesvfi.pipeline.image_processing_interfaces.ImageData.width">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">width</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em><a class="headerlink" href="#goesvfi.pipeline.image_processing_interfaces.ImageData.width" title="Link to this definition"></a></dt>
+<dd><p>Returns the width of the image if available in metadata or image_data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The width of the image, or None if unavailable.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Optional[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)">int</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.image_processing_interfaces.ImageData.update_metadata">
+<span class="sig-name descname"><span class="pre">update_metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_meta</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/image_processing_interfaces.html#ImageData.update_metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.image_processing_interfaces.ImageData.update_metadata" title="Link to this definition"></a></dt>
+<dd><p>Update the metadata dictionary with new values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>new_meta</strong> (<em>Dict</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><em>str</em></a><em>, </em><em>Any</em><em>]</em>) – New metadata to merge into the existing dictionary.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.image_processing_interfaces.ImageData.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image_data:</span> <span class="pre">ImageType</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">source_path:</span> <span class="pre">str</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata:</span> <span class="pre">dict[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">~typing.Any]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="headerlink" href="#goesvfi.pipeline.image_processing_interfaces.ImageData.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="goesvfi.pipeline.image_processing_interfaces.ImageProcessor">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">goesvfi.pipeline.image_processing_interfaces.</span></span><span class="sig-name descname"><span class="pre">ImageProcessor</span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/image_processing_interfaces.html#ImageProcessor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.image_processing_interfaces.ImageProcessor" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<p>Abstract base class for image processing pipeline components.</p>
+<p>This interface standardizes how different processing steps (loading,)
+reprojection, cropping, saving, etc.) interact within the pipeline.
+Concrete implementations provide the specific logic for each step.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.image_processing_interfaces.ImageProcessor.load">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">source_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pipeline_image_processing_interfaces.html#goesvfi.pipeline.image_processing_interfaces.ImageData" title="goesvfi.pipeline.image_processing_interfaces.ImageData"><span class="pre">ImageData</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/image_processing_interfaces.html#ImageProcessor.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.image_processing_interfaces.ImageProcessor.load" title="Link to this definition"></a></dt>
+<dd><p>Loads image data from a specified source path.</p>
+<p>Implementations should handle reading various file formats and
+populating an ImageData object with the image data and
+initial relevant metadata (like dimensions, format, source path).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pass</strong></p></li>
+<li><p><strong>source_path</strong> – The path to the image file to load.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An ImageData object containing the loaded image and initial metadata.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#FileNotFoundError" title="(in Python v3.13)"><strong>FileNotFoundError</strong></a> – If the source_path does not exist.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#IOError" title="(in Python v3.13)"><strong>IOError</strong></a> – If there’s an error reading the file.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.13)"><strong>ValueError</strong></a> – If the file format is unsupported or invalid.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.image_processing_interfaces.ImageProcessor.process">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">process</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pipeline_image_processing_interfaces.html#goesvfi.pipeline.image_processing_interfaces.ImageData" title="goesvfi.pipeline.image_processing_interfaces.ImageData"><span class="pre">ImageData</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pipeline_image_processing_interfaces.html#goesvfi.pipeline.image_processing_interfaces.ImageData" title="goesvfi.pipeline.image_processing_interfaces.ImageData"><span class="pre">ImageData</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/image_processing_interfaces.html#ImageProcessor.process"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.image_processing_interfaces.ImageProcessor.process" title="Link to this definition"></a></dt>
+<dd><p>Performs a specific processing step on the image data.</p>
+<p>This is a generic method intended for steps like filtering,
+color correction, reprojection (e.g., Sanchez), etc.
+Implementations should modify the image_data attribute of the
+input ImageData object or create a new one, potentially updating
+metadata to reflect the changes (e.g., adding processing steps)
+to a history log within metadata).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pass</strong></p></li>
+<li><p><strong>image_data</strong> – The ImageData object to process.</p></li>
+<li><p><strong>**kwargs</strong> – Flexible keyword arguments specific to the processing</p></li>
+<li><p><strong>step</strong> (<em>e.g.</em><em>, </em><em>reprojection parameters</em><em>, </em><em>filter settings</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>pass
+An ImageData object with the processed image and updated metadata.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.image_processing_interfaces.ImageProcessor.crop">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">crop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pipeline_image_processing_interfaces.html#goesvfi.pipeline.image_processing_interfaces.ImageData" title="goesvfi.pipeline.image_processing_interfaces.ImageData"><span class="pre">ImageData</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">crop_area</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.13)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="pipeline_image_processing_interfaces.html#goesvfi.pipeline.image_processing_interfaces.ImageData" title="goesvfi.pipeline.image_processing_interfaces.ImageData"><span class="pre">ImageData</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/image_processing_interfaces.html#ImageProcessor.crop"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.image_processing_interfaces.ImageProcessor.crop" title="Link to this definition"></a></dt>
+<dd><p>Crops the image data to the specified rectangular area.</p>
+<p>Implementations should extract the specified portion of the
+image_data attribute. The crop_area format should be clearly
+defined by implementations (e.g., (left, top, right, bottom))
+pixel coordinates). Metadata should be updated accordingly (e.g.,
+new dimensions).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pass</strong></p></li>
+<li><p><strong>image_data</strong> – The ImageData object to crop.</p></li>
+<li><p><strong>crop_area</strong> – A tuple representing the area to crop. The exact</p></li>
+<li><p><strong>meaning</strong> (<em>e.g.</em><em>, </em><em>pixel coordinates</em><em>, </em><em>percentages</em>)</p></li>
+<li><p><strong>common</strong> (<em>should be defined by the implementation. A</em>)</p></li>
+<li><p><strong>is</strong> (<em>convention</em>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>An ImageData object containing the cropped image and updated
+metadata.</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.13)"><strong>ValueError</strong></a> – If the crop_area is invalid for the image dimensions.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.pipeline.image_processing_interfaces.ImageProcessor.save">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">image_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="pipeline_image_processing_interfaces.html#goesvfi.pipeline.image_processing_interfaces.ImageData" title="goesvfi.pipeline.image_processing_interfaces.ImageData"><span class="pre">ImageData</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">destination_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/pipeline/image_processing_interfaces.html#ImageProcessor.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.pipeline.image_processing_interfaces.ImageProcessor.save" title="Link to this definition"></a></dt>
+<dd><p>Saves the image data to a specified destination path.</p>
+<p>Implementations should handle writing the image_data attribute
+to a file in a suitable format. The format might be determined
+by the file extension or specific arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pass</strong></p></li>
+<li><p><strong>image_data</strong> – The ImageData object containing the data to save.</p></li>
+<li><p><strong>destination_path</strong> – The file path where the image should be saved.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#IOError" title="(in Python v3.13)"><strong>IOError</strong></a> – If there’s an error writing the file.</p></li>
+<li><p><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#ValueError" title="(in Python v3.13)"><strong>ValueError</strong></a> – If the destination format is unsupported.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<p>These interfaces define the contract for all image processing components:</p>
+<p><strong>ImageProcessor Protocol:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Protocol</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.image_processing_interfaces</span><span class="w"> </span><span class="kn">import</span> <span class="n">ImageData</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ImageProcessor</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_data</span><span class="p">:</span> <span class="n">ImageData</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ImageData</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process image data and return result.&quot;&quot;&quot;</span>
+        <span class="o">...</span>
+</pre></div>
+</div>
+<p><strong>ImageData Class:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ImageData</span><span class="p">:</span>
+    <span class="n">image_data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ImageData&#39;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a deep copy of the image data.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">ImageData</span><span class="p">(</span>
+            <span class="n">image_data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">image_data</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="video-encoding">
+<h2>Video Encoding<a class="headerlink" href="#video-encoding" title="Link to this heading"></a></h2>
+<section id="ffmpegbuilder">
+<h3>FFmpegBuilder<a class="headerlink" href="#ffmpegbuilder" title="Link to this heading"></a></h3>
+<p>Handles video encoding using FFmpeg with comprehensive options.</p>
+<p><strong>Encoding Profiles:</strong></p>
+<ul class="simple">
+<li><p><strong>High Quality</strong>: CRF 16, slow preset, yuv444p</p></li>
+<li><p><strong>Balanced</strong>: CRF 20, medium preset, yuv420p</p></li>
+<li><p><strong>Fast</strong>: CRF 24, fast preset, yuv420p</p></li>
+<li><p><strong>Custom</strong>: User-defined parameters</p></li>
+</ul>
+<p><strong>Advanced Features:</strong></p>
+<ul class="simple">
+<li><p>Motion interpolation with configurable algorithms</p></li>
+<li><p>Unsharp mask filtering</p></li>
+<li><p>Scene change detection</p></li>
+<li><p>Variable bitrate encoding</p></li>
+</ul>
+</section>
+</section>
+<section id="utility-functions">
+<h2>Utility Functions<a class="headerlink" href="#utility-functions" title="Link to this heading"></a></h2>
+<p>The main processing function that coordinates all pipeline components.</p>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><strong>folder</strong>: Input directory containing image sequence</p></li>
+<li><p><strong>output_mp4_path</strong>: Output video file path</p></li>
+<li><p><strong>rife_exe_path</strong>: Path to RIFE executable (if using RIFE)</p></li>
+<li><p><strong>fps</strong>: Output video frame rate</p></li>
+<li><p><strong>encoder_type</strong>: Processing method (“RIFE”, “FFmpeg”, or “Sanchez”)</p></li>
+<li><p><strong>ffmpeg_settings</strong>: FFmpeg configuration dictionary</p></li>
+<li><p><strong>resource_limits</strong>: Resource usage constraints</p></li>
+</ul>
+<p><strong>Returns:</strong></p>
+<p>Generator yielding progress updates and final result.</p>
+</section>
+<section id="processing-pipeline-flow">
+<h2>Processing Pipeline Flow<a class="headerlink" href="#processing-pipeline-flow" title="Link to this heading"></a></h2>
+<p>The typical processing flow follows these steps:</p>
+<ol class="arabic simple">
+<li><p><strong>Initialization</strong></p>
+<ul class="simple">
+<li><p>Validate input parameters</p></li>
+<li><p>Set up resource monitoring</p></li>
+<li><p>Initialize processing components</p></li>
+</ul>
+</li>
+<li><p><strong>Input Processing</strong></p>
+<ul class="simple">
+<li><p>Load and validate input images</p></li>
+<li><p>Apply cropping if specified</p></li>
+<li><p>Sort images by timestamp or filename</p></li>
+</ul>
+</li>
+<li><p><strong>Frame Interpolation</strong></p>
+<ul class="simple">
+<li><p>Generate intermediate frames using selected method</p></li>
+<li><p>Apply post-processing effects</p></li>
+<li><p>Validate output quality</p></li>
+</ul>
+</li>
+<li><p><strong>Video Encoding</strong></p>
+<ul class="simple">
+<li><p>Combine frames into video sequence</p></li>
+<li><p>Apply compression and quality settings</p></li>
+<li><p>Generate final output file</p></li>
+</ul>
+</li>
+<li><p><strong>Cleanup</strong></p>
+<ul class="simple">
+<li><p>Remove temporary files</p></li>
+<li><p>Release system resources</p></li>
+<li><p>Report final statistics</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<p>The pipeline uses a comprehensive error handling system:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ConfigurationError</span><span class="p">,</span>
+    <span class="n">ExternalToolError</span><span class="p">,</span>
+    <span class="n">ProcessingError</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.resource_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResourceLimitExceeded</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">worker</span> <span class="o">=</span> <span class="n">VfiWorker</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+    <span class="n">worker</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+<span class="k">except</span> <span class="n">ConfigurationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Configuration issue: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">ResourceLimitExceeded</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resource limit exceeded: </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">ExternalToolError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;External tool failed: </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">tool_name</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">ProcessingError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Processing failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Common Error Scenarios:</strong></p>
+<ul class="simple">
+<li><p>Invalid input format or corrupted files</p></li>
+<li><p>Insufficient system resources</p></li>
+<li><p>Missing external tools (RIFE, FFmpeg, Sanchez)</p></li>
+<li><p>Network issues when downloading satellite data</p></li>
+<li><p>Permission errors when writing output files</p></li>
+</ul>
+</section>
+<section id="performance-optimization">
+<h2>Performance Optimization<a class="headerlink" href="#performance-optimization" title="Link to this heading"></a></h2>
+<p><strong>Memory Management:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.resource_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResourceLimits</span>
+
+<span class="c1"># Conservative settings for limited memory</span>
+<span class="n">limits</span> <span class="o">=</span> <span class="n">ResourceLimits</span><span class="p">(</span>
+    <span class="n">max_memory_mb</span><span class="o">=</span><span class="mi">1024</span><span class="p">,</span>
+    <span class="n">max_open_files</span><span class="o">=</span><span class="mi">100</span>
+<span class="p">)</span>
+
+<span class="c1"># High-performance settings</span>
+<span class="n">limits</span> <span class="o">=</span> <span class="n">ResourceLimits</span><span class="p">(</span>
+    <span class="n">max_memory_mb</span><span class="o">=</span><span class="mi">8192</span><span class="p">,</span>
+    <span class="n">max_cpu_percent</span><span class="o">=</span><span class="mf">90.0</span><span class="p">,</span>
+    <span class="n">max_open_files</span><span class="o">=</span><span class="mi">1000</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Processing Optimization:</strong></p>
+<ul class="simple">
+<li><p>Use tiling for large images to reduce memory usage</p></li>
+<li><p>Enable parallel processing for multi-core systems</p></li>
+<li><p>Cache intermediate results to avoid recomputation</p></li>
+<li><p>Use appropriate compression settings for output quality vs. speed</p></li>
+</ul>
+<p><strong>Monitoring Performance:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.memory_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_memory_monitor</span>
+
+<span class="c1"># Monitor memory usage during processing</span>
+<span class="n">monitor</span> <span class="o">=</span> <span class="n">get_memory_monitor</span><span class="p">()</span>
+<span class="n">monitor</span><span class="o">.</span><span class="n">start_monitoring</span><span class="p">()</span>
+
+<span class="c1"># Check memory statistics</span>
+<span class="n">stats</span> <span class="o">=</span> <span class="n">monitor</span><span class="o">.</span><span class="n">get_current_stats</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Memory usage: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">memory_percent</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="configuration-options">
+<h2>Configuration Options<a class="headerlink" href="#configuration-options" title="Link to this heading"></a></h2>
+<p><strong>RIFE Settings:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">rife_settings</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;model_key&#39;</span><span class="p">:</span> <span class="s1">&#39;rife-v4.6&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;tile_enable&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s1">&#39;tile_size&#39;</span><span class="p">:</span> <span class="mi">512</span><span class="p">,</span>
+    <span class="s1">&#39;uhd_mode&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s1">&#39;tta_spatial&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s1">&#39;tta_temporal&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s1">&#39;thread_spec&#39;</span><span class="p">:</span> <span class="s1">&#39;1:1:1&#39;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>FFmpeg Settings:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">ffmpeg_settings</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;use_ffmpeg_interp&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s1">&#39;mi_mode&#39;</span><span class="p">:</span> <span class="s1">&#39;mci&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;mc_mode&#39;</span><span class="p">:</span> <span class="s1">&#39;aobmc&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;me_mode&#39;</span><span class="p">:</span> <span class="s1">&#39;bidir&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;filter_preset&#39;</span><span class="p">:</span> <span class="s1">&#39;slow&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;crf&#39;</span><span class="p">:</span> <span class="mi">16</span><span class="p">,</span>
+    <span class="s1">&#39;bitrate_kbps&#39;</span><span class="p">:</span> <span class="mi">15000</span><span class="p">,</span>
+    <span class="s1">&#39;pix_fmt&#39;</span><span class="p">:</span> <span class="s1">&#39;yuv444p&#39;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Sanchez Settings:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">sanchez_settings</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;false_colour&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s1">&#39;res_km&#39;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+    <span class="s1">&#39;crop&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="s1">&#39;brightness&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span>
+    <span class="s1">&#39;contrast&#39;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="s1">&#39;saturation&#39;</span><span class="p">:</span> <span class="mf">1.0</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="thread-safety">
+<h2>Thread Safety<a class="headerlink" href="#thread-safety" title="Link to this heading"></a></h2>
+<p>The pipeline components are designed to be thread-safe:</p>
+<ul class="simple">
+<li><p><strong>VfiWorker</strong> runs in its own thread and communicates via Qt signals</p></li>
+<li><p><strong>ImageProcessor</strong> implementations should be stateless or use thread-local storage</p></li>
+<li><p><strong>Resource monitoring</strong> uses thread-safe data structures</p></li>
+<li><p><strong>Temporary file handling</strong> uses unique naming to avoid conflicts</p></li>
+</ul>
+<p><strong>Best Practices:</strong></p>
+<ul class="simple">
+<li><p>Create separate instances for concurrent processing</p></li>
+<li><p>Use signals/slots for inter-thread communication</p></li>
+<li><p>Avoid shared mutable state between threads</p></li>
+<li><p>Use appropriate locking for shared resources</p></li>
+</ul>
+</section>
+<section id="testing-and-validation">
+<h2>Testing and Validation<a class="headerlink" href="#testing-and-validation" title="Link to this heading"></a></h2>
+<p>The pipeline includes comprehensive testing utilities:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.pipeline.testing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">create_test_image_sequence</span><span class="p">,</span>
+    <span class="n">validate_output_video</span><span class="p">,</span>
+    <span class="n">benchmark_processing_speed</span>
+<span class="p">)</span>
+
+<span class="c1"># Create test data</span>
+<span class="n">test_images</span> <span class="o">=</span> <span class="n">create_test_image_sequence</span><span class="p">(</span>
+    <span class="n">count</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">1920</span><span class="p">,</span> <span class="mi">1080</span><span class="p">),</span>
+    <span class="nb">format</span><span class="o">=</span><span class="s1">&#39;png&#39;</span>
+<span class="p">)</span>
+
+<span class="c1"># Validate output</span>
+<span class="n">is_valid</span> <span class="o">=</span> <span class="n">validate_output_video</span><span class="p">(</span>
+    <span class="n">video_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;output.mp4&quot;</span><span class="p">),</span>
+    <span class="n">expected_fps</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">expected_duration</span><span class="o">=</span><span class="mf">5.0</span>
+<span class="p">)</span>
+
+<span class="c1"># Benchmark performance</span>
+<span class="n">stats</span> <span class="o">=</span> <span class="n">benchmark_processing_speed</span><span class="p">(</span>
+    <span class="n">input_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;test_images/&quot;</span><span class="p">),</span>
+    <span class="n">encoder</span><span class="o">=</span><span class="s2">&quot;RIFE&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>See the <span class="xref std std-doc">../development/testing</span> section for more information on testing the pipeline components.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="gui.html" class="btn btn-neutral float-left" title="Gui" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="utils.html" class="btn btn-neutral float-right" title="Utilities API" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,368 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GOES_VFI Documentation &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation Guide" href="installation.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">GOES_VFI Documentation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="goes-vfi-documentation">
+<h1>GOES_VFI Documentation<a class="headerlink" href="#goes-vfi-documentation" title="Link to this heading"></a></h1>
+<p>Welcome to the GOES_VFI (GOES Video Frame Interpolation) documentation. This project provides tools for processing GOES satellite data and creating smooth video interpolations using advanced frame interpolation techniques.</p>
+<a class="reference external image-reference" href="https://www.python.org/downloads/"><img alt="Python Version" src="https://img.shields.io/badge/python-3.13+-blue.svg" />
+</a>
+<a class="reference external image-reference" href="https://opensource.org/licenses/MIT"><img alt="License" src="https://img.shields.io/badge/license-MIT-green.svg" />
+</a>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>GOES_VFI is a comprehensive tool suite for:</p>
+<ul class="simple">
+<li><p><strong>GOES Satellite Data Processing</strong>: Download and process GOES-16/17/18 satellite imagery</p></li>
+<li><p><strong>Video Frame Interpolation</strong>: Create smooth animations using RIFE, FFmpeg, and Sanchez processors</p></li>
+<li><p><strong>Data Integrity Checking</strong>: Validate satellite data completeness and quality</p></li>
+<li><p><strong>Resource Management</strong>: Monitor and control system resource usage</p></li>
+<li><p><strong>Security</strong>: Input validation and secure processing pipelines</p></li>
+</ul>
+</section>
+<section id="key-features">
+<h2>Key Features<a class="headerlink" href="#key-features" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>🛰️ <strong>Satellite Data Processing</strong></dt><dd><ul class="simple">
+<li><p>Download GOES ABI (Advanced Baseline Imager) data from AWS S3</p></li>
+<li><p>Support for all 16 ABI bands and multiple scanning modes</p></li>
+<li><p>NetCDF file processing and visualization</p></li>
+<li><p>False color and natural color composites</p></li>
+</ul>
+</dd>
+<dt>🎬 <strong>Video Frame Interpolation</strong></dt><dd><ul class="simple">
+<li><p>RIFE (Real-Time Intermediate Flow Estimation) integration</p></li>
+<li><p>FFmpeg-based interpolation with advanced motion estimation</p></li>
+<li><p>Sanchez false-color processing for enhanced imagery</p></li>
+<li><p>Customizable output formats and quality settings</p></li>
+</ul>
+</dd>
+<dt>🔍 <strong>Data Integrity &amp; Quality</strong></dt><dd><ul class="simple">
+<li><p>Comprehensive data validation and integrity checking</p></li>
+<li><p>Missing data detection and reporting</p></li>
+<li><p>Timeline visualization for data availability</p></li>
+<li><p>Automated quality assessment tools</p></li>
+</ul>
+</dd>
+<dt>🛡️ <strong>Security &amp; Resource Management</strong></dt><dd><ul class="simple">
+<li><p>Input validation and sanitization</p></li>
+<li><p>Resource usage monitoring and limits</p></li>
+<li><p>Secure subprocess execution</p></li>
+<li><p>Memory and CPU usage controls</p></li>
+</ul>
+</dd>
+<dt>🖥️ <strong>User Interface</strong></dt><dd><ul class="simple">
+<li><p>Modern PyQt6-based GUI</p></li>
+<li><p>Real-time preview and monitoring</p></li>
+<li><p>Intuitive workflow management</p></li>
+<li><p>Comprehensive settings and configuration</p></li>
+</ul>
+</dd>
+</dl>
+</section>
+<section id="getting-started">
+<h2>Getting Started<a class="headerlink" href="#getting-started" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#system-requirements">System Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#supported-operating-systems">Supported Operating Systems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#installation-methods">Installation Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#dependency-installation">Dependency Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#external-tools">External Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#verification">Verification</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#troubleshooting">Troubleshooting</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#development-setup">Development Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#docker-installation-optional">Docker Installation (Optional)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#installation">Installation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#first-run">First Run</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#basic-workflow">Basic Workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#example-processing-satellite-data">Example: Processing Satellite Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#command-line-usage">Command Line Usage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#common-issues-and-solutions">Common Issues and Solutions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quickstart.html#next-steps">Next Steps</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/gui.html">Gui</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/pipeline.html">Pipeline API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/utils.html">Utilities API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/exceptions.html">Exceptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/gui_tabs_main_tab.html">Main Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/gui_tabs_ffmpeg_settings_tab.html">Ffmpeg Settings Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/gui_tabs_resource_limits_tab.html">Resource Limits Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/gui_tabs_model_library_tab.html">Model Library Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/gui_tabs_operation_history_tab.html">Operation History Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/pipeline_image_loader.html">Image Loader</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/pipeline_image_cropper.html">Image Cropper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/pipeline_sanchez_processor.html">Sanchez Processor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/pipeline_encode.html">Encode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/pipeline_interpolate.html">Interpolate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/pipeline_run_vfi.html">Run Vfi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/pipeline_ffmpeg_builder.html">Ffmpeg Builder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/integrity_check_view_model.html">View Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/integrity_check_goes_imagery.html">Goes Imagery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/integrity_check_time_index.html">Time Index</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/integrity_check_cache_db.html">Cache Db</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/integrity_check_remote_store.html">Remote Store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/utils_config.html">Config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/utils_log.html">Log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/utils_date_utils.html">Date Utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/utils_gui_helpers.html">Gui Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/utils_memory_manager.html">Memory Manager</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/utils_security.html">Security</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/index.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/index.html#core-components">Core Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="api/index.html#common-usage-patterns">Common Usage Patterns</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="support.html">Support</a></li>
+</ul>
+</div>
+</section>
+<section id="quick-example">
+<h2>Quick Example<a class="headerlink" href="#quick-example" title="Link to this heading"></a></h2>
+<p>Here’s a simple example of processing GOES satellite data:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">VfiWorker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.resource_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResourceLimits</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="c1"># Set up resource limits</span>
+<span class="n">limits</span> <span class="o">=</span> <span class="n">ResourceLimits</span><span class="p">(</span>
+    <span class="n">max_memory_mb</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span>
+    <span class="n">max_processing_time_sec</span><span class="o">=</span><span class="mi">1800</span>
+<span class="p">)</span>
+
+<span class="c1"># Create a processing worker</span>
+<span class="n">worker</span> <span class="o">=</span> <span class="n">VfiWorker</span><span class="p">(</span>
+    <span class="n">in_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;satellite_images/&quot;</span><span class="p">),</span>
+    <span class="n">out_file_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;output/animation.mp4&quot;</span><span class="p">),</span>
+    <span class="n">fps</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">encoder</span><span class="o">=</span><span class="s2">&quot;RIFE&quot;</span><span class="p">,</span>
+    <span class="n">resource_limits</span><span class="o">=</span><span class="n">limits</span>
+<span class="p">)</span>
+
+<span class="c1"># Start processing</span>
+<span class="n">worker</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<p>Install GOES_VFI using pip:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</pre></div>
+</div>
+<p>Or for development:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/username/GOES_VFI.git
+<span class="nb">cd</span><span class="w"> </span>GOES_VFI
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>test,dev,typing,docs<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="system-requirements">
+<h2>System Requirements<a class="headerlink" href="#system-requirements" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Python</strong>: 3.13 or higher</p></li>
+<li><p><strong>Operating System</strong>: Windows, macOS, or Linux</p></li>
+<li><p><strong>Memory</strong>: Minimum 4GB RAM (8GB+ recommended)</p></li>
+<li><p><strong>Storage</strong>: 1GB+ free space for temporary files</p></li>
+<li><p><strong>Network</strong>: Internet connection for downloading satellite data</p></li>
+</ul>
+<section id="dependencies">
+<h3>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h3>
+<p>Core dependencies:</p>
+<ul class="simple">
+<li><p>PyQt6 (GUI framework)</p></li>
+<li><p>NumPy (numerical computing)</p></li>
+<li><p>Pillow (image processing)</p></li>
+<li><p>OpenCV (computer vision)</p></li>
+<li><p>FFmpeg (video processing)</p></li>
+<li><p>psutil (system monitoring)</p></li>
+</ul>
+<p>Satellite data dependencies:</p>
+<ul class="simple">
+<li><p>aiohttp (async HTTP requests)</p></li>
+<li><p>aioboto3 (AWS S3 access)</p></li>
+<li><p>xarray (NetCDF processing)</p></li>
+<li><p>matplotlib (visualization)</p></li>
+</ul>
+<p>See <a class="reference internal" href="installation.html"><span class="doc">Installation Guide</span></a> for detailed setup instructions.</p>
+</section>
+</section>
+<section id="architecture-overview">
+<h2>Architecture Overview<a class="headerlink" href="#architecture-overview" title="Link to this heading"></a></h2>
+<p>GOES_VFI follows a modular architecture:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>GOES_VFI/
+├── goesvfi/
+│   ├── pipeline/          # Core processing pipeline
+│   ├── integrity_check/   # Data validation and quality
+│   ├── gui/              # User interface components
+│   ├── utils/            # Utilities and helpers
+│   └── sanchez/          # Sanchez processor integration
+├── examples/             # Example scripts and demos
+├── tests/               # Test suite
+└── docs/                # Documentation
+</pre></div>
+</div>
+<p>Key components:</p>
+<ul class="simple">
+<li><p><strong>Pipeline</strong>: Core processing engine for video frame interpolation</p></li>
+<li><p><strong>Integrity Check</strong>: Data validation and quality assessment tools</p></li>
+<li><p><strong>GUI</strong>: Modern PyQt6 user interface</p></li>
+<li><p><strong>Utils</strong>: Shared utilities for logging, configuration, and resource management</p></li>
+<li><p><strong>Sanchez</strong>: Integration with the Sanchez false-color processor</p></li>
+</ul>
+</section>
+<section id="license">
+<h2>License<a class="headerlink" href="#license" title="Link to this heading"></a></h2>
+<p>This project is licensed under the MIT License. See the <a class="reference internal" href="license.html"><span class="doc">License</span></a> file for details.</p>
+</section>
+<section id="support">
+<h2>Support<a class="headerlink" href="#support" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Documentation</strong>: <a class="reference external" href="https://goes-vfi.readthedocs.io/">https://goes-vfi.readthedocs.io/</a></p></li>
+<li><p><strong>Issues</strong>: <a class="reference external" href="https://github.com/username/GOES_VFI/issues">https://github.com/username/GOES_VFI/issues</a></p></li>
+<li><p><strong>Discussions</strong>: <a class="reference external" href="https://github.com/username/GOES_VFI/discussions">https://github.com/username/GOES_VFI/discussions</a></p></li>
+</ul>
+</section>
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation.html" class="btn btn-neutral float-right" title="Installation Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,332 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>View Model &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quick Start Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">View Model</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/date_sorter_view_model.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-goesvfi.date_sorter.view_model">
+<span id="view-model"></span><h1>View Model<a class="headerlink" href="#module-goesvfi.date_sorter.view_model" title="Link to this heading"></a></h1>
+<p>ViewModel for the Date Sorter tab in the GOES VFI application.</p>
+<p>This module defines the DateSorterViewModel class, which manages the state and
+presentation logic for the Date Sorter feature. It interacts with the DateSorter
+model and exposes data and commands to the GUI view layer.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="goesvfi.date_sorter.view_model.DateSorterViewModel">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">goesvfi.date_sorter.view_model.</span></span><span class="sig-name descname"><span class="pre">DateSorterViewModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sorter_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="date_sorter_sorter.html#goesvfi.date_sorter.sorter.DateSorter" title="goesvfi.date_sorter.sorter.DateSorter"><span class="pre">DateSorter</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/goesvfi/date_sorter/view_model.html#DateSorterViewModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.date_sorter.view_model.DateSorterViewModel" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>ViewModel for the Date Sorter GUI tab.</p>
+<p>This class manages the state and presentation logic for the Date Sorter feature,
+acting as an intermediary between the DateSorter model and the GUI view.
+It exposes properties representing the current state and provides command methods
+for user actions such as selecting directories and starting/canceling the sorting process.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.date_sorter.view_model.DateSorterViewModel.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sorter_model</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="date_sorter_sorter.html#goesvfi.date_sorter.sorter.DateSorter" title="goesvfi.date_sorter.sorter.DateSorter"><span class="pre">DateSorter</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/date_sorter/view_model.html#DateSorterViewModel.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.date_sorter.view_model.DateSorterViewModel.__init__" title="Link to this definition"></a></dt>
+<dd><p>Initializes the DateSorterViewModel with default state.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>sorter_model</strong> (<a class="reference internal" href="date_sorter_sorter.html#goesvfi.date_sorter.sorter.DateSorter" title="goesvfi.date_sorter.sorter.DateSorter"><em>DateSorter</em></a>) – The DateSorter model instance to use for file operations.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.date_sorter.view_model.DateSorterViewModel._source_directory">
+<span class="sig-name descname"><span class="pre">_source_directory</span></span><a class="headerlink" href="#goesvfi.date_sorter.view_model.DateSorterViewModel._source_directory" title="Link to this definition"></a></dt>
+<dd><p>The currently selected source directory for sorting.</p>
+<dl class="field-list">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[str]</p>
+<p>_destination_directory (Optional[str]): The currently selected destination directory for sorted files.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p>_is_sorting (bool): Whether a sorting operation is currently in progress.
+_progress_percentage (float): The current progress of the sorting operation (0-100).
+_status_message (str): A message describing the current status for display in the UI.
+_date_format_pattern (str): The date format pattern used for sorting files.
+_cancel_requested (bool): Internal flag indicating if a cancel operation has been requested.</p>
+<blockquote>
+<div><p>_observer (Optional[Callable[[], None]]): Optional callback for observer notification.</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.date_sorter.view_model.DateSorterViewModel.set_observer">
+<span class="sig-name descname"><span class="pre">set_observer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.13)"><span class="pre">Callable</span></a><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/date_sorter/view_model.html#DateSorterViewModel.set_observer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.date_sorter.view_model.DateSorterViewModel.set_observer" title="Link to this definition"></a></dt>
+<dd><p>Sets the observer callback to notify the View of state changes.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="goesvfi.date_sorter.view_model.DateSorterViewModel.source_directory">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">source_directory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em><a class="headerlink" href="#goesvfi.date_sorter.view_model.DateSorterViewModel.source_directory" title="Link to this definition"></a></dt>
+<dd><p>The currently selected source directory for sorting.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The path to the source directory, or None if not set.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Optional[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="goesvfi.date_sorter.view_model.DateSorterViewModel.destination_directory">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">destination_directory</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></em><a class="headerlink" href="#goesvfi.date_sorter.view_model.DateSorterViewModel.destination_directory" title="Link to this definition"></a></dt>
+<dd><p>The currently selected destination directory for sorted files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The path to the destination directory, or None if not set.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Optional[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="goesvfi.date_sorter.view_model.DateSorterViewModel.is_sorting">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_sorting</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></em><a class="headerlink" href="#goesvfi.date_sorter.view_model.DateSorterViewModel.is_sorting" title="Link to this definition"></a></dt>
+<dd><p>Whether a sorting operation is currently in progress.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if sorting is in progress, False otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="goesvfi.date_sorter.view_model.DateSorterViewModel.progress_percentage">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">progress_percentage</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></em><a class="headerlink" href="#goesvfi.date_sorter.view_model.DateSorterViewModel.progress_percentage" title="Link to this definition"></a></dt>
+<dd><p>The current progress of the sorting operation as a percentage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Progress percentage (0-100).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)">float</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="goesvfi.date_sorter.view_model.DateSorterViewModel.status_message">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">status_message</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.date_sorter.view_model.DateSorterViewModel.status_message" title="Link to this definition"></a></dt>
+<dd><p>The current status message for display in the UI.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Status message describing the current state.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="goesvfi.date_sorter.view_model.DateSorterViewModel.date_format_pattern">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">date_format_pattern</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></em><a class="headerlink" href="#goesvfi.date_sorter.view_model.DateSorterViewModel.date_format_pattern" title="Link to this definition"></a></dt>
+<dd><p>The date format pattern used for sorting files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The date format pattern (e.g., “%Y/%m/%d”).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="goesvfi.date_sorter.view_model.DateSorterViewModel.can_start_sorting">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">can_start_sorting</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></em><a class="headerlink" href="#goesvfi.date_sorter.view_model.DateSorterViewModel.can_start_sorting" title="Link to this definition"></a></dt>
+<dd><p>Whether the sorting process can be started.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if both source and destination directories are set and valid,
+and no sorting is currently in progress; False otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)">bool</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.date_sorter.view_model.DateSorterViewModel.select_source_directory">
+<span class="sig-name descname"><span class="pre">select_source_directory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/date_sorter/view_model.html#DateSorterViewModel.select_source_directory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.date_sorter.view_model.DateSorterViewModel.select_source_directory" title="Link to this definition"></a></dt>
+<dd><p>Command to select the source directory.</p>
+<p>This method should be triggered by the UI when the user wants to choose
+a source directory for sorting. The actual implementation should open a
+directory selection dialog and update <cite>source_directory</cite> accordingly.</p>
+<p>Side Effects:</p>
+<blockquote>
+<div><p>Updates <cite>source_directory</cite>.
+Notifies observers if implemented.</p>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is a placeholder implementation for testing purposes.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.date_sorter.view_model.DateSorterViewModel.select_destination_directory">
+<span class="sig-name descname"><span class="pre">select_destination_directory</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/date_sorter/view_model.html#DateSorterViewModel.select_destination_directory"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.date_sorter.view_model.DateSorterViewModel.select_destination_directory" title="Link to this definition"></a></dt>
+<dd><p>Command to select the destination directory.</p>
+<p>This method should be triggered by the UI when the user wants to choose
+a destination directory for sorted files. The actual implementation should
+open a directory selection dialog and update <cite>destination_directory</cite> accordingly.</p>
+<p>Side Effects:</p>
+<blockquote>
+<div><p>Updates <cite>destination_directory</cite>.
+Notifies observers if implemented.</p>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This is a placeholder implementation for testing purposes.</p>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.date_sorter.view_model.DateSorterViewModel.start_sorting">
+<span class="sig-name descname"><span class="pre">start_sorting</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/date_sorter/view_model.html#DateSorterViewModel.start_sorting"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.date_sorter.view_model.DateSorterViewModel.start_sorting" title="Link to this definition"></a></dt>
+<dd><p>Command to start the sorting process.</p>
+<p>Initiates the file sorting operation in a separate thread if the
+preconditions are met (valid source/destination directories and not already sorting).</p>
+<p>Side Effects:</p>
+<blockquote>
+<div><p>Updates <cite>is_sorting</cite>, <cite>status_message</cite>, <cite>progress_percentage</cite>, and <cite>_cancel_requested</cite>.
+Starts a new thread for the sorting operation.
+Notifies observers if implemented.</p>
+</div></blockquote>
+<p>If preconditions are not met, this method does nothing.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.date_sorter.view_model.DateSorterViewModel.cancel_sorting">
+<span class="sig-name descname"><span class="pre">cancel_sorting</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/date_sorter/view_model.html#DateSorterViewModel.cancel_sorting"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.date_sorter.view_model.DateSorterViewModel.cancel_sorting" title="Link to this definition"></a></dt>
+<dd><p>Command to cancel the ongoing sorting process.</p>
+<p>If a sorting operation is in progress, sets the cancellation flag and updates
+the status message. The sorting thread should periodically check this flag and
+terminate if set.</p>
+<p>Side Effects:</p>
+<blockquote>
+<div><p>Updates <cite>_cancel_requested</cite> and <cite>status_message</cite>.
+Notifies observers if implemented.</p>
+</div></blockquote>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

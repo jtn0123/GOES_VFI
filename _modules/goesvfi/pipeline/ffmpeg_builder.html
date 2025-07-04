@@ -1,0 +1,560 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>goesvfi.pipeline.ffmpeg_builder &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">goesvfi.pipeline.ffmpeg_builder</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for goesvfi.pipeline.ffmpeg_builder</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;ffmpeg_builder.py.</span>
+
+<span class="sd">Provides the FFmpegCommandBuilder class for constructing FFmpeg command-line</span>
+<span class="sd">arguments in a flexible and modular way, supporting various encoding options</span>
+<span class="sd">and hardware/software backends for the GOES_VFI pipeline.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+
+
+<div class="viewcode-block" id="FFmpegCommandBuilder">
+<a class="viewcode-back" href="../../../api/pipeline_ffmpeg_builder.html#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FFmpegCommandBuilder</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Builder for FFmpeg command-line arguments for video encoding.</span>
+
+<span class="sd">    This class provides a fluent interface for specifying input/output files,</span>
+<span class="sd">    encoder options, quality/bitrate settings, pixel format, and two-pass</span>
+<span class="sd">    encoding parameters. It generates a command list suitable for subprocess</span>
+<span class="sd">    execution.</span>
+
+<span class="sd">    Typical usage:</span>
+<span class="sd">        builder = FFmpegCommandBuilder()</span>
+<span class="sd">        cmd = (</span>
+<span class="sd">            builder.set_input(input_path)</span>
+<span class="sd">            .set_output(output_path)</span>
+<span class="sd">            .set_encoder(&quot;Software x265&quot;)</span>
+<span class="sd">            .set_crf(20)</span>
+<span class="sd">            .set_pix_fmt(&quot;yuv420p10le&quot;)</span>
+<span class="sd">            .build()</span>
+<span class="sd">        )</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="FFmpegCommandBuilder.__init__">
+<a class="viewcode-back" href="../../../api/pipeline_ffmpeg_builder.html#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize a new FFmpegCommandBuilder with default settings.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_command</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;ffmpeg&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;-hide_banner&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;-loglevel&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;info&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;-stats&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;-y&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_input_path</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_output_path</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_encoder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_crf</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bitrate_kbps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bufsize_kb</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pix_fmt</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_preset</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tune</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_profile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_two_pass</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pass_log_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pass_number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="FFmpegCommandBuilder.set_input">
+<a class="viewcode-back" href="../../../api/pipeline_ffmpeg_builder.html#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_input">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_path</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FFmpegCommandBuilder</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the input file path for the FFmpeg command.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            input_path (pathlib.Path): Path to the input video file.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            FFmpegCommandBuilder: The builder instance (for chaining).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_input_path</span> <span class="o">=</span> <span class="n">input_path</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_command</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;-i&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">input_path</span><span class="p">)])</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="FFmpegCommandBuilder.set_output">
+<a class="viewcode-back" href="../../../api/pipeline_ffmpeg_builder.html#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_output">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FFmpegCommandBuilder</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the output file path for the FFmpeg command.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            output_path (pathlib.Path): Path to the output video file.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            FFmpegCommandBuilder: The builder instance (for chaining).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_output_path</span> <span class="o">=</span> <span class="n">output_path</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="k">return</span> <span class="bp">self</span>  <span class="c1"># Output path is added during build based on pass</span></div>
+
+
+<div class="viewcode-block" id="FFmpegCommandBuilder.set_encoder">
+<a class="viewcode-back" href="../../../api/pipeline_ffmpeg_builder.html#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_encoder">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_encoder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">encoder</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FFmpegCommandBuilder</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the video encoder to use.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            encoder (str): Encoder name (e.g., &quot;Software x265&quot;, &quot;Hardware HEVC (VideoToolbox)&quot;).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            FFmpegCommandBuilder: The builder instance (for chaining).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_encoder</span> <span class="o">=</span> <span class="n">encoder</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="c1"># Encoder-specific args will be added in build()</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="FFmpegCommandBuilder.set_crf">
+<a class="viewcode-back" href="../../../api/pipeline_ffmpeg_builder.html#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_crf">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_crf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">crf</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FFmpegCommandBuilder</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the Constant Rate Factor (CRF) for quality-based encoding.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            crf (int): CRF value (lower is higher quality).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            FFmpegCommandBuilder: The builder instance (for chaining).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_crf</span> <span class="o">=</span> <span class="n">crf</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="FFmpegCommandBuilder.set_bitrate">
+<a class="viewcode-back" href="../../../api/pipeline_ffmpeg_builder.html#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_bitrate">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_bitrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bitrate_kbps</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FFmpegCommandBuilder</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the target bitrate in kbps for bitrate-based encoding.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            bitrate_kbps (int): Target bitrate in kilobits per second.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            FFmpegCommandBuilder: The builder instance (for chaining).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bitrate_kbps</span> <span class="o">=</span> <span class="n">bitrate_kbps</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="FFmpegCommandBuilder.set_bufsize">
+<a class="viewcode-back" href="../../../api/pipeline_ffmpeg_builder.html#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_bufsize">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_bufsize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bufsize_kb</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FFmpegCommandBuilder</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the buffer size in kb for bitrate-based encoding.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            bufsize_kb (int): Buffer size in kilobytes.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            FFmpegCommandBuilder: The builder instance (for chaining).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_bufsize_kb</span> <span class="o">=</span> <span class="n">bufsize_kb</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="FFmpegCommandBuilder.set_pix_fmt">
+<a class="viewcode-back" href="../../../api/pipeline_ffmpeg_builder.html#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_pix_fmt">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_pix_fmt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pix_fmt</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FFmpegCommandBuilder</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the pixel format for the output video.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pix_fmt (str): Pixel format string (e.g., &quot;yuv420p10le&quot;).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            FFmpegCommandBuilder: The builder instance (for chaining).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pix_fmt</span> <span class="o">=</span> <span class="n">pix_fmt</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="FFmpegCommandBuilder.set_preset">
+<a class="viewcode-back" href="../../../api/pipeline_ffmpeg_builder.html#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_preset">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_preset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">preset</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FFmpegCommandBuilder</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the encoding preset for the output video.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            preset (str): Encoding preset (e.g., &quot;slow&quot;, &quot;medium&quot;, &quot;fast&quot;).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            FFmpegCommandBuilder: The builder instance (for chaining).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_preset</span> <span class="o">=</span> <span class="n">preset</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="FFmpegCommandBuilder.set_tune">
+<a class="viewcode-back" href="../../../api/pipeline_ffmpeg_builder.html#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_tune">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_tune</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">tune</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FFmpegCommandBuilder</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the encoding tune for the output video.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            tune (str): Encoding tune (e.g., &quot;animation&quot;, &quot;film&quot;, &quot;grain&quot;).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            FFmpegCommandBuilder: The builder instance (for chaining).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tune</span> <span class="o">=</span> <span class="n">tune</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="FFmpegCommandBuilder.set_profile">
+<a class="viewcode-back" href="../../../api/pipeline_ffmpeg_builder.html#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_profile">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_profile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">profile</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FFmpegCommandBuilder</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the encoding profile for the output video.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            profile (str): Encoding profile (e.g., &quot;main&quot;, &quot;main10&quot;, &quot;high&quot;).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            FFmpegCommandBuilder: The builder instance (for chaining).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_profile</span> <span class="o">=</span> <span class="n">profile</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="FFmpegCommandBuilder.set_two_pass">
+<a class="viewcode-back" href="../../../api/pipeline_ffmpeg_builder.html#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.set_two_pass">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_two_pass</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">is_two_pass</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">pass_log_prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pass_number</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FFmpegCommandBuilder</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Configure two-pass encoding parameters.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            is_two_pass (bool): Whether to use two-pass encoding.</span>
+<span class="sd">            pass_log_prefix (str): Prefix for the two-pass log file.</span>
+<span class="sd">            pass_number (int): Pass number (1 or 2).</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            FFmpegCommandBuilder: The builder instance (for chaining).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_is_two_pass</span> <span class="o">=</span> <span class="n">is_two_pass</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pass_log_prefix</span> <span class="o">=</span> <span class="n">pass_log_prefix</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pass_number</span> <span class="o">=</span> <span class="n">pass_number</span>  <span class="c1"># pylint: disable=attribute-defined-outside-init</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<div class="viewcode-block" id="FFmpegCommandBuilder.build">
+<a class="viewcode-back" href="../../../api/pipeline_ffmpeg_builder.html#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder.build">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build and return the FFmpeg command as a list of arguments.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            List[str]: The FFmpeg command suitable for subprocess execution.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If required parameters are missing or invalid.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_required_parameters</span><span class="p">()</span>
+
+        <span class="c1"># Handle special case of copy encoder</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encoder</span> <span class="o">==</span> <span class="s2">&quot;None (copy original)&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_copy_command</span><span class="p">()</span>
+
+        <span class="c1"># Build command with encoder-specific arguments</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_command</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_encoder_specific_args</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cmd</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_required_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that all required parameters are set.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_input_path</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output_path</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encoder</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Input path, output path, and encoder must be set.&quot;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_copy_command</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build command for stream copy (no re-encoding).&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="s2">&quot;ffmpeg&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;-y&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;-i&quot;</span><span class="p">,</span>
+            <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_input_path</span><span class="p">),</span>
+            <span class="s2">&quot;-c&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;copy&quot;</span><span class="p">,</span>
+            <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output_path</span><span class="p">),</span>
+        <span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_preset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the preset to use, with fallback to default.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            default (str): Default preset to use if none specified.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The preset to use.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_preset</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_preset</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">default</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_tune_and_profile_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add tune and profile arguments if set.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            cmd (list[str]): Command list to append to.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tune</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;-tune&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tune</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_profile</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;-profile:v&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_profile</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_encoder_specific_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add encoder-specific arguments to the command.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encoder</span> <span class="o">==</span> <span class="s2">&quot;Software x265 (2-Pass)&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_x265_two_pass_args</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encoder</span> <span class="o">==</span> <span class="s2">&quot;Software x265&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_x265_single_pass_args</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encoder</span> <span class="o">==</span> <span class="s2">&quot;Software x264&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_x264_args</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encoder</span> <span class="o">==</span> <span class="s2">&quot;Hardware HEVC (VideoToolbox)&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_hardware_hevc_args</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encoder</span> <span class="o">==</span> <span class="s2">&quot;Hardware H.264 (VideoToolbox)&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_hardware_h264_args</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Unsupported encoder selected: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_encoder</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_x265_two_pass_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add arguments for x265 two-pass encoding.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_two_pass_parameters</span><span class="p">()</span>
+
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;-c:v&quot;</span><span class="p">,</span> <span class="s2">&quot;libx265&quot;</span><span class="p">,</span> <span class="s2">&quot;-preset&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_preset</span><span class="p">(</span><span class="s2">&quot;slower&quot;</span><span class="p">)])</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pass_number</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_x265_pass1_args</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pass_number</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_add_x265_pass2_args</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Invalid pass number for two-pass x265: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_pass_number</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_two_pass_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate parameters required for two-pass encoding.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_two_pass</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pass_log_prefix</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pass_number</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Two-pass encoding requires two_pass flag, log prefix, and pass number.&quot;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_x265_pass1_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add arguments for x265 pass 1.&quot;&quot;&quot;</span>
+        <span class="c1"># Type narrowing: we know _pass_log_prefix is not None here due to validation</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pass_log_prefix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span>
+            <span class="s2">&quot;-b:v&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_bitrate_kbps</span><span class="si">}</span><span class="s2">k&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;-x265-params&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;pass=1&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;-passlogfile&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pass_log_prefix</span><span class="p">,</span>
+            <span class="s2">&quot;-f&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;null&quot;</span><span class="p">,</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">devnull</span><span class="p">,</span>
+        <span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_x265_pass2_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add arguments for x265 pass 2.&quot;&quot;&quot;</span>
+        <span class="c1"># Type narrowing: we know _pass_log_prefix is not None here due to validation</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pass_log_prefix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="n">pass2_params</span> <span class="o">=</span> <span class="s2">&quot;pass=2:aq-mode=3:aq-strength=1.0:psy-rd=2.0:psy-rdoq=1.0&quot;</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;-b:v&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_bitrate_kbps</span><span class="si">}</span><span class="s2">k&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;-x265-params&quot;</span><span class="p">,</span>
+            <span class="n">pass2_params</span><span class="p">,</span>
+            <span class="s2">&quot;-passlogfile&quot;</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pass_log_prefix</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_common_output_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_x265_single_pass_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add arguments for single-pass x265 encoding.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_crf</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;CRF must be set for single-pass x265.&quot;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">x265_params</span> <span class="o">=</span> <span class="s2">&quot;aq-mode=3:aq-strength=1.0:psy-rd=2.0:psy-rdoq=1.0&quot;</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;-c:v&quot;</span><span class="p">,</span> <span class="s2">&quot;libx265&quot;</span><span class="p">,</span> <span class="s2">&quot;-preset&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_preset</span><span class="p">(</span><span class="s2">&quot;slower&quot;</span><span class="p">),</span> <span class="s2">&quot;-crf&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_crf</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_tune_and_profile_args</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;-x265-params&quot;</span><span class="p">,</span> <span class="n">x265_params</span><span class="p">])</span>
+
+        <span class="n">args</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_common_output_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_x264_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add arguments for x264 encoding.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_crf</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;CRF must be set for x264.&quot;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;-c:v&quot;</span><span class="p">,</span> <span class="s2">&quot;libx264&quot;</span><span class="p">,</span> <span class="s2">&quot;-preset&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_preset</span><span class="p">(</span><span class="s2">&quot;slow&quot;</span><span class="p">),</span> <span class="s2">&quot;-crf&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_crf</span><span class="p">)])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_tune_and_profile_args</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>
+
+        <span class="n">args</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_common_output_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_hardware_hevc_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add arguments for hardware HEVC encoding.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_hardware_parameters</span><span class="p">(</span><span class="s2">&quot;Hardware HEVC&quot;</span><span class="p">)</span>
+
+        <span class="n">safe_bitrate</span><span class="p">,</span> <span class="n">safe_bufsize</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_safe_hardware_rates</span><span class="p">()</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;-c:v&quot;</span><span class="p">,</span> <span class="s2">&quot;hevc_videotoolbox&quot;</span><span class="p">,</span> <span class="s2">&quot;-tag:v&quot;</span><span class="p">,</span> <span class="s2">&quot;hvc1&quot;</span><span class="p">])</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;-b:v&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">safe_bitrate</span><span class="si">}</span><span class="s2">k&quot;</span><span class="p">,</span> <span class="s2">&quot;-maxrate&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">safe_bufsize</span><span class="si">}</span><span class="s2">k&quot;</span><span class="p">])</span>
+
+        <span class="n">args</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_common_output_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_hardware_h264_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cmd</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add arguments for hardware H.264 encoding.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_hardware_parameters</span><span class="p">(</span><span class="s2">&quot;Hardware H.264&quot;</span><span class="p">)</span>
+
+        <span class="n">safe_bitrate</span><span class="p">,</span> <span class="n">safe_bufsize</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_safe_hardware_rates</span><span class="p">()</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;-c:v&quot;</span><span class="p">,</span> <span class="s2">&quot;h264_videotoolbox&quot;</span><span class="p">])</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;-b:v&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">safe_bitrate</span><span class="si">}</span><span class="s2">k&quot;</span><span class="p">,</span> <span class="s2">&quot;-maxrate&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">safe_bufsize</span><span class="si">}</span><span class="s2">k&quot;</span><span class="p">])</span>
+
+        <span class="n">args</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_common_output_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_hardware_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">encoder_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate parameters required for hardware encoding.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bitrate_kbps</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bufsize_kb</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Bitrate and bufsize must be set for </span><span class="si">{</span><span class="n">encoder_name</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_safe_hardware_rates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get safe bitrate and bufsize values for hardware encoding.&quot;&quot;&quot;</span>
+        <span class="c1"># These should have been validated before calling this method</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bitrate_kbps</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bufsize_kb</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="n">safe_bitrate</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bitrate_kbps</span><span class="p">)</span>
+        <span class="n">safe_bufsize</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bufsize_kb</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">safe_bitrate</span><span class="p">,</span> <span class="n">safe_bufsize</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_format_specific_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add format-specific arguments based on output file extension.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output_ext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output_path</span><span class="o">.</span><span class="n">suffix</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">output_ext</span> <span class="o">==</span> <span class="s2">&quot;.mp4&quot;</span><span class="p">:</span>
+                <span class="n">args</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;-movflags&quot;</span><span class="p">,</span> <span class="s2">&quot;+faststart&quot;</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_add_common_output_args</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Add common output arguments (pixel format, format-specific options, and output path).&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pix_fmt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;-pix_fmt&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pix_fmt</span><span class="p">])</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_format_specific_args</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_output_path</span><span class="p">))</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

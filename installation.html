@@ -1,0 +1,464 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installation Guide &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Quick Start Guide" href="quickstart.html" />
+    <link rel="prev" title="GOES_VFI Documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#system-requirements">System Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#supported-operating-systems">Supported Operating Systems</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installation-methods">Installation Methods</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#method-1-standard-installation">Method 1: Standard Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#method-2-development-installation">Method 2: Development Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#dependency-installation">Dependency Installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#core-dependencies">Core Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#system-dependencies">System Dependencies</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#external-tools">External Tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#rife-real-time-intermediate-flow-estimation">RIFE (Real-Time Intermediate Flow Estimation)</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#sanchez">Sanchez</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#verification">Verification</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#test-installation">Test Installation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#quick-test-script">Quick Test Script</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#troubleshooting">Troubleshooting</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#common-issues">Common Issues</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#performance-optimization">Performance Optimization</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#development-setup">Development Setup</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#docker-installation-optional">Docker Installation (Optional)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Installation Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/installation.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="installation-guide">
+<h1>Installation Guide<a class="headerlink" href="#installation-guide" title="Link to this heading"></a></h1>
+<p>This guide covers the installation of GOES_VFI on different operating systems.</p>
+<section id="system-requirements">
+<h2>System Requirements<a class="headerlink" href="#system-requirements" title="Link to this heading"></a></h2>
+<p>Before installing GOES_VFI, ensure your system meets the following requirements:</p>
+<p><strong>Minimum Requirements:</strong></p>
+<ul class="simple">
+<li><p>Python 3.13 or higher</p></li>
+<li><p>4GB RAM (8GB+ recommended for large datasets)</p></li>
+<li><p>1GB free disk space</p></li>
+<li><p>Internet connection for downloading satellite data</p></li>
+</ul>
+<p><strong>Recommended System:</strong></p>
+<ul class="simple">
+<li><p>Python 3.13+</p></li>
+<li><p>16GB RAM or more</p></li>
+<li><p>SSD storage with 10GB+ free space</p></li>
+<li><p>Multi-core CPU (4+ cores recommended)</p></li>
+<li><p>Dedicated GPU (optional, for accelerated processing)</p></li>
+</ul>
+</section>
+<section id="supported-operating-systems">
+<h2>Supported Operating Systems<a class="headerlink" href="#supported-operating-systems" title="Link to this heading"></a></h2>
+<p>GOES_VFI is tested and supported on:</p>
+<ul class="simple">
+<li><p><strong>Windows</strong>: Windows 10/11 (64-bit)</p></li>
+<li><p><strong>macOS</strong>: macOS 10.15+ (Catalina and later)</p></li>
+<li><p><strong>Linux</strong>: Ubuntu 20.04+, CentOS 8+, and other modern distributions</p></li>
+</ul>
+</section>
+<section id="installation-methods">
+<h2>Installation Methods<a class="headerlink" href="#installation-methods" title="Link to this heading"></a></h2>
+<section id="method-1-standard-installation">
+<h3>Method 1: Standard Installation<a class="headerlink" href="#method-1-standard-installation" title="Link to this heading"></a></h3>
+<p>The recommended way to install GOES_VFI:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Clone the repository</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/username/GOES_VFI.git
+<span class="nb">cd</span><span class="w"> </span>GOES_VFI
+
+<span class="c1"># Create a virtual environment (recommended)</span>
+python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv
+
+<span class="c1"># Activate the virtual environment</span>
+<span class="c1"># On Windows:</span>
+.venv<span class="se">\S</span>cripts<span class="se">\a</span>ctivate
+<span class="c1"># On macOS/Linux:</span>
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+
+<span class="c1"># Install dependencies</span>
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</pre></div>
+</div>
+</section>
+<section id="method-2-development-installation">
+<h3>Method 2: Development Installation<a class="headerlink" href="#method-2-development-installation" title="Link to this heading"></a></h3>
+<p>For contributors and developers:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Clone the repository</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/username/GOES_VFI.git
+<span class="nb">cd</span><span class="w"> </span>GOES_VFI
+
+<span class="c1"># Create and activate virtual environment</span>
+python<span class="w"> </span>-m<span class="w"> </span>venv<span class="w"> </span>.venv
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate<span class="w">  </span><span class="c1"># or .venv\Scripts\activate on Windows</span>
+
+<span class="c1"># Install the package in editable mode with development tools</span>
+pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>test,dev,typing,docs<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="dependency-installation">
+<h2>Dependency Installation<a class="headerlink" href="#dependency-installation" title="Link to this heading"></a></h2>
+<section id="core-dependencies">
+<h3>Core Dependencies<a class="headerlink" href="#core-dependencies" title="Link to this heading"></a></h3>
+<p>GOES_VFI requires several Python packages:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># GUI and system</span>
+pip<span class="w"> </span>install<span class="w"> </span>PyQt6<span class="w"> </span>psutil
+
+<span class="c1"># Image and video processing</span>
+pip<span class="w"> </span>install<span class="w"> </span>numpy<span class="w"> </span>Pillow<span class="w"> </span>opencv-python-headless<span class="w"> </span>ffmpeg-python
+
+<span class="c1"># Satellite data processing</span>
+pip<span class="w"> </span>install<span class="w"> </span>aiohttp<span class="w"> </span>aioboto3<span class="w"> </span>xarray<span class="w"> </span>netCDF4<span class="w"> </span>matplotlib<span class="w"> </span>aiofiles
+
+<span class="c1"># Utilities</span>
+pip<span class="w"> </span>install<span class="w"> </span>colorlog<span class="w"> </span>requests<span class="w"> </span>tqdm<span class="w"> </span>imageio<span class="w"> </span>python-dateutil
+</pre></div>
+</div>
+</section>
+<section id="system-dependencies">
+<h3>System Dependencies<a class="headerlink" href="#system-dependencies" title="Link to this heading"></a></h3>
+<p>Some dependencies require system-level packages:</p>
+<p><strong>Ubuntu/Debian:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt<span class="w"> </span>update
+sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>python3-dev<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libgl1-mesa-glx<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libglib2.0-0<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libsm6<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libxext6<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libxrender-dev<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libfontconfig1<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>ffmpeg
+</pre></div>
+</div>
+<p><strong>CentOS/RHEL:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>python3-devel<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>mesa-libGL<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>glib2<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libSM<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libXext<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libXrender<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>fontconfig<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>ffmpeg
+</pre></div>
+</div>
+<p><strong>macOS:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install Homebrew if not already installed</span>
+/bin/bash<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>curl<span class="w"> </span>-fsSL<span class="w"> </span>https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh<span class="k">)</span><span class="s2">&quot;</span>
+
+<span class="c1"># Install FFmpeg</span>
+brew<span class="w"> </span>install<span class="w"> </span>ffmpeg
+</pre></div>
+</div>
+<p><strong>Windows:</strong></p>
+<ol class="arabic simple">
+<li><p>Download and install FFmpeg from <a class="reference external" href="https://ffmpeg.org/download.html">https://ffmpeg.org/download.html</a></p></li>
+<li><p>Add FFmpeg to your system PATH</p></li>
+<li><p>Install Microsoft Visual C++ Redistributable if needed</p></li>
+</ol>
+</section>
+</section>
+<section id="external-tools">
+<h2>External Tools<a class="headerlink" href="#external-tools" title="Link to this heading"></a></h2>
+<p>GOES_VFI can use several external tools for enhanced functionality:</p>
+<section id="rife-real-time-intermediate-flow-estimation">
+<h3>RIFE (Real-Time Intermediate Flow Estimation)<a class="headerlink" href="#rife-real-time-intermediate-flow-estimation" title="Link to this heading"></a></h3>
+<p>For AI-powered frame interpolation:</p>
+<ol class="arabic simple">
+<li><p>Download RIFE from: <a class="reference external" href="https://github.com/megvii-research/ECCV2022-RIFE">https://github.com/megvii-research/ECCV2022-RIFE</a></p></li>
+<li><p>Place the executable in <code class="docutils literal notranslate"><span class="pre">goesvfi/bin/</span></code> or add to system PATH</p></li>
+<li><p>Download model files to <code class="docutils literal notranslate"><span class="pre">goesvfi/models/</span></code></p></li>
+</ol>
+</section>
+<section id="sanchez">
+<h3>Sanchez<a class="headerlink" href="#sanchez" title="Link to this heading"></a></h3>
+<p>For false-color satellite image processing:</p>
+<ol class="arabic simple">
+<li><p>Download Sanchez from: <a class="reference external" href="https://github.com/nullpainter/sanchez">https://github.com/nullpainter/sanchez</a></p></li>
+<li><p>Place the executable in <code class="docutils literal notranslate"><span class="pre">goesvfi/sanchez/bin/</span></code> or add to system PATH</p></li>
+</ol>
+</section>
+</section>
+<section id="verification">
+<h2>Verification<a class="headerlink" href="#verification" title="Link to this heading"></a></h2>
+<section id="test-installation">
+<h3>Test Installation<a class="headerlink" href="#test-installation" title="Link to this heading"></a></h3>
+<p>Verify your installation by running the test suite:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Basic functionality test</span>
+python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import goesvfi; print(&#39;GOES_VFI imported successfully&#39;)&quot;</span>
+
+<span class="c1"># Run unit tests</span>
+python<span class="w"> </span>-m<span class="w"> </span>pytest<span class="w"> </span>tests/unit/<span class="w"> </span>-v
+
+<span class="c1"># Test resource management</span>
+python<span class="w"> </span>examples/utilities/test_resource_management.py
+
+<span class="c1"># Launch GUI (if display is available)</span>
+python<span class="w"> </span>-m<span class="w"> </span>goesvfi.gui<span class="w"> </span>--debug
+</pre></div>
+</div>
+</section>
+<section id="quick-test-script">
+<h3>Quick Test Script<a class="headerlink" href="#quick-test-script" title="Link to this heading"></a></h3>
+<p>Create a simple test script to verify core functionality:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;Quick installation test for GOES_VFI.&quot;&quot;&quot;</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_imports</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test that all core modules can be imported.&quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">goesvfi.utils.log</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">goesvfi.utils.config</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">goesvfi.utils.resource_manager</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">goesvfi.pipeline.image_loader</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;✅ Core modules imported successfully&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ Import error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="kc">True</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_dependencies</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test that key dependencies are available.&quot;&quot;&quot;</span>
+    <span class="n">deps</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;PyQt6&#39;</span><span class="p">,</span> <span class="s1">&#39;numpy&#39;</span><span class="p">,</span> <span class="s1">&#39;PIL&#39;</span><span class="p">,</span> <span class="s1">&#39;cv2&#39;</span><span class="p">,</span> <span class="s1">&#39;psutil&#39;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">dep</span> <span class="ow">in</span> <span class="n">deps</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="nb">__import__</span><span class="p">(</span><span class="n">dep</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;✅ </span><span class="si">{</span><span class="n">dep</span><span class="si">}</span><span class="s2"> available&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;❌ </span><span class="si">{</span><span class="n">dep</span><span class="si">}</span><span class="s2"> not found&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="kc">True</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Testing GOES_VFI installation...&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">test_imports</span><span class="p">()</span> <span class="ow">and</span> <span class="n">test_dependencies</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;🎉 Installation test passed!&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;💥 Installation test failed!&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Save this as <code class="docutils literal notranslate"><span class="pre">test_installation.py</span></code> and run it:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>test_installation.py
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="common-issues">
+<h3>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading"></a></h3>
+<p><strong>ImportError: No module named ‘PyQt6’</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>PyQt6
+</pre></div>
+</div>
+<p><strong>FFmpeg not found</strong></p>
+<p>Ensure FFmpeg is installed and in your system PATH:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Test FFmpeg installation</span>
+ffmpeg<span class="w"> </span>-version
+</pre></div>
+</div>
+<p><strong>Permission errors on Linux/macOS</strong></p>
+<p>Ensure proper permissions for the installation directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>chmod<span class="w"> </span>+x<span class="w"> </span>goesvfi/bin/*
+chmod<span class="w"> </span>+x<span class="w"> </span>examples/utilities/*.py
+</pre></div>
+</div>
+<p><strong>Memory errors during processing</strong></p>
+<p>Reduce resource limits in the GUI or use command-line options:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.resource_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResourceLimits</span>
+
+<span class="n">limits</span> <span class="o">=</span> <span class="n">ResourceLimits</span><span class="p">(</span><span class="n">max_memory_mb</span><span class="o">=</span><span class="mi">1024</span><span class="p">)</span>  <span class="c1"># Limit to 1GB</span>
+</pre></div>
+</div>
+</section>
+<section id="performance-optimization">
+<h3>Performance Optimization<a class="headerlink" href="#performance-optimization" title="Link to this heading"></a></h3>
+<p>For optimal performance:</p>
+<ol class="arabic simple">
+<li><p><strong>Use SSD storage</strong> for temporary files</p></li>
+<li><p><strong>Increase memory limits</strong> based on available RAM</p></li>
+<li><p><strong>Use multiple CPU cores</strong> for parallel processing</p></li>
+<li><p><strong>Close other applications</strong> during intensive processing</p></li>
+</ol>
+</section>
+</section>
+<section id="development-setup">
+<h2>Development Setup<a class="headerlink" href="#development-setup" title="Link to this heading"></a></h2>
+<p>Additional setup for development:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install pre-commit hooks</span>
+pip<span class="w"> </span>install<span class="w"> </span>pre-commit
+pre-commit<span class="w"> </span>install
+
+<span class="c1"># Install linting tools</span>
+pip<span class="w"> </span>install<span class="w"> </span>flake8<span class="w"> </span>pylint<span class="w"> </span>mypy<span class="w"> </span>black<span class="w"> </span>isort
+
+<span class="c1"># Run linters</span>
+python<span class="w"> </span>run_linters.py
+
+<span class="c1"># Generate documentation</span>
+<span class="nb">cd</span><span class="w"> </span>docs
+make<span class="w"> </span>html
+</pre></div>
+</div>
+</section>
+<section id="docker-installation-optional">
+<h2>Docker Installation (Optional)<a class="headerlink" href="#docker-installation-optional" title="Link to this heading"></a></h2>
+<p>For containerized deployment:</p>
+<div class="highlight-dockerfile notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">python:3.13-slim</span>
+
+<span class="k">RUN</span><span class="w"> </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>ffmpeg<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libgl1-mesa-glx<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libglib2.0-0<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-rf<span class="w"> </span>/var/lib/apt/lists/*
+
+<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/app</span>
+<span class="k">COPY</span><span class="w"> </span>pyproject.toml<span class="w"> </span>.
+<span class="k">RUN</span><span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>.
+
+<span class="k">COPY</span><span class="w"> </span>.<span class="w"> </span>.
+<span class="k">CMD</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;python&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;-m&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;goesvfi.gui&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Build and run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>goes-vfi<span class="w"> </span>.
+docker<span class="w"> </span>run<span class="w"> </span>-it<span class="w"> </span>--rm<span class="w"> </span>-e<span class="w"> </span><span class="nv">DISPLAY</span><span class="o">=</span><span class="nv">$DISPLAY</span><span class="w"> </span>-v<span class="w"> </span>/tmp/.X11-unix:/tmp/.X11-unix<span class="w"> </span>goes-vfi
+</pre></div>
+</div>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<p>Once installation is complete:</p>
+<ol class="arabic simple">
+<li><p>Read the <a class="reference internal" href="quickstart.html"><span class="doc">Quick Start Guide</span></a> guide</p></li>
+<li><p>Explore the <span class="xref std std-doc">tutorials/index</span></p></li>
+<li><p>Check out the <span class="xref std std-doc">user_guide/index</span></p></li>
+<li><p>Join our community discussions on GitHub</p></li>
+</ol>
+<p>For any installation issues, please check our <a class="reference external" href="https://github.com/username/GOES_VFI/issues">GitHub Issues</a> or start a new discussion.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="GOES_VFI Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="quickstart.html" class="btn btn-neutral float-right" title="Quick Start Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

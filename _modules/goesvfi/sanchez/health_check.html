@@ -1,0 +1,806 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>goesvfi.sanchez.health_check &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">goesvfi.sanchez.health_check</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for goesvfi.sanchez.health_check</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Sanchez health check and monitoring system.</span>
+
+<span class="sd">This module provides comprehensive health checks for the Sanchez</span>
+<span class="sd">external tool, including binary validation, dependency checks,</span>
+<span class="sd">and runtime monitoring.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">asyncio.subprocess</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">PIL</span><span class="w"> </span><span class="kn">import</span> <span class="n">Image</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigurationError</span><span class="p">,</span> <span class="n">ExternalToolError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.log</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># Memory thresholds</span>
+<span class="n">MINIMUM_MEMORY_MB</span> <span class="o">=</span> <span class="mi">500</span>
+<span class="n">MEMORY_WARNING_MB</span> <span class="o">=</span> <span class="mi">1000</span>  <span class="c1"># 1GB</span>
+
+<span class="c1"># Disk space thresholds</span>
+<span class="n">MINIMUM_DISK_SPACE_MB</span> <span class="o">=</span> <span class="mi">100</span>
+
+<span class="c1"># File size thresholds</span>
+<span class="n">LARGE_FILE_SIZE_BYTES</span> <span class="o">=</span> <span class="mi">500</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span>  <span class="c1"># 500MB</span>
+
+<span class="c1"># Image dimension limits</span>
+<span class="n">MINIMUM_IMAGE_DIMENSION</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">MAXIMUM_IMAGE_DIMENSION</span> <span class="o">=</span> <span class="mi">10000</span>
+
+<span class="c1"># Return codes</span>
+<span class="n">SUCCESS_RETURN_CODE</span> <span class="o">=</span> <span class="mi">0</span>
+
+
+<div class="viewcode-block" id="SanchezHealthStatus">
+<a class="viewcode-back" href="../../../api/sanchez_health_check.html#goesvfi.sanchez.health_check.SanchezHealthStatus">[docs]</a>
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SanchezHealthStatus</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Container for Sanchez health check results.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Basic checks</span>
+    <span class="n">binary_exists</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">binary_executable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">binary_path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">binary_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">binary_modified</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Dependency checks</span>
+    <span class="n">resources_exist</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">gradient_files</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">missing_resources</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+
+    <span class="c1"># Runtime checks</span>
+    <span class="n">can_execute</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">execution_time</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">version_info</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">help_available</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="c1"># System checks</span>
+    <span class="n">temp_dir_writable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">memory_available_mb</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">disk_space_available_mb</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="c1"># Error information</span>
+    <span class="n">errors</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+    <span class="n">warnings</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_healthy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if Sanchez is healthy and ready to use.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">binary_exists</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">binary_executable</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">resources_exist</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">can_execute</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp_dir_writable</span>
+            <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="SanchezHealthStatus.to_dict">
+<a class="viewcode-back" href="../../../api/sanchez_health_check.html#goesvfi.sanchez.health_check.SanchezHealthStatus.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert to dictionary for logging/serialization.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;healthy&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_healthy</span><span class="p">,</span>
+            <span class="s2">&quot;binary&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;exists&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">binary_exists</span><span class="p">,</span>
+                <span class="s2">&quot;executable&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">binary_executable</span><span class="p">,</span>
+                <span class="s2">&quot;path&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">binary_path</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">binary_path</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;size&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">binary_size</span><span class="p">,</span>
+                <span class="s2">&quot;modified&quot;</span><span class="p">:</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">binary_modified</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">binary_modified</span> <span class="k">else</span> <span class="kc">None</span><span class="p">),</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;dependencies&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;resources_exist&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">resources_exist</span><span class="p">,</span>
+                <span class="s2">&quot;gradient_files&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">gradient_files</span><span class="p">,</span>
+                <span class="s2">&quot;missing_resources&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">missing_resources</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;runtime&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;can_execute&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">can_execute</span><span class="p">,</span>
+                <span class="s2">&quot;execution_time&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">execution_time</span><span class="p">,</span>
+                <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">version_info</span><span class="p">,</span>
+                <span class="s2">&quot;help_available&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">help_available</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;system&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;temp_writable&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp_dir_writable</span><span class="p">,</span>
+                <span class="s2">&quot;memory_mb&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">memory_available_mb</span><span class="p">,</span>
+                <span class="s2">&quot;disk_mb&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">disk_space_available_mb</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;diagnostics&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="s2">&quot;temp_dir_writable&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp_dir_writable</span><span class="p">,</span>
+                <span class="s2">&quot;execution_time&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">execution_time</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="s2">&quot;errors&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">errors</span><span class="p">,</span>
+            <span class="s2">&quot;warnings&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">warnings</span><span class="p">,</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SanchezHealthChecker">
+<a class="viewcode-back" href="../../../api/sanchez_health_check.html#goesvfi.sanchez.health_check.SanchezHealthChecker">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SanchezHealthChecker</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Performs health checks on the Sanchez installation.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SanchezHealthChecker.__init__">
+<a class="viewcode-back" href="../../../api/sanchez_health_check.html#goesvfi.sanchez.health_check.SanchezHealthChecker.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the health checker.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">platform_key</span> <span class="o">=</span> <span class="p">(</span><span class="n">platform</span><span class="o">.</span><span class="n">system</span><span class="p">(),</span> <span class="n">platform</span><span class="o">.</span><span class="n">machine</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sanchez_dir</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_sanchez_bin_dir</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_binary_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the expected Sanchez binary path for this platform.&quot;&quot;&quot;</span>
+        <span class="n">lookup</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="p">(</span><span class="s2">&quot;Darwin&quot;</span><span class="p">,</span> <span class="s2">&quot;x86_64&quot;</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">sanchez_dir</span> <span class="o">/</span> <span class="s2">&quot;osx-x64&quot;</span> <span class="o">/</span> <span class="s2">&quot;Sanchez&quot;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s2">&quot;Darwin&quot;</span><span class="p">,</span> <span class="s2">&quot;arm64&quot;</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">sanchez_dir</span> <span class="o">/</span> <span class="s2">&quot;osx-arm64&quot;</span> <span class="o">/</span> <span class="s2">&quot;Sanchez&quot;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s2">&quot;Linux&quot;</span><span class="p">,</span> <span class="s2">&quot;x86_64&quot;</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">sanchez_dir</span> <span class="o">/</span> <span class="s2">&quot;linux-x64&quot;</span> <span class="o">/</span> <span class="s2">&quot;Sanchez&quot;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s2">&quot;Windows&quot;</span><span class="p">,</span> <span class="s2">&quot;AMD64&quot;</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">sanchez_dir</span> <span class="o">/</span> <span class="s2">&quot;win-x64&quot;</span> <span class="o">/</span> <span class="s2">&quot;Sanchez.exe&quot;</span><span class="p">,</span>
+            <span class="p">(</span><span class="s2">&quot;Windows&quot;</span><span class="p">,</span> <span class="s2">&quot;x86&quot;</span><span class="p">):</span> <span class="bp">self</span><span class="o">.</span><span class="n">sanchez_dir</span> <span class="o">/</span> <span class="s2">&quot;win-x86&quot;</span> <span class="o">/</span> <span class="s2">&quot;Sanchez.exe&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="k">return</span> <span class="n">lookup</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">platform_key</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SanchezHealthChecker.check_binary">
+<a class="viewcode-back" href="../../../api/sanchez_health_check.html#goesvfi.sanchez.health_check.SanchezHealthChecker.check_binary">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_binary</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="n">SanchezHealthStatus</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the Sanchez binary exists and is executable.&quot;&quot;&quot;</span>
+        <span class="n">binary_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_binary_path</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">binary_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sanchez not supported on platform: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">platform_key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">status</span><span class="o">.</span><span class="n">binary_path</span> <span class="o">=</span> <span class="n">binary_path</span>
+
+        <span class="c1"># Check existence</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">binary_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sanchez binary not found at: </span><span class="si">{</span><span class="n">binary_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">status</span><span class="o">.</span><span class="n">binary_exists</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># Check file properties</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">stat</span> <span class="o">=</span> <span class="n">binary_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">binary_size</span> <span class="o">=</span> <span class="n">stat</span><span class="o">.</span><span class="n">st_size</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">binary_modified</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">stat</span><span class="o">.</span><span class="n">st_mtime</span><span class="p">)</span>
+
+            <span class="c1"># Check if executable</span>
+            <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="n">binary_path</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">X_OK</span><span class="p">):</span>
+                <span class="n">status</span><span class="o">.</span><span class="n">binary_executable</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">status</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sanchez binary is not executable: </span><span class="si">{</span><span class="n">binary_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error checking binary properties: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SanchezHealthChecker.check_resources">
+<a class="viewcode-back" href="../../../api/sanchez_health_check.html#goesvfi.sanchez.health_check.SanchezHealthChecker.check_resources">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="n">SanchezHealthStatus</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if required Sanchez resources exist.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">status</span><span class="o">.</span><span class="n">binary_path</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">binary_dir</span> <span class="o">=</span> <span class="n">status</span><span class="o">.</span><span class="n">binary_path</span><span class="o">.</span><span class="n">parent</span>
+        <span class="n">resources_dir</span> <span class="o">=</span> <span class="n">binary_dir</span> <span class="o">/</span> <span class="s2">&quot;Resources&quot;</span>
+
+        <span class="c1"># Check main resources directory</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">resources_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Resources directory not found: </span><span class="si">{</span><span class="n">resources_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># Check for gradient files</span>
+        <span class="n">gradients_dir</span> <span class="o">=</span> <span class="n">resources_dir</span> <span class="o">/</span> <span class="s2">&quot;Gradients&quot;</span>
+        <span class="k">if</span> <span class="n">gradients_dir</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">gradient_files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">gradients_dir</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;*.json&quot;</span><span class="p">))</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">gradient_files</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">gradient_files</span><span class="p">]</span>
+
+            <span class="c1"># Check for essential gradient</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">gradients_dir</span> <span class="o">/</span> <span class="s2">&quot;Atmosphere.json&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">status</span><span class="o">.</span><span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Default Atmosphere.json gradient not found&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">missing_resources</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Gradients directory&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Check for other resources</span>
+        <span class="n">expected_resources</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;Overlays&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Palettes&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">resource</span> <span class="ow">in</span> <span class="n">expected_resources</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">resources_dir</span> <span class="o">/</span> <span class="n">resource</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                <span class="n">status</span><span class="o">.</span><span class="n">missing_resources</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">resource</span><span class="p">)</span>
+
+        <span class="c1"># Overall resources check</span>
+        <span class="n">status</span><span class="o">.</span><span class="n">resources_exist</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">gradient_files</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">missing_resources</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="SanchezHealthChecker.check_execution">
+<a class="viewcode-back" href="../../../api/sanchez_health_check.html#goesvfi.sanchez.health_check.SanchezHealthChecker.check_execution">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_execution</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="n">SanchezHealthStatus</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if Sanchez can actually execute.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">status</span><span class="o">.</span><span class="n">binary_executable</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">binary_path</span> <span class="o">=</span> <span class="n">status</span><span class="o">.</span><span class="n">binary_path</span>
+        <span class="k">if</span> <span class="n">binary_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">binary_dir</span> <span class="o">=</span> <span class="n">binary_path</span><span class="o">.</span><span class="n">parent</span>
+
+        <span class="c1"># Try to get version/help</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># First try --version</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">binary_path</span><span class="p">),</span> <span class="s2">&quot;--version&quot;</span><span class="p">],</span>
+                <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                <span class="n">cwd</span><span class="o">=</span><span class="n">binary_dir</span><span class="p">,</span>
+                <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">elapsed</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+
+            <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="n">SUCCESS_RETURN_CODE</span><span class="p">:</span>
+                <span class="n">status</span><span class="o">.</span><span class="n">version_info</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                <span class="n">status</span><span class="o">.</span><span class="n">execution_time</span> <span class="o">=</span> <span class="n">elapsed</span>
+                <span class="n">status</span><span class="o">.</span><span class="n">can_execute</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Try --help as fallback</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                    <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">binary_path</span><span class="p">),</span> <span class="s2">&quot;--help&quot;</span><span class="p">],</span>
+                    <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">timeout</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                    <span class="n">cwd</span><span class="o">=</span><span class="n">binary_dir</span><span class="p">,</span>
+                    <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">returncode</span> <span class="o">==</span> <span class="n">SUCCESS_RETURN_CODE</span> <span class="ow">or</span> <span class="s2">&quot;Usage:&quot;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="p">:</span>
+                    <span class="n">status</span><span class="o">.</span><span class="n">help_available</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">status</span><span class="o">.</span><span class="n">can_execute</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="c1"># Extract version from help if possible</span>
+                    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">):</span>
+                        <span class="k">if</span> <span class="s2">&quot;version&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span>
+                            <span class="n">status</span><span class="o">.</span><span class="n">version_info</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                            <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">status</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sanchez execution failed: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">stderr</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">TimeoutExpired</span><span class="p">:</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Sanchez execution timed out (&gt;5 seconds)&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error executing Sanchez: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SanchezHealthChecker.check_system_resources">
+<a class="viewcode-back" href="../../../api/sanchez_health_check.html#goesvfi.sanchez.health_check.SanchezHealthChecker.check_system_resources">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_system_resources</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="n">SanchezHealthStatus</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check system resources (memory, disk space, temp directory).&quot;&quot;&quot;</span>
+        <span class="c1"># Check temp directory</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="nb">dir</span><span class="o">=</span><span class="n">tempfile</span><span class="o">.</span><span class="n">gettempdir</span><span class="p">(),</span> <span class="n">delete</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">tmp</span><span class="p">:</span>
+                <span class="n">tmp</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>
+                <span class="n">tmp</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span>
+                <span class="n">status</span><span class="o">.</span><span class="n">temp_dir_writable</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;Cannot write to temporary directory&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Check available memory</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">psutil</span>
+
+            <span class="n">memory</span> <span class="o">=</span> <span class="n">psutil</span><span class="o">.</span><span class="n">virtual_memory</span><span class="p">()</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">memory_available_mb</span> <span class="o">=</span> <span class="n">memory</span><span class="o">.</span><span class="n">available</span> <span class="o">//</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">)</span>
+
+            <span class="c1"># Warn if less than 500MB available</span>
+            <span class="k">if</span> <span class="n">status</span><span class="o">.</span><span class="n">memory_available_mb</span> <span class="o">&lt;</span> <span class="n">MINIMUM_MEMORY_MB</span><span class="p">:</span>
+                <span class="n">status</span><span class="o">.</span><span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Low memory available: </span><span class="si">{</span><span class="n">status</span><span class="o">.</span><span class="n">memory_available_mb</span><span class="si">}</span><span class="s2">MB&quot;</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="c1"># psutil not available, try platform-specific</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;psutil not available for memory checking&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">status</span><span class="o">.</span><span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not check memory: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Check disk space</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">status</span><span class="o">.</span><span class="n">binary_path</span><span class="p">:</span>
+                <span class="n">stat</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">statvfs</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">binary_path</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span>
+                <span class="c1"># Available space in MB</span>
+                <span class="n">status</span><span class="o">.</span><span class="n">disk_space_available_mb</span> <span class="o">=</span> <span class="p">(</span><span class="n">stat</span><span class="o">.</span><span class="n">f_bavail</span> <span class="o">*</span> <span class="n">stat</span><span class="o">.</span><span class="n">f_frsize</span><span class="p">)</span> <span class="o">//</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">)</span>
+
+                <span class="c1"># Warn if less than 100MB</span>
+                <span class="k">if</span> <span class="n">status</span><span class="o">.</span><span class="n">disk_space_available_mb</span> <span class="o">&lt;</span> <span class="n">MINIMUM_DISK_SPACE_MB</span><span class="p">:</span>
+                    <span class="n">status</span><span class="o">.</span><span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Low disk space: </span><span class="si">{</span><span class="n">status</span><span class="o">.</span><span class="n">disk_space_available_mb</span><span class="si">}</span><span class="s2">MB&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">AttributeError</span><span class="p">):</span>
+            <span class="c1"># Windows doesn&#39;t have statvfs</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+
+                <span class="k">if</span> <span class="n">status</span><span class="o">.</span><span class="n">binary_path</span><span class="p">:</span>
+                    <span class="n">_total</span><span class="p">,</span> <span class="n">_used</span><span class="p">,</span> <span class="n">free</span> <span class="o">=</span> <span class="n">shutil</span><span class="o">.</span><span class="n">disk_usage</span><span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">binary_path</span><span class="o">.</span><span class="n">parent</span><span class="p">)</span>
+                    <span class="n">status</span><span class="o">.</span><span class="n">disk_space_available_mb</span> <span class="o">=</span> <span class="n">free</span> <span class="o">//</span> <span class="p">(</span><span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">status</span><span class="o">.</span><span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not check disk space: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SanchezHealthChecker.run_health_check">
+<a class="viewcode-back" href="../../../api/sanchez_health_check.html#goesvfi.sanchez.health_check.SanchezHealthChecker.run_health_check">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_health_check</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SanchezHealthStatus</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run a complete health check on Sanchez.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            SanchezHealthStatus with all check results</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Starting Sanchez health check...&quot;</span><span class="p">)</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">SanchezHealthStatus</span><span class="p">()</span>
+
+        <span class="c1"># Run all checks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_binary</span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_resources</span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_execution</span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_system_resources</span><span class="p">(</span><span class="n">status</span><span class="p">)</span>
+
+        <span class="c1"># Log results</span>
+        <span class="k">if</span> <span class="n">status</span><span class="o">.</span><span class="n">is_healthy</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Sanchez health check PASSED&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Sanchez health check FAILED: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">.</span><span class="n">errors</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">status</span><span class="o">.</span><span class="n">warnings</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Warnings: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">.</span><span class="n">warnings</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">status</span></div>
+
+
+<div class="viewcode-block" id="SanchezHealthChecker.run_health_check_async">
+<a class="viewcode-back" href="../../../api/sanchez_health_check.html#goesvfi.sanchez.health_check.SanchezHealthChecker.run_health_check_async">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run_health_check_async</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SanchezHealthStatus</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run health check asynchronously.&quot;&quot;&quot;</span>
+        <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">loop</span><span class="o">.</span><span class="n">run_in_executor</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">run_health_check</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SanchezProcessMonitor">
+<a class="viewcode-back" href="../../../api/sanchez_health_check.html#goesvfi.sanchez.health_check.SanchezProcessMonitor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SanchezProcessMonitor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Monitor Sanchez process execution with progress tracking.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SanchezProcessMonitor.__init__">
+<a class="viewcode-back" href="../../../api/sanchez_health_check.html#goesvfi.sanchez.health_check.SanchezProcessMonitor.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the process monitor.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">current_process</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">Process</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_file</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_file</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_cancelled</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="SanchezProcessMonitor.set_progress_callback">
+<a class="viewcode-back" href="../../../api/sanchez_health_check.html#goesvfi.sanchez.health_check.SanchezProcessMonitor.set_progress_callback">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_progress_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="kc">None</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set a callback for progress updates.</span>
+
+<span class="sd">        The callback should accept (current_step: str, progress: float)</span>
+<span class="sd">        where progress is 0.0 to 1.0.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">progress_callback</span> <span class="o">=</span> <span class="n">callback</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_report_progress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">progress</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Report progress if callback is set.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">progress_callback</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_cancelled</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">progress_callback</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">progress</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Error in progress callback: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SanchezProcessMonitor.run_sanchez_monitored">
+<a class="viewcode-back" href="../../../api/sanchez_health_check.html#goesvfi.sanchez.health_check.SanchezProcessMonitor.run_sanchez_monitored">[docs]</a>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run_sanchez_monitored</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">input_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+        <span class="n">output_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span>
+        <span class="n">res_km</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">120</span><span class="p">,</span>
+        <span class="n">_memory_limit_mb</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run Sanchez with monitoring and progress tracking.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            input_path: Input image path</span>
+<span class="sd">            output_path: Output image path</span>
+<span class="sd">            res_km: Resolution in km/pixel</span>
+<span class="sd">            timeout: Maximum execution time in seconds</span>
+<span class="sd">            memory_limit_mb: Optional memory limit in MB</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Path to the output file</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ExternalToolError: If Sanchez execution fails</span>
+<span class="sd">            TimeoutError: If execution exceeds timeout</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_file</span> <span class="o">=</span> <span class="n">input_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_file</span> <span class="o">=</span> <span class="n">output_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_cancelled</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># First do a health check</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Performing Sanchez health check before execution...&quot;</span><span class="p">)</span>
+        <span class="n">health_checker</span> <span class="o">=</span> <span class="n">SanchezHealthChecker</span><span class="p">()</span>
+        <span class="n">health_status</span> <span class="o">=</span> <span class="n">health_checker</span><span class="o">.</span><span class="n">run_health_check</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">health_status</span><span class="o">.</span><span class="n">is_healthy</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Sanchez is not healthy: </span><span class="si">{</span><span class="n">health_status</span><span class="o">.</span><span class="n">errors</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="c1"># Verify input file</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">input_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Input file not found: </span><span class="si">{</span><span class="n">input_path</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">input_size</span> <span class="o">=</span> <span class="n">input_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;Processing </span><span class="si">%s</span><span class="s2"> (</span><span class="si">%.1f</span><span class="s2">MB) at </span><span class="si">%s</span><span class="s2">km/pixel resolution&quot;</span><span class="p">,</span> <span class="n">input_path</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">input_size</span> <span class="o">/</span> <span class="mi">1024</span> <span class="o">/</span> <span class="mi">1024</span><span class="p">,</span> <span class="n">res_km</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Create output directory</span>
+        <span class="n">output_path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Build command</span>
+        <span class="n">binary_path</span> <span class="o">=</span> <span class="n">health_status</span><span class="o">.</span><span class="n">binary_path</span>
+        <span class="k">if</span> <span class="n">binary_path</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Sanchez binary path not found&quot;</span>
+            <span class="k">raise</span> <span class="n">ConfigurationError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="n">binary_dir</span> <span class="o">=</span> <span class="n">binary_path</span><span class="o">.</span><span class="n">parent</span>
+
+        <span class="n">cmd</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">binary_path</span><span class="p">),</span>
+            <span class="s2">&quot;geostationary&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;-s&quot;</span><span class="p">,</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">input_path</span><span class="p">),</span>
+            <span class="s2">&quot;-o&quot;</span><span class="p">,</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">output_path</span><span class="p">),</span>
+            <span class="s2">&quot;-r&quot;</span><span class="p">,</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">res_km</span><span class="p">),</span>
+        <span class="p">]</span>
+
+        <span class="c1"># Add gradient if available</span>
+        <span class="n">gradient_path</span> <span class="o">=</span> <span class="n">binary_dir</span> <span class="o">/</span> <span class="s2">&quot;Resources&quot;</span> <span class="o">/</span> <span class="s2">&quot;Gradients&quot;</span> <span class="o">/</span> <span class="s2">&quot;Atmosphere.json&quot;</span>
+        <span class="k">if</span> <span class="n">gradient_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">cmd</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="s2">&quot;-c&quot;</span><span class="p">,</span> <span class="s2">&quot;0.0-1.0&quot;</span><span class="p">,</span> <span class="s2">&quot;-g&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">gradient_path</span><span class="p">)])</span>
+
+        <span class="c1"># Monitor execution</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_report_progress</span><span class="p">(</span><span class="s2">&quot;Starting Sanchez&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Start process</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_process</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_subprocess_exec</span><span class="p">(</span>
+                <span class="o">*</span><span class="n">cmd</span><span class="p">,</span>
+                <span class="n">stdout</span><span class="o">=</span><span class="n">asyncio</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                <span class="n">stderr</span><span class="o">=</span><span class="n">asyncio</span><span class="o">.</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                <span class="n">cwd</span><span class="o">=</span><span class="n">binary_dir</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Monitor with timeout</span>
+            <span class="n">monitor_task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">create_task</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_monitor_process</span><span class="p">())</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Wait for completion with timeout</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_process</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Process not started&quot;</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="n">_stdout</span><span class="p">,</span> <span class="n">stderr</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait_for</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_process</span><span class="o">.</span><span class="n">communicate</span><span class="p">(),</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+
+                <span class="c1"># Cancel monitor</span>
+                <span class="n">monitor_task</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+                <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">suppress</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">CancelledError</span><span class="p">):</span>
+                    <span class="k">await</span> <span class="n">monitor_task</span>
+
+                <span class="c1"># Check result</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_process</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Process not started&quot;</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_process</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="n">SUCCESS_RETURN_CODE</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">ExternalToolError</span><span class="p">(</span>
+                        <span class="n">tool_name</span><span class="o">=</span><span class="s2">&quot;Sanchez&quot;</span><span class="p">,</span>
+                        <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Sanchez failed with exit code </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">current_process</span><span class="o">.</span><span class="n">returncode</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                        <span class="n">stderr</span><span class="o">=</span><span class="p">(</span><span class="n">stderr</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;replace&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">stderr</span> <span class="k">else</span> <span class="kc">None</span><span class="p">),</span>
+                    <span class="p">)</span>
+
+                <span class="c1"># Verify output</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">output_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                    <span class="k">raise</span> <span class="n">ExternalToolError</span><span class="p">(</span>
+                        <span class="n">tool_name</span><span class="o">=</span><span class="s2">&quot;Sanchez&quot;</span><span class="p">,</span>
+                        <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Sanchez completed but output file not found&quot;</span><span class="p">,</span>
+                    <span class="p">)</span>
+
+                <span class="n">output_size</span> <span class="o">=</span> <span class="n">output_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span>
+                <span class="n">elapsed</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">start_time</span>
+
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                    <span class="s2">&quot;Sanchez completed successfully in </span><span class="si">%.1f</span><span class="s2">s. Output: </span><span class="si">%.1f</span><span class="s2">MB&quot;</span><span class="p">,</span> <span class="n">elapsed</span><span class="p">,</span> <span class="n">output_size</span> <span class="o">/</span> <span class="mi">1024</span> <span class="o">/</span> <span class="mi">1024</span>
+                <span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_report_progress</span><span class="p">(</span><span class="s2">&quot;Complete&quot;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">output_path</span>
+
+            <span class="k">except</span> <span class="ne">TimeoutError</span><span class="p">:</span>
+                <span class="c1"># Kill the process</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_process</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">current_process</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
+                        <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_process</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">current_process</span><span class="o">.</span><span class="n">kill</span><span class="p">()</span>
+                    <span class="k">except</span> <span class="ne">ProcessLookupError</span><span class="p">:</span>
+                        <span class="k">pass</span>
+
+                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Sanchez execution timed out after </span><span class="si">{</span><span class="n">timeout</span><span class="si">}</span><span class="s2"> seconds&quot;</span>
+                <span class="k">raise</span> <span class="ne">TimeoutError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_report_progress</span><span class="p">(</span><span class="s2">&quot;Error&quot;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+            <span class="k">raise</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">current_process</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_monitor_process</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Monitor the running process and report progress.&quot;&quot;&quot;</span>
+        <span class="n">check_interval</span> <span class="o">=</span> <span class="mf">0.5</span>  <span class="c1"># Check every 500ms</span>
+        <span class="n">last_size</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">no_progress_count</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_process</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_cancelled</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># Check if process is still running</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_process</span><span class="o">.</span><span class="n">returncode</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="k">break</span>
+
+                <span class="c1"># Estimate progress based on output file growth</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_file</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_file</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+                    <span class="n">current_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_file</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span>
+
+                    <span class="k">if</span> <span class="n">current_size</span> <span class="o">&gt;</span> <span class="n">last_size</span><span class="p">:</span>
+                        <span class="c1"># Progress is happening</span>
+                        <span class="n">no_progress_count</span> <span class="o">=</span> <span class="mi">0</span>
+                        <span class="c1"># Estimate progress (rough heuristic)</span>
+                        <span class="n">estimated_progress</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span>
+                            <span class="mf">0.9</span><span class="p">,</span>
+                            <span class="n">current_size</span> <span class="o">/</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_file</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span> <span class="o">*</span> <span class="mi">2</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_file</span> <span class="k">else</span> <span class="mi">1000000</span><span class="p">),</span>
+                        <span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_report_progress</span><span class="p">(</span><span class="s2">&quot;Processing&quot;</span><span class="p">,</span> <span class="n">estimated_progress</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">no_progress_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                    <span class="n">last_size</span> <span class="o">=</span> <span class="n">current_size</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Output file doesn&#39;t exist yet</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_report_progress</span><span class="p">(</span><span class="s2">&quot;Initializing&quot;</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
+
+                <span class="c1"># Check memory usage if psutil available</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="kn">import</span><span class="w"> </span><span class="nn">psutil</span>
+
+                    <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_process</span><span class="o">.</span><span class="n">pid</span><span class="p">:</span>
+                        <span class="n">process</span> <span class="o">=</span> <span class="n">psutil</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_process</span><span class="o">.</span><span class="n">pid</span><span class="p">)</span>
+                        <span class="n">memory_mb</span> <span class="o">=</span> <span class="n">process</span><span class="o">.</span><span class="n">memory_info</span><span class="p">()</span><span class="o">.</span><span class="n">rss</span> <span class="o">/</span> <span class="mi">1024</span> <span class="o">/</span> <span class="mi">1024</span>
+
+                        <span class="k">if</span> <span class="n">memory_mb</span> <span class="o">&gt;</span> <span class="n">MEMORY_WARNING_MB</span><span class="p">:</span>  <span class="c1"># Warn if &gt; 1GB</span>
+                            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Sanchez using </span><span class="si">%.0f</span><span class="s2">MB of memory&quot;</span><span class="p">,</span> <span class="n">memory_mb</span><span class="p">)</span>
+                <span class="k">except</span> <span class="p">(</span><span class="ne">ImportError</span><span class="p">,</span> <span class="n">psutil</span><span class="o">.</span><span class="n">NoSuchProcess</span><span class="p">):</span>
+                    <span class="k">pass</span>
+
+                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">check_interval</span><span class="p">)</span>
+
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Error monitoring Sanchez process: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+                <span class="k">break</span>
+
+<div class="viewcode-block" id="SanchezProcessMonitor.cancel">
+<a class="viewcode-back" href="../../../api/sanchez_health_check.html#goesvfi.sanchez.health_check.SanchezProcessMonitor.cancel">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cancel</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Cancel the current Sanchez process.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">is_cancelled</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_process</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">suppress</span><span class="p">(</span><span class="ne">ProcessLookupError</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">current_process</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="validate_sanchez_input">
+<a class="viewcode-back" href="../../../api/sanchez_health_check.html#goesvfi.sanchez.health_check.validate_sanchez_input">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">validate_sanchez_input</span><span class="p">(</span><span class="n">input_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate that an input file is suitable for Sanchez.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        input_path: Path to input image</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple of (is_valid, error_message)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Check file exists</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">input_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Input file not found: </span><span class="si">{</span><span class="n">input_path</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="c1"># Check file size</span>
+    <span class="n">size</span> <span class="o">=</span> <span class="n">input_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span>
+    <span class="k">if</span> <span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;Input file is empty&quot;</span>
+    <span class="k">if</span> <span class="n">size</span> <span class="o">&gt;</span> <span class="n">LARGE_FILE_SIZE_BYTES</span><span class="p">:</span>  <span class="c1"># 500MB</span>
+        <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Input file too large: </span><span class="si">{</span><span class="n">size</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">MB (max 500MB)&quot;</span>
+
+    <span class="c1"># Check if it&#39;s an image</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">img</span><span class="p">:</span>
+            <span class="c1"># Check format</span>
+            <span class="k">if</span> <span class="n">img</span><span class="o">.</span><span class="n">format</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;PNG&quot;</span><span class="p">,</span> <span class="s2">&quot;JPEG&quot;</span><span class="p">,</span> <span class="s2">&quot;TIFF&quot;</span><span class="p">}:</span>
+                <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Unsupported image format: </span><span class="si">{</span><span class="n">img</span><span class="o">.</span><span class="n">format</span><span class="si">}</span><span class="s2">&quot;</span>
+
+            <span class="c1"># Check dimensions</span>
+            <span class="n">width</span><span class="p">,</span> <span class="n">height</span> <span class="o">=</span> <span class="n">img</span><span class="o">.</span><span class="n">size</span>
+            <span class="k">if</span> <span class="n">width</span> <span class="o">&lt;</span> <span class="n">MINIMUM_IMAGE_DIMENSION</span> <span class="ow">or</span> <span class="n">height</span> <span class="o">&lt;</span> <span class="n">MINIMUM_IMAGE_DIMENSION</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Image too small: </span><span class="si">{</span><span class="n">width</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="n">height</span><span class="si">}</span><span class="s2"> (min 100x100)&quot;</span>
+            <span class="k">if</span> <span class="n">width</span> <span class="o">&gt;</span> <span class="n">MAXIMUM_IMAGE_DIMENSION</span> <span class="ow">or</span> <span class="n">height</span> <span class="o">&gt;</span> <span class="n">MAXIMUM_IMAGE_DIMENSION</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Image too large: </span><span class="si">{</span><span class="n">width</span><span class="si">}</span><span class="s2">x</span><span class="si">{</span><span class="n">height</span><span class="si">}</span><span class="s2"> (max 10000x10000)&quot;</span>
+
+            <span class="c1"># Check mode</span>
+            <span class="k">if</span> <span class="n">img</span><span class="o">.</span><span class="n">mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;L&quot;</span><span class="p">,</span> <span class="s2">&quot;RGB&quot;</span><span class="p">,</span> <span class="s2">&quot;RGBA&quot;</span><span class="p">}:</span>
+                <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Unsupported image mode: </span><span class="si">{</span><span class="n">img</span><span class="o">.</span><span class="n">mode</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Could not read image: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;OK&quot;</span></div>
+
+
+
+<span class="c1"># Convenience function</span>
+<div class="viewcode-block" id="check_sanchez_health">
+<a class="viewcode-back" href="../../../api/sanchez_health_check.html#goesvfi.sanchez.health_check.check_sanchez_health">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_sanchez_health</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Quick health check for Sanchez.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        True if Sanchez is healthy and ready to use</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">checker</span> <span class="o">=</span> <span class="n">SanchezHealthChecker</span><span class="p">()</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="n">checker</span><span class="o">.</span><span class="n">run_health_check</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">status</span><span class="o">.</span><span class="n">is_healthy</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

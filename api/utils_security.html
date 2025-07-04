@@ -1,0 +1,418 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Security &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Changelog" href="../changelog.html" />
+    <link rel="prev" title="Memory Manager" href="utils_memory_manager.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quick Start Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">API Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="gui.html">Gui</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html">Pipeline API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">Utilities API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_main_tab.html">Main Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_ffmpeg_settings_tab.html">Ffmpeg Settings Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_resource_limits_tab.html">Resource Limits Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_model_library_tab.html">Model Library Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_operation_history_tab.html">Operation History Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_image_loader.html">Image Loader</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_image_cropper.html">Image Cropper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_sanchez_processor.html">Sanchez Processor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_encode.html">Encode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_interpolate.html">Interpolate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_run_vfi.html">Run Vfi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_ffmpeg_builder.html">Ffmpeg Builder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_view_model.html">View Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_goes_imagery.html">Goes Imagery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_time_index.html">Time Index</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_cache_db.html">Cache Db</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_remote_store.html">Remote Store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html">Config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_log.html">Log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_date_utils.html">Date Utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_gui_helpers.html">Gui Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_memory_manager.html">Memory Manager</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Security</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.security.SecurityError"><code class="docutils literal notranslate"><span class="pre">SecurityError</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.security.SecurityError.__init__"><code class="docutils literal notranslate"><span class="pre">SecurityError.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.security.SecurityError.add_note"><code class="docutils literal notranslate"><span class="pre">SecurityError.add_note()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.security.SecurityError.args"><code class="docutils literal notranslate"><span class="pre">SecurityError.args</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.security.SecurityError.with_traceback"><code class="docutils literal notranslate"><span class="pre">SecurityError.with_traceback()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.security.InputValidator"><code class="docutils literal notranslate"><span class="pre">InputValidator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.security.InputValidator.ALLOWED_IMAGE_EXTENSIONS"><code class="docutils literal notranslate"><span class="pre">InputValidator.ALLOWED_IMAGE_EXTENSIONS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.security.InputValidator.ALLOWED_VIDEO_EXTENSIONS"><code class="docutils literal notranslate"><span class="pre">InputValidator.ALLOWED_VIDEO_EXTENSIONS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.security.InputValidator.ALLOWED_CONFIG_EXTENSIONS"><code class="docutils literal notranslate"><span class="pre">InputValidator.ALLOWED_CONFIG_EXTENSIONS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.security.InputValidator.ALLOWED_FFMPEG_ENCODERS"><code class="docutils literal notranslate"><span class="pre">InputValidator.ALLOWED_FFMPEG_ENCODERS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.security.InputValidator.ALLOWED_SANCHEZ_ARGS"><code class="docutils literal notranslate"><span class="pre">InputValidator.ALLOWED_SANCHEZ_ARGS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.security.InputValidator.validate_file_path"><code class="docutils literal notranslate"><span class="pre">InputValidator.validate_file_path()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.security.InputValidator.validate_numeric_range"><code class="docutils literal notranslate"><span class="pre">InputValidator.validate_numeric_range()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.security.InputValidator.sanitize_filename"><code class="docutils literal notranslate"><span class="pre">InputValidator.sanitize_filename()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.security.InputValidator.validate_ffmpeg_encoder"><code class="docutils literal notranslate"><span class="pre">InputValidator.validate_ffmpeg_encoder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.security.InputValidator.validate_sanchez_argument"><code class="docutils literal notranslate"><span class="pre">InputValidator.validate_sanchez_argument()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.security.InputValidator.validate_command_args"><code class="docutils literal notranslate"><span class="pre">InputValidator.validate_command_args()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.security.SecureFileHandler"><code class="docutils literal notranslate"><span class="pre">SecureFileHandler</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.security.SecureFileHandler.create_secure_temp_file"><code class="docutils literal notranslate"><span class="pre">SecureFileHandler.create_secure_temp_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#goesvfi.utils.security.SecureFileHandler.create_secure_config_dir"><code class="docutils literal notranslate"><span class="pre">SecureFileHandler.create_secure_config_dir()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#goesvfi.utils.security.secure_subprocess_call"><code class="docutils literal notranslate"><span class="pre">secure_subprocess_call()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#core-components">Core Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="index.html#common-usage-patterns">Common Usage Patterns</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="index.html">API Reference</a></li>
+      <li class="breadcrumb-item active">Security</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/utils_security.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-goesvfi.utils.security">
+<span id="security"></span><h1>Security<a class="headerlink" href="#module-goesvfi.utils.security" title="Link to this heading"></a></h1>
+<p>Security utilities for GOES_VFI application.</p>
+<p>This module provides security validation and sanitization functions
+to prevent common vulnerabilities like command injection and path traversal.</p>
+<dl class="py exception">
+<dt class="sig sig-object py" id="goesvfi.utils.security.SecurityError">
+<em class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">goesvfi.utils.security.</span></span><span class="sig-name descname"><span class="pre">SecurityError</span></span><a class="reference internal" href="../_modules/goesvfi/utils/security.html#SecurityError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.security.SecurityError" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></a></p>
+<p>Raised when a security validation fails.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.security.SecurityError.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#goesvfi.utils.security.SecurityError.__init__" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.security.SecurityError.add_note">
+<span class="sig-name descname"><span class="pre">add_note</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">object</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em><span class="sig-paren">)</span><a class="headerlink" href="#goesvfi.utils.security.SecurityError.add_note" title="Link to this definition"></a></dt>
+<dd><p>Exception.add_note(note) –
+add a note to the exception</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.security.SecurityError.args">
+<span class="sig-name descname"><span class="pre">args</span></span><a class="headerlink" href="#goesvfi.utils.security.SecurityError.args" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.security.SecurityError.with_traceback">
+<span class="sig-name descname"><span class="pre">with_traceback</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">object</span></span></em>, <em class="sig-param"><span class="positional-only-separator o"><abbr title="Positional-only parameter separator (PEP 570)"><span class="pre">/</span></abbr></span></em><span class="sig-paren">)</span><a class="headerlink" href="#goesvfi.utils.security.SecurityError.with_traceback" title="Link to this definition"></a></dt>
+<dd><p>Exception.with_traceback(tb) –
+set self.__traceback__ to tb and return self.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="goesvfi.utils.security.InputValidator">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">goesvfi.utils.security.</span></span><span class="sig-name descname"><span class="pre">InputValidator</span></span><a class="reference internal" href="../_modules/goesvfi/utils/security.html#InputValidator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.security.InputValidator" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Validates and sanitizes user inputs to prevent security vulnerabilities.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.security.InputValidator.ALLOWED_IMAGE_EXTENSIONS">
+<span class="sig-name descname"><span class="pre">ALLOWED_IMAGE_EXTENSIONS</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.ClassVar" title="(in Python v3.13)"><span class="pre">ClassVar</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['.png',</span> <span class="pre">'.jpg',</span> <span class="pre">'.jpeg',</span> <span class="pre">'.bmp',</span> <span class="pre">'.tiff',</span> <span class="pre">'.tif']</span></em><a class="headerlink" href="#goesvfi.utils.security.InputValidator.ALLOWED_IMAGE_EXTENSIONS" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.security.InputValidator.ALLOWED_VIDEO_EXTENSIONS">
+<span class="sig-name descname"><span class="pre">ALLOWED_VIDEO_EXTENSIONS</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.ClassVar" title="(in Python v3.13)"><span class="pre">ClassVar</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['.mp4',</span> <span class="pre">'.avi',</span> <span class="pre">'.mov',</span> <span class="pre">'.mkv',</span> <span class="pre">'.webm']</span></em><a class="headerlink" href="#goesvfi.utils.security.InputValidator.ALLOWED_VIDEO_EXTENSIONS" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.security.InputValidator.ALLOWED_CONFIG_EXTENSIONS">
+<span class="sig-name descname"><span class="pre">ALLOWED_CONFIG_EXTENSIONS</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.ClassVar" title="(in Python v3.13)"><span class="pre">ClassVar</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['.toml',</span> <span class="pre">'.json',</span> <span class="pre">'.yaml',</span> <span class="pre">'.yml']</span></em><a class="headerlink" href="#goesvfi.utils.security.InputValidator.ALLOWED_CONFIG_EXTENSIONS" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.security.InputValidator.ALLOWED_FFMPEG_ENCODERS">
+<span class="sig-name descname"><span class="pre">ALLOWED_FFMPEG_ENCODERS</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.ClassVar" title="(in Python v3.13)"><span class="pre">ClassVar</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['Software</span> <span class="pre">x265',</span> <span class="pre">'Software</span> <span class="pre">x264',</span> <span class="pre">'Hardware</span> <span class="pre">HEVC</span> <span class="pre">(VideoToolbox)',</span> <span class="pre">'Hardware</span> <span class="pre">H.264</span> <span class="pre">(VideoToolbox)',</span> <span class="pre">'None</span> <span class="pre">(copy</span> <span class="pre">original)',</span> <span class="pre">'Hardware</span> <span class="pre">HEVC</span> <span class="pre">(NVENC)',</span> <span class="pre">'Hardware</span> <span class="pre">H.264</span> <span class="pre">(NVENC)',</span> <span class="pre">'Hardware</span> <span class="pre">HEVC</span> <span class="pre">(QSV)',</span> <span class="pre">'Hardware</span> <span class="pre">H.264</span> <span class="pre">(QSV)']</span></em><a class="headerlink" href="#goesvfi.utils.security.InputValidator.ALLOWED_FFMPEG_ENCODERS" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="goesvfi.utils.security.InputValidator.ALLOWED_SANCHEZ_ARGS">
+<span class="sig-name descname"><span class="pre">ALLOWED_SANCHEZ_ARGS</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.ClassVar" title="(in Python v3.13)"><span class="pre">ClassVar</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.13)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'brightness':</span> <span class="pre">'^[+-]?\\d+(\\.\\d+)?$',</span> <span class="pre">'contrast':</span> <span class="pre">'^[+-]?\\d+(\\.\\d+)?$',</span> <span class="pre">'crop':</span> <span class="pre">'^[\\d,]+$',</span> <span class="pre">'false_colour':</span> <span class="pre">'^(true|false)$',</span> <span class="pre">'interpolate':</span> <span class="pre">'^(true|false)$',</span> <span class="pre">'output':</span> <span class="pre">'^[\\w\\-./]+$',</span> <span class="pre">'res_km':</span> <span class="pre">'^\\d+(\\.\\d+)?$',</span> <span class="pre">'saturation':</span> <span class="pre">'^[+-]?\\d+(\\.\\d+)?$',</span> <span class="pre">'timestamp':</span> <span class="pre">'^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$'}</span></em><a class="headerlink" href="#goesvfi.utils.security.InputValidator.ALLOWED_SANCHEZ_ARGS" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.security.InputValidator.validate_file_path">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">validate_file_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">allowed_extensions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">must_exist</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/security.html#InputValidator.validate_file_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.security.InputValidator.validate_file_path" title="Link to this definition"></a></dt>
+<dd><p>Validate file path to prevent directory traversal and ensure safety.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> – File path to validate</p></li>
+<li><p><strong>allowed_extensions</strong> – List of allowed file extensions (e.g., [‘.png’, ‘.jpg’])</p></li>
+<li><p><strong>must_exist</strong> – If True, file must exist on filesystem</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if path is valid and safe</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#goesvfi.utils.security.SecurityError" title="goesvfi.utils.security.SecurityError"><strong>SecurityError</strong></a> – If path contains security issues</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.security.InputValidator.validate_numeric_range">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">validate_numeric_range</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_val</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_val</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.13)"><span class="pre">float</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'value'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/security.html#InputValidator.validate_numeric_range"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.security.InputValidator.validate_numeric_range" title="Link to this definition"></a></dt>
+<dd><p>Validate that a numeric value is within acceptable bounds.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> – Numeric value to validate</p></li>
+<li><p><strong>min_val</strong> – Minimum allowed value</p></li>
+<li><p><strong>max_val</strong> – Maximum allowed value</p></li>
+<li><p><strong>name</strong> – Name of the value for error messages</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if value is within range</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#goesvfi.utils.security.SecurityError" title="goesvfi.utils.security.SecurityError"><strong>SecurityError</strong></a> – If value is out of range</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.security.InputValidator.sanitize_filename">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sanitize_filename</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/security.html#InputValidator.sanitize_filename"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.security.InputValidator.sanitize_filename" title="Link to this definition"></a></dt>
+<dd><p>Sanitize filename by removing/replacing dangerous characters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filename</strong> – Original filename</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Sanitized filename safe for filesystem use</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.security.InputValidator.validate_ffmpeg_encoder">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">validate_ffmpeg_encoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">encoder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/security.html#InputValidator.validate_ffmpeg_encoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.security.InputValidator.validate_ffmpeg_encoder" title="Link to this definition"></a></dt>
+<dd><p>Validate that FFmpeg encoder is from allowed list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>encoder</strong> – Encoder name to validate</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if encoder is allowed</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#goesvfi.utils.security.SecurityError" title="goesvfi.utils.security.SecurityError"><strong>SecurityError</strong></a> – If encoder is not in whitelist</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.security.InputValidator.validate_sanchez_argument">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">validate_sanchez_argument</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/security.html#InputValidator.validate_sanchez_argument"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.security.InputValidator.validate_sanchez_argument" title="Link to this definition"></a></dt>
+<dd><p>Validate Sanchez processor arguments to prevent command injection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> – Argument name</p></li>
+<li><p><strong>value</strong> – Argument value</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if argument is valid</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#goesvfi.utils.security.SecurityError" title="goesvfi.utils.security.SecurityError"><strong>SecurityError</strong></a> – If argument is invalid or potentially dangerous</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.security.InputValidator.validate_command_args">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">validate_command_args</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.13)"><span class="pre">int</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.13)"><span class="pre">bool</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/security.html#InputValidator.validate_command_args"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.security.InputValidator.validate_command_args" title="Link to this definition"></a></dt>
+<dd><p>Validate command line arguments for subprocess execution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>args</strong> – List of command arguments</p></li>
+<li><p><strong>max_args</strong> – Maximum number of arguments allowed</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if arguments are safe</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#goesvfi.utils.security.SecurityError" title="goesvfi.utils.security.SecurityError"><strong>SecurityError</strong></a> – If arguments contain dangerous patterns</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="goesvfi.utils.security.SecureFileHandler">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">goesvfi.utils.security.</span></span><span class="sig-name descname"><span class="pre">SecureFileHandler</span></span><a class="reference internal" href="../_modules/goesvfi/utils/security.html#SecureFileHandler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.security.SecureFileHandler" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.13)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Handles file operations with security considerations.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.security.SecureFileHandler.create_secure_temp_file">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_secure_temp_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'goesvfi_'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/security.html#SecureFileHandler.create_secure_temp_file"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.security.SecureFileHandler.create_secure_temp_file" title="Link to this definition"></a></dt>
+<dd><p>Create a temporary file with secure permissions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>suffix</strong> – File suffix/extension</p></li>
+<li><p><strong>prefix</strong> – File prefix</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Path to created temporary file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="goesvfi.utils.security.SecureFileHandler.create_secure_config_dir">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">create_secure_config_dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.13)"><span class="pre">Path</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.13)"><span class="pre">None</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/security.html#SecureFileHandler.create_secure_config_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.security.SecureFileHandler.create_secure_config_dir" title="Link to this definition"></a></dt>
+<dd><p>Create configuration directory with secure permissions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config_dir</strong> – Path to configuration directory</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="goesvfi.utils.security.secure_subprocess_call">
+<span class="sig-prename descclassname"><span class="pre">goesvfi.utils.security.</span></span><span class="sig-name descname"><span class="pre">secure_subprocess_call</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">command</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.13)"><span class="pre">list</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.13)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.13)"><span class="pre">Any</span></a></span></span><a class="reference internal" href="../_modules/goesvfi/utils/security.html#secure_subprocess_call"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#goesvfi.utils.security.secure_subprocess_call" title="Link to this definition"></a></dt>
+<dd><p>Execute subprocess with security validations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>command</strong> – Command and arguments to execute</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments for subprocess.run</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Result from subprocess.run</p>
+</dd>
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#goesvfi.utils.security.SecurityError" title="goesvfi.utils.security.SecurityError"><strong>SecurityError</strong></a> – If command fails security validation</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="utils_memory_manager.html" class="btn btn-neutral float-left" title="Memory Manager" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../changelog.html" class="btn btn-neutral float-right" title="Changelog" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

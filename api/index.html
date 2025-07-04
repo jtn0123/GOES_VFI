@@ -1,0 +1,425 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>API Reference &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Gui" href="gui.html" />
+    <link rel="prev" title="Quick Start Guide" href="../quickstart.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quickstart.html">Quick Start Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gui.html">Gui</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html">Pipeline API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html">Utilities API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_main_tab.html">Main Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_ffmpeg_settings_tab.html">Ffmpeg Settings Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_resource_limits_tab.html">Resource Limits Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_model_library_tab.html">Model Library Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_operation_history_tab.html">Operation History Tab</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_image_loader.html">Image Loader</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_image_cropper.html">Image Cropper</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_sanchez_processor.html">Sanchez Processor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_encode.html">Encode</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_interpolate.html">Interpolate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_run_vfi.html">Run Vfi</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_ffmpeg_builder.html">Ffmpeg Builder</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_view_model.html">View Model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_goes_imagery.html">Goes Imagery</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_time_index.html">Time Index</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_cache_db.html">Cache Db</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrity_check_remote_store.html">Remote Store</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html">Config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_log.html">Log</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_date_utils.html">Date Utils</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_gui_helpers.html">Gui Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_memory_manager.html">Memory Manager</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_security.html">Security</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#core-components">Core Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#common-usage-patterns">Common Usage Patterns</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">API Reference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="api-reference">
+<h1>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h1>
+<p>This section provides detailed API documentation for all GOES_VFI modules and classes.</p>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Core Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="gui.html">Gui</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline.html">Pipeline API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#core-components">Core Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#image-processing-components">Image Processing Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#module-goesvfi.pipeline.image_processing_interfaces">Image Processing Interfaces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#video-encoding">Video Encoding</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#utility-functions">Utility Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#processing-pipeline-flow">Processing Pipeline Flow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#error-handling">Error Handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#performance-optimization">Performance Optimization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#configuration-options">Configuration Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#thread-safety">Thread Safety</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline.html#testing-and-validation">Testing and Validation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utilities API</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#module-goesvfi.utils.config">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#logging">Logging</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#resource-management">Resource Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#security">Security</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#memory-management">Memory Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#gui-helpers">GUI Helpers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#date-and-time-utilities">Date and Time Utilities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#rife-analyzer">RIFE Analyzer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#ui-security-indicators">UI Security Indicators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#error-handling">Error Handling</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#performance-considerations">Performance Considerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#thread-safety">Thread Safety</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils.html#testing-utilities">Testing Utilities</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions.html">Exceptions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="exceptions.html#goesvfi.exceptions.GoesVfiError"><code class="docutils literal notranslate"><span class="pre">GoesVfiError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="exceptions.html#goesvfi.exceptions.GoesvfiError"><code class="docutils literal notranslate"><span class="pre">GoesvfiError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="exceptions.html#goesvfi.exceptions.PipelineError"><code class="docutils literal notranslate"><span class="pre">PipelineError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="exceptions.html#goesvfi.exceptions.ConfigurationError"><code class="docutils literal notranslate"><span class="pre">ConfigurationError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="exceptions.html#goesvfi.exceptions.GuiError"><code class="docutils literal notranslate"><span class="pre">GuiError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="exceptions.html#goesvfi.exceptions.ExternalToolError"><code class="docutils literal notranslate"><span class="pre">ExternalToolError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="exceptions.html#exception-hierarchy">Exception Hierarchy</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">GUI Components</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="gui_tabs_main_tab.html">Main Tab</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_main_tab.html#widget-hierarchy">Widget Hierarchy</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gui_tabs_ffmpeg_settings_tab.html">Ffmpeg Settings Tab</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_ffmpeg_settings_tab.html#widget-hierarchy">Widget Hierarchy</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gui_tabs_resource_limits_tab.html">Resource Limits Tab</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_resource_limits_tab.html#widget-hierarchy">Widget Hierarchy</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gui_tabs_model_library_tab.html">Model Library Tab</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_model_library_tab.html#widget-hierarchy">Widget Hierarchy</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="gui_tabs_operation_history_tab.html">Operation History Tab</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gui_tabs_operation_history_tab.html#widget-hierarchy">Widget Hierarchy</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Processing Pipeline</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pipeline_image_loader.html">Image Loader</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_image_loader.html#goesvfi.pipeline.image_loader.ImageLoader"><code class="docutils literal notranslate"><span class="pre">ImageLoader</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_image_loader.html#processing-flow">Processing Flow</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline_image_cropper.html">Image Cropper</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_image_cropper.html#goesvfi.pipeline.image_cropper.ImageCropper"><code class="docutils literal notranslate"><span class="pre">ImageCropper</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_image_cropper.html#processing-flow">Processing Flow</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline_sanchez_processor.html">Sanchez Processor</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_sanchez_processor.html#goesvfi.pipeline.sanchez_processor.SanchezProcessor"><code class="docutils literal notranslate"><span class="pre">SanchezProcessor</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_sanchez_processor.html#processing-flow">Processing Flow</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline_encode.html">Encode</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_encode.html#goesvfi.pipeline.encode.encode_with_ffmpeg"><code class="docutils literal notranslate"><span class="pre">encode_with_ffmpeg()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_encode.html#processing-flow">Processing Flow</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline_interpolate.html">Interpolate</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_interpolate.html#processing-flow">Processing Flow</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline_run_vfi.html">Run Vfi</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_run_vfi.html#goesvfi.pipeline.run_vfi.VFIProcessor"><code class="docutils literal notranslate"><span class="pre">VFIProcessor</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_run_vfi.html#goesvfi.pipeline.run_vfi.InterpolationPipeline"><code class="docutils literal notranslate"><span class="pre">InterpolationPipeline</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_run_vfi.html#goesvfi.pipeline.run_vfi.VfiWorker"><code class="docutils literal notranslate"><span class="pre">VfiWorker</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_run_vfi.html#goesvfi.pipeline.run_vfi.run_vfi"><code class="docutils literal notranslate"><span class="pre">run_vfi()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_run_vfi.html#processing-flow">Processing Flow</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pipeline_ffmpeg_builder.html">Ffmpeg Builder</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_ffmpeg_builder.html#goesvfi.pipeline.ffmpeg_builder.FFmpegCommandBuilder"><code class="docutils literal notranslate"><span class="pre">FFmpegCommandBuilder</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="pipeline_ffmpeg_builder.html#processing-flow">Processing Flow</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Integrity Check</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="integrity_check_view_model.html">View Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integrity_check_goes_imagery.html">Goes Imagery</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integrity_check_time_index.html">Time Index</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integrity_check_cache_db.html">Cache Db</a></li>
+<li class="toctree-l1"><a class="reference internal" href="integrity_check_remote_store.html">Remote Store</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Utilities</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="utils_config.html">Config</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html#goesvfi.utils.config.get_config_path"><code class="docutils literal notranslate"><span class="pre">get_config_path()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html#goesvfi.utils.config.FfmpegProfile"><code class="docutils literal notranslate"><span class="pre">FfmpegProfile</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html#goesvfi.utils.config.get_output_dir"><code class="docutils literal notranslate"><span class="pre">get_output_dir()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html#goesvfi.utils.config.get_cache_dir"><code class="docutils literal notranslate"><span class="pre">get_cache_dir()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html#goesvfi.utils.config.get_default_tile_size"><code class="docutils literal notranslate"><span class="pre">get_default_tile_size()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html#goesvfi.utils.config.get_sanchez_bin_dir"><code class="docutils literal notranslate"><span class="pre">get_sanchez_bin_dir()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html#goesvfi.utils.config.get_logging_level"><code class="docutils literal notranslate"><span class="pre">get_logging_level()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html#goesvfi.utils.config.get_supported_extensions"><code class="docutils literal notranslate"><span class="pre">get_supported_extensions()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html#goesvfi.utils.config.get_project_root"><code class="docutils literal notranslate"><span class="pre">get_project_root()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html#goesvfi.utils.config.find_rife_executable"><code class="docutils literal notranslate"><span class="pre">find_rife_executable()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html#goesvfi.utils.config.get_available_rife_models"><code class="docutils literal notranslate"><span class="pre">get_available_rife_models()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html#goesvfi.utils.config.get_user_config_dir"><code class="docutils literal notranslate"><span class="pre">get_user_config_dir()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html#goesvfi.utils.config.get_theme_name"><code class="docutils literal notranslate"><span class="pre">get_theme_name()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html#goesvfi.utils.config.get_theme_custom_overrides"><code class="docutils literal notranslate"><span class="pre">get_theme_custom_overrides()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html#goesvfi.utils.config.get_theme_density_scale"><code class="docutils literal notranslate"><span class="pre">get_theme_density_scale()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_config.html#goesvfi.utils.config.get_theme_fallback_enabled"><code class="docutils literal notranslate"><span class="pre">get_theme_fallback_enabled()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="utils_log.html">Log</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="utils_log.html#goesvfi.utils.log.get_logger"><code class="docutils literal notranslate"><span class="pre">get_logger()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_log.html#goesvfi.utils.log.set_global_log_level"><code class="docutils literal notranslate"><span class="pre">set_global_log_level()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_log.html#goesvfi.utils.log.set_level"><code class="docutils literal notranslate"><span class="pre">set_level()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="utils_date_utils.html">Date Utils</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="utils_date_utils.html#goesvfi.utils.date_utils.date_to_doy"><code class="docutils literal notranslate"><span class="pre">date_to_doy()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_date_utils.html#goesvfi.utils.date_utils.doy_to_date"><code class="docutils literal notranslate"><span class="pre">doy_to_date()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_date_utils.html#goesvfi.utils.date_utils.extract_date_from_path"><code class="docutils literal notranslate"><span class="pre">extract_date_from_path()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_date_utils.html#goesvfi.utils.date_utils.format_satellite_path"><code class="docutils literal notranslate"><span class="pre">format_satellite_path()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_date_utils.html#goesvfi.utils.date_utils.get_all_date_formats"><code class="docutils literal notranslate"><span class="pre">get_all_date_formats()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_date_utils.html#goesvfi.utils.date_utils.parse_timestamp"><code class="docutils literal notranslate"><span class="pre">parse_timestamp()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_date_utils.html#goesvfi.utils.date_utils.format_timestamp"><code class="docutils literal notranslate"><span class="pre">format_timestamp()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_date_utils.html#goesvfi.utils.date_utils.get_satellite_path_components"><code class="docutils literal notranslate"><span class="pre">get_satellite_path_components()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_date_utils.html#goesvfi.utils.date_utils.parse_satellite_path"><code class="docutils literal notranslate"><span class="pre">parse_satellite_path()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="utils_gui_helpers.html">Gui Helpers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils_memory_manager.html">Memory Manager</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="utils_memory_manager.html#goesvfi.utils.memory_manager.MemoryStats"><code class="docutils literal notranslate"><span class="pre">MemoryStats</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_memory_manager.html#goesvfi.utils.memory_manager.MemoryMonitor"><code class="docutils literal notranslate"><span class="pre">MemoryMonitor</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_memory_manager.html#goesvfi.utils.memory_manager.MemoryOptimizer"><code class="docutils literal notranslate"><span class="pre">MemoryOptimizer</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_memory_manager.html#goesvfi.utils.memory_manager.estimate_memory_requirement"><code class="docutils literal notranslate"><span class="pre">estimate_memory_requirement()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_memory_manager.html#goesvfi.utils.memory_manager.log_memory_usage"><code class="docutils literal notranslate"><span class="pre">log_memory_usage()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_memory_manager.html#goesvfi.utils.memory_manager.get_memory_monitor"><code class="docutils literal notranslate"><span class="pre">get_memory_monitor()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_memory_manager.html#goesvfi.utils.memory_manager.ObjectPool"><code class="docutils literal notranslate"><span class="pre">ObjectPool</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_memory_manager.html#goesvfi.utils.memory_manager.StreamingProcessor"><code class="docutils literal notranslate"><span class="pre">StreamingProcessor</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="utils_security.html">Security</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="utils_security.html#goesvfi.utils.security.SecurityError"><code class="docutils literal notranslate"><span class="pre">SecurityError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_security.html#goesvfi.utils.security.InputValidator"><code class="docutils literal notranslate"><span class="pre">InputValidator</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_security.html#goesvfi.utils.security.SecureFileHandler"><code class="docutils literal notranslate"><span class="pre">SecureFileHandler</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="utils_security.html#goesvfi.utils.security.secure_subprocess_call"><code class="docutils literal notranslate"><span class="pre">secure_subprocess_call()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The GOES_VFI API is organized into several key modules:</p>
+<ul class="simple">
+<li><p><strong>GUI</strong> - User interface components and main window</p></li>
+<li><p><strong>Pipeline</strong> - Core processing pipeline for video frame interpolation</p></li>
+<li><p><strong>Integrity Check</strong> - Data validation and quality assessment</p></li>
+<li><p><strong>Utils</strong> - Shared utilities and helper functions</p></li>
+<li><p><strong>File/Date Sorter</strong> - Tools for organizing and sorting files</p></li>
+</ul>
+</section>
+<section id="core-components">
+<h2>Core Components<a class="headerlink" href="#core-components" title="Link to this heading"></a></h2>
+<p><strong>Main Application:</strong></p>
+<p>The main entry point is through the <cite>goesvfi.gui</cite> module which provides the MainWindow class.</p>
+<p><strong>Processing Pipeline:</strong></p>
+<p>The processing pipeline consists of several stages:</p>
+<ol class="arabic simple">
+<li><p>Image loading (<cite>goesvfi.pipeline.image_loader</cite>)</p></li>
+<li><p>Optional cropping (<cite>goesvfi.pipeline.image_cropper</cite>)</p></li>
+<li><p>Optional Sanchez processing (<cite>goesvfi.pipeline.sanchez_processor</cite>)</p></li>
+<li><p>Frame interpolation (<cite>goesvfi.pipeline.interpolate</cite>)</p></li>
+<li><p>Video encoding (<cite>goesvfi.pipeline.encode</cite>)</p></li>
+</ol>
+<p><strong>Data Management:</strong></p>
+<ul class="simple">
+<li><p>Time indexing and organization (<cite>goesvfi.integrity_check.time_index</cite>)</p></li>
+<li><p>Remote data access via S3 (<cite>goesvfi.integrity_check.remote.s3_store</cite>)</p></li>
+<li><p>Local caching (<cite>goesvfi.integrity_check.cache_db</cite>)</p></li>
+</ul>
+<p><strong>GUI Components:</strong></p>
+<ul class="simple">
+<li><p>Main processing tab (<cite>goesvfi.gui_tabs.main_tab</cite>)</p></li>
+<li><p>FFmpeg settings (<cite>goesvfi.gui_tabs.ffmpeg_settings_tab</cite>)</p></li>
+<li><p>Resource limits configuration (<cite>goesvfi.gui_tabs.resource_limits_tab</cite>)</p></li>
+<li><p>Model library management (<cite>goesvfi.gui_tabs.model_library_tab</cite>)</p></li>
+</ul>
+</section>
+<section id="common-usage-patterns">
+<h2>Common Usage Patterns<a class="headerlink" href="#common-usage-patterns" title="Link to this heading"></a></h2>
+<p><strong>Basic Processing Workflow:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.pipeline.run_vfi</span><span class="w"> </span><span class="kn">import</span> <span class="n">VfiWorker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="c1"># Create worker</span>
+<span class="n">worker</span> <span class="o">=</span> <span class="n">VfiWorker</span><span class="p">(</span>
+    <span class="n">in_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;input/&quot;</span><span class="p">),</span>
+    <span class="n">out_file_path</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;output.mp4&quot;</span><span class="p">),</span>
+    <span class="n">fps</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">encoder</span><span class="o">=</span><span class="s2">&quot;RIFE&quot;</span>
+<span class="p">)</span>
+
+<span class="c1"># Connect signals</span>
+<span class="n">worker</span><span class="o">.</span><span class="n">progress</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="n">c</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">e</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Progress: </span><span class="si">{</span><span class="n">c</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
+<span class="n">worker</span><span class="o">.</span><span class="n">finished</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Finished: </span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
+<span class="n">worker</span><span class="o">.</span><span class="n">error</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
+
+<span class="c1"># Start processing</span>
+<span class="n">worker</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><strong>Configuration Access:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+
+<span class="c1"># Get configuration values</span>
+<span class="n">output_dir</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_output_dir</span><span class="p">()</span>
+<span class="n">cache_dir</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_cache_dir</span><span class="p">()</span>
+
+<span class="c1"># Get available models</span>
+<span class="n">models</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">get_available_rife_models</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><strong>Logging:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span>
+
+<span class="c1"># Get logger for your module</span>
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="c1"># Log messages</span>
+<span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Processing started&quot;</span><span class="p">)</span>
+<span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;An error occurred&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>For detailed documentation of specific modules, see the individual API reference pages listed above.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../quickstart.html" class="btn btn-neutral float-left" title="Quick Start Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="gui.html" class="btn btn-neutral float-right" title="Gui" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,325 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>goesvfi.pipeline.encode &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">goesvfi.pipeline.encode</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for goesvfi.pipeline.encode</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Video encoding pipeline module for GOES VFI.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils.memory_manager</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryMonitor</span><span class="p">,</span> <span class="n">log_memory_usage</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.ffmpeg_builder</span><span class="w"> </span><span class="kn">import</span> <span class="n">FFmpegCommandBuilder</span>
+
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_run_ffmpeg_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">desc</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">monitor_memory</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run an FFmpeg command with logging and error handling.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        cmd: FFmpeg command to run</span>
+<span class="sd">        desc: Description of the operation</span>
+<span class="sd">        monitor_memory: Whether to monitor memory during execution</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Running ffmpeg command (</span><span class="si">%s</span><span class="s2">): </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cmd</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">monitor_memory</span><span class="p">:</span>
+        <span class="n">log_memory_usage</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Before </span><span class="si">{</span><span class="n">desc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">monitor</span> <span class="o">=</span> <span class="n">MemoryMonitor</span><span class="p">()</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span>
+            <span class="n">cmd</span><span class="p">,</span>
+            <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+            <span class="n">stderr</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">STDOUT</span><span class="p">,</span>
+            <span class="n">stdin</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">DEVNULL</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;replace&quot;</span><span class="p">,</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">proc</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="n">proc</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="n">line_count</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">proc</span><span class="o">.</span><span class="n">stdout</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;[ffmpeg-</span><span class="si">%s</span><span class="s2">] </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="p">,</span> <span class="n">line</span><span class="o">.</span><span class="n">rstrip</span><span class="p">())</span>
+                <span class="n">line_count</span> <span class="o">+=</span> <span class="mi">1</span>
+
+                <span class="c1"># Check memory periodically</span>
+                <span class="k">if</span> <span class="n">monitor_memory</span> <span class="ow">and</span> <span class="n">line_count</span> <span class="o">%</span> <span class="mi">100</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">stats</span> <span class="o">=</span> <span class="n">monitor</span><span class="o">.</span><span class="n">get_memory_stats</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">stats</span><span class="o">.</span><span class="n">is_critical_memory</span><span class="p">:</span>
+                        <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                            <span class="s2">&quot;Critical memory during </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">MB available&quot;</span><span class="p">,</span>
+                            <span class="n">desc</span><span class="p">,</span>
+                            <span class="n">stats</span><span class="o">.</span><span class="n">available_mb</span><span class="p">,</span>
+                        <span class="p">)</span>
+
+            <span class="n">ret</span> <span class="o">=</span> <span class="n">proc</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">ret</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
+                    <span class="s2">&quot;FFmpeg (</span><span class="si">%s</span><span class="s2">) failed (exit code </span><span class="si">%s</span><span class="s2">). See logged output above.&quot;</span><span class="p">,</span>
+                    <span class="n">desc</span><span class="p">,</span>
+                    <span class="n">ret</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;FFmpeg (</span><span class="si">{</span><span class="n">desc</span><span class="si">}</span><span class="s2">) failed (exit code </span><span class="si">{</span><span class="n">ret</span><span class="si">}</span><span class="s2">)&quot;</span>
+                <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">monitor_memory</span><span class="p">:</span>
+            <span class="n">log_memory_usage</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;After </span><span class="si">{</span><span class="n">desc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;FFmpeg (</span><span class="si">%s</span><span class="s2">) completed successfully.&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;ffmpeg command not found for </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="p">)</span>
+        <span class="k">raise</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">RuntimeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Error during FFmpeg execution (</span><span class="si">%s</span><span class="s2">)&quot;</span><span class="p">,</span> <span class="n">desc</span><span class="p">)</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Error during FFmpeg execution (</span><span class="si">{</span><span class="n">desc</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+
+<div class="viewcode-block" id="encode_with_ffmpeg">
+<a class="viewcode-back" href="../../../api/pipeline_encode.html#goesvfi.pipeline.encode.encode_with_ffmpeg">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">encode_with_ffmpeg</span><span class="p">(</span>
+    <span class="n">intermediate_input</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span>
+    <span class="n">final_output</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">,</span>
+    <span class="n">encoder</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">crf</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">bitrate_kbps</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">bufsize_kb</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">pix_fmt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">monitor_memory</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Encode intermediate input into final output using the chosen settings.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        intermediate_input: Path to input video</span>
+<span class="sd">        final_output: Path to output video</span>
+<span class="sd">        encoder: Encoder to use</span>
+<span class="sd">        crf: Constant Rate Factor (for x264/x265)</span>
+<span class="sd">        bitrate_kbps: Bitrate in kbps</span>
+<span class="sd">        bufsize_kb: Buffer size in kb</span>
+<span class="sd">        pix_fmt: Pixel format</span>
+<span class="sd">        monitor_memory: Whether to monitor memory during encoding</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">monitor_memory</span><span class="p">:</span>
+        <span class="n">log_memory_usage</span><span class="p">(</span><span class="s2">&quot;Starting video encoding&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Handle &quot;None&quot; encoder case first (stream copy)</span>
+    <span class="k">if</span> <span class="n">encoder</span> <span class="o">==</span> <span class="s2">&quot;None (copy original)&quot;</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;Encoder set to None. Copying streams from </span><span class="si">%s</span><span class="s2"> -&gt; </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">intermediate_input</span><span class="p">,</span>
+            <span class="n">final_output</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">cmd_copy</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;ffmpeg&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;-y&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;-i&quot;</span><span class="p">,</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">intermediate_input</span><span class="p">),</span>
+            <span class="s2">&quot;-c&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;copy&quot;</span><span class="p">,</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">final_output</span><span class="p">),</span>
+        <span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">_run_ffmpeg_command</span><span class="p">(</span><span class="n">cmd_copy</span><span class="p">,</span> <span class="s2">&quot;Stream Copy&quot;</span><span class="p">,</span> <span class="n">monitor_memory</span><span class="o">=</span><span class="n">monitor_memory</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+            <span class="k">raise</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">RuntimeError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Stream copy failed (</span><span class="si">%s</span><span class="s2">). Attempting simple rename as fallback...&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">intermediate_input</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">final_output</span><span class="p">)</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Fallback rename successful.&quot;</span><span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">move_e</span><span class="p">:</span>
+                <span class="n">LOGGER</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Fallback rename failed: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">move_e</span><span class="p">)</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Stream copy fallback rename failed&quot;</span>
+                <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">move_e</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Unexpected error during stream copy fallback.&quot;</span><span class="p">)</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Unexpected error during stream copy: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+        <span class="k">return</span>
+
+    <span class="c1"># Use FFmpegCommandBuilder for other encoders</span>
+    <span class="k">if</span> <span class="n">encoder</span> <span class="o">==</span> <span class="s2">&quot;Software x265 (2-Pass)&quot;</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;Starting 2-pass x265 encode. Target Bitrate: </span><span class="si">%s</span><span class="s2">k (Preset: slower)&quot;</span><span class="p">,</span>
+            <span class="n">bitrate_kbps</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">pass_log_prefix</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">(</span><span class="n">delete</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">&quot;_ffmpeg_passlog&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">temp_file</span><span class="p">:</span>
+                <span class="n">pass_log_prefix</span> <span class="o">=</span> <span class="n">temp_file</span><span class="o">.</span><span class="n">name</span>
+
+                <span class="c1"># Build commands using FFmpegCommandBuilder</span>
+                <span class="c1"># Pass 1</span>
+                <span class="n">builder1</span> <span class="o">=</span> <span class="n">FFmpegCommandBuilder</span><span class="p">()</span>
+                <span class="n">builder1</span><span class="o">.</span><span class="n">set_input</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">intermediate_input</span><span class="p">))</span>
+                <span class="n">builder1</span><span class="o">.</span><span class="n">set_output</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">final_output</span><span class="p">))</span>
+                <span class="n">builder1</span><span class="o">.</span><span class="n">set_encoder</span><span class="p">(</span><span class="s2">&quot;Software x265 (2-Pass)&quot;</span><span class="p">)</span>
+                <span class="n">builder1</span><span class="o">.</span><span class="n">set_pix_fmt</span><span class="p">(</span><span class="n">pix_fmt</span><span class="p">)</span>
+                <span class="n">builder1</span><span class="o">.</span><span class="n">set_bitrate</span><span class="p">(</span><span class="n">bitrate_kbps</span><span class="p">)</span>
+                <span class="n">builder1</span><span class="o">.</span><span class="n">set_bufsize</span><span class="p">(</span><span class="n">bufsize_kb</span><span class="p">)</span>
+                <span class="n">builder1</span><span class="o">.</span><span class="n">set_two_pass</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">pass_log_prefix</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+                <span class="n">cmd_pass1</span> <span class="o">=</span> <span class="n">builder1</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+                <span class="n">_run_ffmpeg_command</span><span class="p">(</span><span class="n">cmd_pass1</span><span class="p">,</span> <span class="s2">&quot;2-Pass x265 Pass 1&quot;</span><span class="p">,</span> <span class="n">monitor_memory</span><span class="p">)</span>
+
+                <span class="c1"># Pass 2</span>
+                <span class="n">builder2</span> <span class="o">=</span> <span class="n">FFmpegCommandBuilder</span><span class="p">()</span>
+                <span class="n">builder2</span><span class="o">.</span><span class="n">set_input</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">intermediate_input</span><span class="p">))</span>
+                <span class="n">builder2</span><span class="o">.</span><span class="n">set_output</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">final_output</span><span class="p">))</span>
+                <span class="n">builder2</span><span class="o">.</span><span class="n">set_encoder</span><span class="p">(</span><span class="s2">&quot;Software x265 (2-Pass)&quot;</span><span class="p">)</span>
+                <span class="n">builder2</span><span class="o">.</span><span class="n">set_pix_fmt</span><span class="p">(</span><span class="n">pix_fmt</span><span class="p">)</span>
+                <span class="n">builder2</span><span class="o">.</span><span class="n">set_bitrate</span><span class="p">(</span><span class="n">bitrate_kbps</span><span class="p">)</span>
+                <span class="n">builder2</span><span class="o">.</span><span class="n">set_bufsize</span><span class="p">(</span><span class="n">bufsize_kb</span><span class="p">)</span>
+                <span class="n">builder2</span><span class="o">.</span><span class="n">set_two_pass</span><span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">pass_log_prefix</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+                <span class="n">cmd_pass2</span> <span class="o">=</span> <span class="n">builder2</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+                <span class="n">_run_ffmpeg_command</span><span class="p">(</span><span class="n">cmd_pass2</span><span class="p">,</span> <span class="s2">&quot;2-Pass x265 Pass 2&quot;</span><span class="p">,</span> <span class="n">monitor_memory</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">RuntimeError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">LOGGER</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Error during 2-pass x265 encoding&quot;</span><span class="p">)</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;2-pass x265 encoding failed&quot;</span>
+            <span class="k">raise</span> <span class="ne">OSError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Single-pass encoding for other encoders</span>
+        <span class="n">builder</span> <span class="o">=</span> <span class="n">FFmpegCommandBuilder</span><span class="p">()</span>
+        <span class="n">builder</span><span class="o">.</span><span class="n">set_input</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">intermediate_input</span><span class="p">))</span>
+        <span class="n">builder</span><span class="o">.</span><span class="n">set_output</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">final_output</span><span class="p">))</span>
+
+        <span class="c1"># Map encoder names to match FFmpegCommandBuilder expectations</span>
+        <span class="k">if</span> <span class="s2">&quot;x264&quot;</span> <span class="ow">in</span> <span class="n">encoder</span><span class="p">:</span>
+            <span class="n">builder</span><span class="o">.</span><span class="n">set_encoder</span><span class="p">(</span><span class="s2">&quot;Software x264&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="s2">&quot;x265&quot;</span> <span class="ow">in</span> <span class="n">encoder</span><span class="p">:</span>
+            <span class="n">builder</span><span class="o">.</span><span class="n">set_encoder</span><span class="p">(</span><span class="s2">&quot;Software x265&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Pass through the encoder name as-is</span>
+            <span class="n">builder</span><span class="o">.</span><span class="n">set_encoder</span><span class="p">(</span><span class="n">encoder</span><span class="p">)</span>
+
+        <span class="n">builder</span><span class="o">.</span><span class="n">set_crf</span><span class="p">(</span><span class="n">crf</span><span class="p">)</span>
+        <span class="n">builder</span><span class="o">.</span><span class="n">set_pix_fmt</span><span class="p">(</span><span class="n">pix_fmt</span><span class="p">)</span>
+
+        <span class="c1"># Set bitrate and bufsize if provided</span>
+        <span class="k">if</span> <span class="n">bitrate_kbps</span><span class="p">:</span>
+            <span class="n">builder</span><span class="o">.</span><span class="n">set_bitrate</span><span class="p">(</span><span class="n">bitrate_kbps</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">bufsize_kb</span><span class="p">:</span>
+            <span class="n">builder</span><span class="o">.</span><span class="n">set_bufsize</span><span class="p">(</span><span class="n">bufsize_kb</span><span class="p">)</span>
+
+        <span class="n">cmd</span> <span class="o">=</span> <span class="n">builder</span><span class="o">.</span><span class="n">build</span><span class="p">()</span>
+        <span class="n">_run_ffmpeg_command</span><span class="p">(</span><span class="n">cmd</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Encoding with </span><span class="si">{</span><span class="n">encoder</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">monitor_memory</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">monitor_memory</span><span class="p">:</span>
+        <span class="n">log_memory_usage</span><span class="p">(</span><span class="s2">&quot;Video encoding completed&quot;</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

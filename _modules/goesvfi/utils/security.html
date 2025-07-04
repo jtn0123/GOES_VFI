@@ -1,0 +1,527 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>goesvfi.utils.security &mdash; GOES_VFI 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/custom.css?v=8b3bdd34" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=8d563738"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            GOES_VFI
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../installation.html">Installation Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quickstart.html">Quick Start Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/index.html">API Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Additional Information</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../license.html">License</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../support.html">Support</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">GOES_VFI</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">goesvfi.utils.security</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for goesvfi.utils.security</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Security utilities for GOES_VFI application.</span>
+
+<span class="sd">This module provides security validation and sanitization functions</span>
+<span class="sd">to prevent common vulnerabilities like command injection and path traversal.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>  <span class="c1"># noqa: S404  # subprocess usage is for security validation</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">ClassVar</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">goesvfi.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">log</span>
+
+<span class="n">LOGGER</span> <span class="o">=</span> <span class="n">log</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="SecurityError">
+<a class="viewcode-back" href="../../../api/utils_security.html#goesvfi.utils.security.SecurityError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SecurityError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>  <span class="c1"># pylint: disable=too-few-public-methods</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a security validation fails.&quot;&quot;&quot;</span></div>
+
+
+
+<div class="viewcode-block" id="InputValidator">
+<a class="viewcode-back" href="../../../api/utils_security.html#goesvfi.utils.security.InputValidator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">InputValidator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates and sanitizes user inputs to prevent security vulnerabilities.&quot;&quot;&quot;</span>
+
+    <span class="c1"># Allowed file extensions for different purposes</span>
+    <span class="n">ALLOWED_IMAGE_EXTENSIONS</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;.png&quot;</span><span class="p">,</span> <span class="s2">&quot;.jpg&quot;</span><span class="p">,</span> <span class="s2">&quot;.jpeg&quot;</span><span class="p">,</span> <span class="s2">&quot;.bmp&quot;</span><span class="p">,</span> <span class="s2">&quot;.tiff&quot;</span><span class="p">,</span> <span class="s2">&quot;.tif&quot;</span><span class="p">]</span>
+    <span class="n">ALLOWED_VIDEO_EXTENSIONS</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;.mp4&quot;</span><span class="p">,</span> <span class="s2">&quot;.avi&quot;</span><span class="p">,</span> <span class="s2">&quot;.mov&quot;</span><span class="p">,</span> <span class="s2">&quot;.mkv&quot;</span><span class="p">,</span> <span class="s2">&quot;.webm&quot;</span><span class="p">]</span>
+    <span class="n">ALLOWED_CONFIG_EXTENSIONS</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;.toml&quot;</span><span class="p">,</span> <span class="s2">&quot;.json&quot;</span><span class="p">,</span> <span class="s2">&quot;.yaml&quot;</span><span class="p">,</span> <span class="s2">&quot;.yml&quot;</span><span class="p">]</span>
+
+    <span class="c1"># Allowed FFmpeg encoders (whitelist approach)</span>
+    <span class="n">ALLOWED_FFMPEG_ENCODERS</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;Software x265&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Software x264&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Hardware HEVC (VideoToolbox)&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Hardware H.264 (VideoToolbox)&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;None (copy original)&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Hardware HEVC (NVENC)&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Hardware H.264 (NVENC)&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Hardware HEVC (QSV)&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;Hardware H.264 (QSV)&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="c1"># Allowed Sanchez arguments with validation patterns</span>
+    <span class="n">ALLOWED_SANCHEZ_ARGS</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;res_km&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;^\d+(\.\d+)?$&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;false_colour&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;^(true|false)$&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;crop&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;^[\d,]+$&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;timestamp&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;^\d</span><span class="si">{4}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">-\d</span><span class="si">{2}</span><span class="s2">T\d</span><span class="si">{2}</span><span class="s2">:\d</span><span class="si">{2}</span><span class="s2">:\d</span><span class="si">{2}</span><span class="s2">Z$&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;output&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;^[\w\-./]+$&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;interpolate&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;^(true|false)$&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;brightness&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;^[+-]?\d+(\.\d+)?$&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;contrast&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;^[+-]?\d+(\.\d+)?$&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;saturation&quot;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;^[+-]?\d+(\.\d+)?$&quot;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+<div class="viewcode-block" id="InputValidator.validate_file_path">
+<a class="viewcode-back" href="../../../api/utils_security.html#goesvfi.utils.security.InputValidator.validate_file_path">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_file_path</span><span class="p">(</span>
+        <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">allowed_extensions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">must_exist</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate file path to prevent directory traversal and ensure safety.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            path: File path to validate</span>
+<span class="sd">            allowed_extensions: List of allowed file extensions (e.g., [&#39;.png&#39;, &#39;.jpg&#39;])</span>
+<span class="sd">            must_exist: If True, file must exist on filesystem</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if path is valid and safe</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            SecurityError: If path contains security issues</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Path must be a non-empty string&quot;</span>
+            <span class="k">raise</span> <span class="n">SecurityError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="c1"># Normalize path and resolve any symlinks</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">path_obj</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+            <span class="n">normalized</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path_obj</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Invalid path format: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="n">SecurityError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+
+        <span class="c1"># Check for directory traversal attempts</span>
+        <span class="k">if</span> <span class="s2">&quot;..&quot;</span> <span class="ow">in</span> <span class="n">path</span> <span class="ow">or</span> <span class="p">(</span><span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">()):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Path contains directory traversal attempts&quot;</span>
+            <span class="k">raise</span> <span class="n">SecurityError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="c1"># Validate extension if specified</span>
+        <span class="k">if</span> <span class="n">allowed_extensions</span><span class="p">:</span>
+            <span class="n">ext</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">normalized</span><span class="p">)</span><span class="o">.</span><span class="n">suffix</span>
+            <span class="k">if</span> <span class="n">ext</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">e</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">allowed_extensions</span><span class="p">]:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;File extension &#39;</span><span class="si">{</span><span class="n">ext</span><span class="si">}</span><span class="s2">&#39; not allowed. Allowed: </span><span class="si">{</span><span class="n">allowed_extensions</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">raise</span> <span class="n">SecurityError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="c1"># Check if file exists if required</span>
+        <span class="k">if</span> <span class="n">must_exist</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">normalized</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;File does not exist: </span><span class="si">{</span><span class="n">normalized</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="n">SecurityError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="c1"># Check if path is within reasonable bounds (prevent extremely long paths)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">normalized</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">4096</span><span class="p">:</span>  <span class="c1"># Most filesystems have much shorter limits</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Path too long&quot;</span>
+            <span class="k">raise</span> <span class="n">SecurityError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Path validation passed: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">normalized</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="InputValidator.validate_numeric_range">
+<a class="viewcode-back" href="../../../api/utils_security.html#goesvfi.utils.security.InputValidator.validate_numeric_range">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_numeric_range</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">min_val</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">max_val</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;value&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that a numeric value is within acceptable bounds.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value: Numeric value to validate</span>
+<span class="sd">            min_val: Minimum allowed value</span>
+<span class="sd">            max_val: Maximum allowed value</span>
+<span class="sd">            name: Name of the value for error messages</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if value is within range</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            SecurityError: If value is out of range</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Check for invalid types (including booleans which are subclass of int)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must be a number&quot;</span>
+            <span class="k">raise</span> <span class="n">SecurityError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="c1"># Check for infinity and NaN values</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="ow">or</span> <span class="n">math</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">value</span><span class="p">)):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must be a number&quot;</span>
+            <span class="k">raise</span> <span class="n">SecurityError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">min_val</span> <span class="o">&lt;=</span> <span class="n">value</span> <span class="o">&lt;=</span> <span class="n">max_val</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must be between </span><span class="si">{</span><span class="n">min_val</span><span class="si">}</span><span class="s2"> and </span><span class="si">{</span><span class="n">max_val</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="n">SecurityError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="InputValidator.sanitize_filename">
+<a class="viewcode-back" href="../../../api/utils_security.html#goesvfi.utils.security.InputValidator.sanitize_filename">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sanitize_filename</span><span class="p">(</span><span class="n">filename</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sanitize filename by removing/replacing dangerous characters.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            filename: Original filename</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Sanitized filename safe for filesystem use</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">filename</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;untitled&quot;</span>
+
+        <span class="c1"># Remove/replace dangerous characters</span>
+        <span class="n">sanitized</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[&lt;&gt;:&quot;/</span><span class="se">\\</span><span class="s1">|?*\x00-\x1f]&#39;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+
+        <span class="c1"># Remove leading/trailing dots and spaces</span>
+        <span class="n">sanitized</span> <span class="o">=</span> <span class="n">sanitized</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;. &quot;</span><span class="p">)</span>
+
+        <span class="c1"># Ensure filename isn&#39;t empty after sanitization</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">sanitized</span><span class="p">:</span>
+            <span class="n">sanitized</span> <span class="o">=</span> <span class="s2">&quot;untitled&quot;</span>
+
+        <span class="c1"># Handle Windows reserved names</span>
+        <span class="n">windows_reserved</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;CON&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;PRN&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;AUX&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;NUL&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;COM1&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;COM2&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;COM3&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;COM4&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;COM5&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;COM6&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;COM7&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;COM8&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;COM9&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;LPT1&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;LPT2&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;LPT3&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;LPT4&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;LPT5&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;LPT6&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;LPT7&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;LPT8&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;LPT9&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="c1"># Check if the base name (without extension) is a reserved name</span>
+        <span class="n">path_obj</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">sanitized</span><span class="p">)</span>
+        <span class="n">name_part</span> <span class="o">=</span> <span class="n">path_obj</span><span class="o">.</span><span class="n">stem</span>
+        <span class="n">ext_part</span> <span class="o">=</span> <span class="n">path_obj</span><span class="o">.</span><span class="n">suffix</span>
+        <span class="k">if</span> <span class="n">name_part</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">in</span> <span class="n">windows_reserved</span><span class="p">:</span>
+            <span class="n">sanitized</span> <span class="o">=</span> <span class="n">name_part</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">+</span> <span class="n">ext_part</span>
+
+        <span class="c1"># Limit length</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sanitized</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">255</span><span class="p">:</span>
+            <span class="n">path_obj</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">sanitized</span><span class="p">)</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">path_obj</span><span class="o">.</span><span class="n">stem</span>
+            <span class="n">ext</span> <span class="o">=</span> <span class="n">path_obj</span><span class="o">.</span><span class="n">suffix</span>
+            <span class="n">max_name_len</span> <span class="o">=</span> <span class="mi">255</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">ext</span><span class="p">)</span>
+            <span class="n">sanitized</span> <span class="o">=</span> <span class="n">name</span><span class="p">[:</span><span class="n">max_name_len</span><span class="p">]</span> <span class="o">+</span> <span class="n">ext</span>
+
+        <span class="k">return</span> <span class="n">sanitized</span></div>
+
+
+<div class="viewcode-block" id="InputValidator.validate_ffmpeg_encoder">
+<a class="viewcode-back" href="../../../api/utils_security.html#goesvfi.utils.security.InputValidator.validate_ffmpeg_encoder">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_ffmpeg_encoder</span><span class="p">(</span><span class="n">encoder</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate that FFmpeg encoder is from allowed list.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            encoder: Encoder name to validate</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if encoder is allowed</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            SecurityError: If encoder is not in whitelist</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">encoder</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">InputValidator</span><span class="o">.</span><span class="n">ALLOWED_FFMPEG_ENCODERS</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;FFmpeg encoder &#39;</span><span class="si">{</span><span class="n">encoder</span><span class="si">}</span><span class="s2">&#39; not allowed. Allowed: </span><span class="si">{</span><span class="n">InputValidator</span><span class="o">.</span><span class="n">ALLOWED_FFMPEG_ENCODERS</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="n">SecurityError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="InputValidator.validate_sanchez_argument">
+<a class="viewcode-back" href="../../../api/utils_security.html#goesvfi.utils.security.InputValidator.validate_sanchez_argument">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_sanchez_argument</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate Sanchez processor arguments to prevent command injection.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            key: Argument name</span>
+<span class="sd">            value: Argument value</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if argument is valid</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            SecurityError: If argument is invalid or potentially dangerous</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">InputValidator</span><span class="o">.</span><span class="n">ALLOWED_SANCHEZ_ARGS</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Sanchez argument &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; not allowed&quot;</span>
+            <span class="k">raise</span> <span class="n">SecurityError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="n">pattern</span> <span class="o">=</span> <span class="n">InputValidator</span><span class="o">.</span><span class="n">ALLOWED_SANCHEZ_ARGS</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)):</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Sanchez argument &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; has invalid value: </span><span class="si">{</span><span class="n">value</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="n">SecurityError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="InputValidator.validate_command_args">
+<a class="viewcode-back" href="../../../api/utils_security.html#goesvfi.utils.security.InputValidator.validate_command_args">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_command_args</span><span class="p">(</span><span class="n">args</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">max_args</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">100</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate command line arguments for subprocess execution.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            args: List of command arguments</span>
+<span class="sd">            max_args: Maximum number of arguments allowed</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            True if arguments are safe</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            SecurityError: If arguments contain dangerous patterns</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_args</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Too many command arguments: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span><span class="si">}</span><span class="s2"> &gt; </span><span class="si">{</span><span class="n">max_args</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">raise</span> <span class="n">SecurityError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="c1"># Check for dangerous patterns in arguments</span>
+        <span class="n">dangerous_patterns</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="sa">r</span><span class="s2">&quot;[;&amp;|`$()]&quot;</span><span class="p">,</span>  <span class="c1"># Shell metacharacters</span>
+            <span class="sa">r</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">x[0-9a-fA-F]</span><span class="si">{2}</span><span class="s2">&quot;</span><span class="p">,</span>  <span class="c1"># Hex escape sequences</span>
+            <span class="sa">r</span><span class="s2">&quot;%[0-9a-fA-F]</span><span class="si">{2}</span><span class="s2">&quot;</span><span class="p">,</span>  <span class="c1"># URL encoding</span>
+        <span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Command argument must be string, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">arg</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">raise</span> <span class="n">SecurityError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">pattern</span> <span class="ow">in</span> <span class="n">dangerous_patterns</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">arg</span><span class="p">):</span>
+                    <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Dangerous pattern found in argument: </span><span class="si">{</span><span class="n">arg</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="k">raise</span> <span class="n">SecurityError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">True</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SecureFileHandler">
+<a class="viewcode-back" href="../../../api/utils_security.html#goesvfi.utils.security.SecureFileHandler">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SecureFileHandler</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Handles file operations with security considerations.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SecureFileHandler.create_secure_temp_file">
+<a class="viewcode-back" href="../../../api/utils_security.html#goesvfi.utils.security.SecureFileHandler.create_secure_temp_file">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_secure_temp_file</span><span class="p">(</span><span class="n">suffix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;goesvfi_&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a temporary file with secure permissions.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            suffix: File suffix/extension</span>
+<span class="sd">            prefix: File prefix</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Path to created temporary file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Create temporary file with restrictive permissions</span>
+        <span class="n">fd</span><span class="p">,</span> <span class="n">path</span> <span class="o">=</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">mkstemp</span><span class="p">(</span><span class="n">suffix</span><span class="o">=</span><span class="n">suffix</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="n">prefix</span><span class="p">)</span>
+        <span class="n">temp_path</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+        <span class="c1"># Set restrictive permissions (owner only)</span>
+        <span class="n">temp_path</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="mo">0o600</span><span class="p">)</span>
+
+        <span class="c1"># Close the file descriptor (we just need the path)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">fd</span><span class="p">)</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Created secure temporary file: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">temp_path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">temp_path</span></div>
+
+
+<div class="viewcode-block" id="SecureFileHandler.create_secure_config_dir">
+<a class="viewcode-back" href="../../../api/utils_security.html#goesvfi.utils.security.SecureFileHandler.create_secure_config_dir">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_secure_config_dir</span><span class="p">(</span><span class="n">config_dir</span><span class="p">:</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Create configuration directory with secure permissions.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config_dir: Path to configuration directory</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">config_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="c1"># Set restrictive permissions (owner only)</span>
+        <span class="n">config_dir</span><span class="o">.</span><span class="n">chmod</span><span class="p">(</span><span class="mo">0o700</span><span class="p">)</span>
+
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Created secure config directory: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">config_dir</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="secure_subprocess_call">
+<a class="viewcode-back" href="../../../api/utils_security.html#goesvfi.utils.security.secure_subprocess_call">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">secure_subprocess_call</span><span class="p">(</span><span class="n">command</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Execute subprocess with security validations.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        command: Command and arguments to execute</span>
+<span class="sd">        **kwargs: Additional arguments for subprocess.run</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Result from subprocess.run</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        SecurityError: If command fails security validation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Validate command arguments</span>
+    <span class="n">InputValidator</span><span class="o">.</span><span class="n">validate_command_args</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
+
+    <span class="c1"># Set secure defaults</span>
+    <span class="n">secure_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;shell&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>  <span class="c1"># Never use shell</span>
+        <span class="s2">&quot;check&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">&quot;capture_output&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">&quot;text&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">&quot;timeout&quot;</span><span class="p">:</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;timeout&quot;</span><span class="p">,</span> <span class="mi">300</span><span class="p">),</span>  <span class="c1"># 5 minute default timeout</span>
+    <span class="p">}</span>
+
+    <span class="c1"># Override with user-provided kwargs</span>
+    <span class="n">secure_kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="c1"># Ensure shell is never enabled</span>
+    <span class="k">if</span> <span class="n">secure_kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;shell&quot;</span><span class="p">):</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Shell execution not allowed for security reasons&quot;</span>
+        <span class="k">raise</span> <span class="n">SecurityError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="n">LOGGER</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Executing secure subprocess: </span><span class="si">%s</span><span class="s2"> with </span><span class="si">%s</span><span class="s2"> args&quot;</span><span class="p">,</span> <span class="n">command</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">command</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="o">**</span><span class="n">secure_kwargs</span><span class="p">)</span>  <span class="c1"># noqa: S603, PLW1510  # subprocess call for secure execution, check=True in kwargs</span>
+    <span class="k">except</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">TimeoutExpired</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Command timed out after </span><span class="si">{</span><span class="n">secure_kwargs</span><span class="p">[</span><span class="s1">&#39;timeout&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> seconds&quot;</span>
+        <span class="k">raise</span> <span class="n">SecurityError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">LOGGER</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s2">&quot;Subprocess execution failed&quot;</span><span class="p">)</span>
+        <span class="k">raise</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, GOES_VFI Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
