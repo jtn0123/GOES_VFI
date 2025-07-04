@@ -1,4 +1,4 @@
-"""PyQt6 GUI entry point for GOES‑VFI.
+"""PyQt6 GUI entry point for GOES-VFI.
 
 Launching this module starts the application's main window with tabs for data
 integrity checks, imagery previews, and video generation.  Run
@@ -21,6 +21,8 @@ from goesvfi.gui_components import (
     ThemeManager,
 )
 from goesvfi.gui_components.resource_manager import get_resource_tracker
+from goesvfi.gui_components.signal_broker import SignalBroker
+from goesvfi.gui_components.ui_setup_manager import UISetupManager
 from goesvfi.gui_components.update_manager import get_update_manager, register_update, request_update
 from goesvfi.utils import log
 from goesvfi.utils.gui_helpers import ClickableLabel
@@ -31,6 +33,8 @@ LOGGER = log.get_logger(__name__)
 
 # ────────────────────────────── Main Window ────────────────────────────────
 class MainWindow(QWidget):
+    """Main application window for GOES-VFI GUI interface."""
+
     request_previews_update = pyqtSignal()  # Signal to trigger preview update
 
     # Type annotations for attributes created by InitializationManager
@@ -50,7 +54,12 @@ class MainWindow(QWidget):
     current_crop_rect: Any | None
     processing_callbacks: Any
 
-    def __init__(self, debug_mode: bool = False) -> None:
+    def __init__(self, *, debug_mode: bool = False) -> None:
+        """Initialize the main window.
+
+        Args:
+            debug_mode: Whether to enable debug mode for enhanced logging.
+        """
         # Removed log level setting here, it's handled in main()
         LOGGER.debug("Entering MainWindow.__init__... debug_mode=%s", debug_mode)
         super().__init__()
@@ -179,13 +188,9 @@ class MainWindow(QWidget):
         self.tab_widget = QTabWidget(self)
 
         # Create UI setup manager
-        from goesvfi.gui_components.ui_setup_manager import UISetupManager
-
         self.ui_setup_manager = UISetupManager()
 
         # Create signal broker
-        from goesvfi.gui_components.signal_broker import SignalBroker
-
         self.signal_broker = SignalBroker()
 
         self.ui_setup_manager.setup_tab_widget(self)
@@ -237,7 +242,11 @@ class MainWindow(QWidget):
 
     # --- State Setters for Child Tabs ---
     def _save_input_directory(self, path: Path) -> bool:
-        """Save input directory to settings persistently."""
+        """Save input directory to settings persistently.
+
+        Returns:
+            bool: True if save was successful, False otherwise.
+        """
         return self.settings_persistence.save_input_directory(path)
 
     def set_in_dir(self, path: Path | None) -> None:
@@ -245,7 +254,11 @@ class MainWindow(QWidget):
         self.state_manager.set_input_directory(path)
 
     def _save_crop_rect(self, rect: tuple[int, int, int, int]) -> bool:
-        """Save crop rectangle to settings persistently."""
+        """Save crop rectangle to settings persistently.
+
+        Returns:
+            bool: True if save was successful, False otherwise.
+        """
         return self.settings_persistence.save_crop_rect(rect)
 
     def set_crop_rect(self, rect: tuple[int, int, int, int] | None) -> None:
@@ -270,18 +283,30 @@ class MainWindow(QWidget):
         self.crop_handler.on_crop_clicked(self)
 
     def _get_sorted_image_files(self) -> list[Path]:
-        """Get sorted list of image files from input directory."""
+        """Get sorted list of image files from input directory.
+
+        Returns:
+            list[Path]: Sorted list of image file paths.
+        """
         return cast("list[Path]", self.crop_handler.get_sorted_image_files(self))
 
     def _prepare_image_for_crop_dialog(self, image_path: Path) -> QPixmap | None:
-        """Prepare an image for the crop dialog, applying Sanchez if enabled."""
+        """Prepare an image for the crop dialog, applying Sanchez if enabled.
+
+        Returns:
+            QPixmap | None: Prepared image pixmap or None if preparation failed.
+        """
         return cast(
             "QPixmap | None",
             self.crop_handler.prepare_image_for_crop_dialog(self, image_path),
         )
 
     def _get_processed_preview_pixmap(self) -> QPixmap | None:
-        """Get the processed preview pixmap from the first frame label."""
+        """Get the processed preview pixmap from the first frame label.
+
+        Returns:
+            QPixmap | None: Processed preview pixmap or None if not available.
+        """
         return cast("QPixmap | None", self.crop_handler.get_processed_preview_pixmap(self))
 
     def _show_crop_dialog(self, pixmap: QPixmap) -> None:
@@ -402,19 +427,9 @@ class MainWindow(QWidget):
                 apply_sanchez,
             )
 
-            # Disconnect any existing connections first
-            try:
-                self.main_view_model.preview_manager.preview_updated.disconnect()
-            except TypeError:
-                pass  # No connections exist
-            try:
-                self.main_view_model.preview_manager.preview_error.disconnect()
-            except TypeError:
-                pass  # No connections exist
-
-            # Connect signals before loading
-            self.main_view_model.preview_manager.preview_updated.connect(self._on_preview_images_loaded)
-            self.main_view_model.preview_manager.preview_error.connect(self._on_preview_error)
+            # Use signal broker for proper connection management
+            # This will handle disconnection and reconnection safely
+            self._setup_preview_connections()
 
             # Load previews through view model using memory-efficient thumbnails
             success = self.main_view_model.preview_manager.load_preview_thumbnails(
@@ -491,7 +506,11 @@ class MainWindow(QWidget):
             LOGGER.exception("Error updating preview labels")
 
     def _get_image_files_from_input_dir(self) -> list[Path]:
-        """Get sorted list of image files from input directory."""
+        """Get sorted list of image files from input directory.
+
+        Returns:
+            list[Path]: Sorted list of image file paths.
+        """
         if not (self.in_dir and self.in_dir.exists()):
             return []
 
@@ -508,30 +527,40 @@ class MainWindow(QWidget):
 
         label = getattr(self.main_tab, label_name)
 
-        # Scale and set pixmap
-        target_size = self._get_target_size_for_label(label)
-        scaled_pixmap = self.main_view_model.preview_manager.scale_preview_pixmap(pixmap, target_size)
-        label.setPixmap(scaled_pixmap)
+        # Ensure we're in the main thread for UI updates
+        def update_ui() -> None:
+            try:
+                # Scale and set pixmap
+                target_size = self._get_target_size_for_label(label)
+                scaled_pixmap = self.main_view_model.preview_manager.scale_preview_pixmap(pixmap, target_size)
+                label.setPixmap(scaled_pixmap)
 
-        # Set file path
-        if image_files:
-            if file_index == -1:  # Last file
-                label.file_path = str(image_files[-1])
-            elif file_index < len(image_files):
-                label.file_path = str(image_files[file_index])
+                # Set file path
+                if image_files:
+                    if file_index == -1:  # Last file
+                        label.file_path = str(image_files[-1])
+                    elif file_index < len(image_files):
+                        label.file_path = str(image_files[file_index])
 
-        # Set processed image data
-        if frame_data and frame_data.image_data is not None:
-            full_res_pixmap = self.main_view_model.preview_manager.numpy_to_qpixmap(frame_data.image_data)
-            if not full_res_pixmap.isNull():
-                label.processed_image = full_res_pixmap.toImage()
-                if label_name == "first_frame_label":
-                    LOGGER.debug("Set processed_image on first_frame_label: %s", label.processed_image)
-        elif label_name == "first_frame_label":
-            LOGGER.warning("No first_frame_data available from preview manager")
+                # Set processed image data
+                if frame_data and frame_data.image_data is not None:
+                    full_res_pixmap = self.main_view_model.preview_manager.numpy_to_qpixmap(frame_data.image_data)
+                    if not full_res_pixmap.isNull():
+                        label.processed_image = full_res_pixmap.toImage()
+                        if label_name == "first_frame_label":
+                            LOGGER.debug("Set processed_image on first_frame_label: %s", label.processed_image)
+            except Exception:
+                LOGGER.exception("Error updating frame label %s", label_name)
+
+        # Use QTimer to ensure UI updates happen in main thread
+        QTimer.singleShot(0, update_ui)
 
     def _get_target_size_for_label(self, label: QWidget) -> QSize:
-        """Get appropriate target size for scaling a label's pixmap."""
+        """Get appropriate target size for scaling a label's pixmap.
+
+        Returns:
+            QSize: Target size for the label's pixmap.
+        """
         target_size = QSize(200, 200)  # Minimum preview size
         current_size = label.size()
         if current_size.width() > 200 and current_size.height() > 200:
@@ -564,32 +593,75 @@ class MainWindow(QWidget):
         # Save settings before closing
         self.saveSettings()
 
+        # Disconnect all signal connections first to prevent issues during cleanup
+        if hasattr(self, "signal_broker"):
+            self.signal_broker.disconnect_all_connections()
+
+        # Clean up processing manager
+        if hasattr(self, "main_view_model") and hasattr(self.main_view_model, "processing_manager"):
+            self.main_view_model.processing_manager.cleanup_all_resources()
+
         # Clean up all tracked resources through resource manager
         resource_tracker = get_resource_tracker()
         stats = resource_tracker.get_stats()
         LOGGER.info("Cleaning up resources: %s", stats)
 
+        # Register any legacy resources that weren't properly tracked
+        self._register_legacy_resources_for_cleanup(resource_tracker)
+
+        # Unified cleanup through resource manager
         resource_tracker.cleanup_all()
 
-        # Legacy cleanup for any untracked resources
-        if hasattr(self, "_sanchez_gui_temp_dir") and self._sanchez_gui_temp_dir.exists():
-            try:
-                import shutil
-
-                shutil.rmtree(self._sanchez_gui_temp_dir)
-                LOGGER.debug("Cleaned up temporary Sanchez directory")
-            except Exception as e:
-                LOGGER.warning("Failed to clean up temp directory: %s", e)
-
-        # Terminate any running worker (now also handled by resource tracker)
-        if hasattr(self, "vfi_worker") and self.vfi_worker and self.vfi_worker.isRunning():
-            LOGGER.info("Terminating VFI worker thread")
-            self.vfi_worker.terminate()
-            self.vfi_worker.wait(1000)
+        LOGGER.info("All resource cleanup completed")
 
         # Accept the close event
         if event:
             event.accept()
+
+    def _register_legacy_resources_for_cleanup(self, resource_tracker: Any) -> None:
+        """Register any legacy resources that weren't properly tracked.
+
+        Args:
+            resource_tracker: The resource tracker instance
+        """
+        # Register legacy temporary directories
+        if hasattr(self, "_sanchez_gui_temp_dir") and self._sanchez_gui_temp_dir.exists():
+            resource_tracker.track_temp_dir(self._sanchez_gui_temp_dir)
+            LOGGER.debug("Registered legacy Sanchez temp directory for cleanup")
+
+        # Register VFI worker for graceful shutdown
+        if hasattr(self, "vfi_worker") and self.vfi_worker and self.vfi_worker.isRunning():
+            resource_tracker.track_worker_thread("vfi_worker", self.vfi_worker)
+            LOGGER.debug("Registered VFI worker for graceful cleanup")
+
+        # Register any other untracked resources here
+        # This method serves as a transition point to move legacy cleanup into the resource manager
+
+    def _setup_preview_connections(self) -> None:
+        """Set up preview signal connections using signal broker."""
+        if not hasattr(self, "signal_broker"):
+            self.signal_broker = SignalBroker()
+
+        # Use the signal broker's connection tracking for preview signals
+        try:
+            # Disconnect any existing preview connections
+            self.main_view_model.preview_manager.preview_updated.disconnect()
+        except TypeError:
+            pass  # No connections exist
+        try:
+            self.main_view_model.preview_manager.preview_error.disconnect()
+        except TypeError:
+            pass  # No connections exist
+
+        # Make new tracked connections
+        self.signal_broker._make_connection(
+            self.main_view_model.preview_manager.preview_updated,
+            self._on_preview_images_loaded,
+            "preview manager updated signal",
+        )
+        self.signal_broker._make_connection(
+            self.main_view_model.preview_manager.preview_error, self._on_preview_error, "preview manager error signal"
+        )
 
     def _connect_settings_tab(self) -> None:
         """Connect settings tab signals to handlers."""

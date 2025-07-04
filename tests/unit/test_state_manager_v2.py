@@ -280,7 +280,16 @@ class TestStateManager:
         if not settings_save_success:
             mock_main_window.main_tab.save_settings.side_effect = Exception("Save failed")
 
-        mock_main_window.settings.value.return_value = str(new_path) if verification_success else ""
+        # Set up different return values for pre-state vs post-state capture
+        if verification_success:
+            # First 3 calls (pre-state): old values, next 3 calls (post-state): new values
+            mock_main_window.settings.value.side_effect = [
+                "", "", "",  # Pre-state: input_directory, crop_rectangle, output_directory
+                str(new_path), "", ""  # Post-state: shows change in input_directory
+            ]
+        else:
+            # All calls return empty string (no change detected)
+            mock_main_window.settings.value.return_value = ""
 
         with patch("goesvfi.gui_components.state_manager.LOGGER") as mock_logger:
             state_manager._save_all_settings_with_fallback(old_path)
@@ -288,12 +297,16 @@ class TestStateManager:
             if settings_save_success and verification_success:
                 # Should save and verify successfully
                 mock_main_window.main_tab.save_settings.assert_called_once()
-                mock_main_window.settings.value.assert_called_once_with("paths/inputDirectory", "", type=str)
+                # Expect exactly 6 calls: pre-state capture (3) + post-state capture (3) = 6 calls
+                assert mock_main_window.settings.value.call_count == 6
+                # Verify it was called with the right key at least once
+                mock_main_window.settings.value.assert_any_call("paths/inputDirectory", "", type=str)
                 mock_logger.warning.assert_not_called()
             elif settings_save_success and not verification_success:
                 # Should attempt revert after failed verification
                 mock_main_window._save_input_directory.assert_called_with(old_path)
-                mock_logger.warning.assert_called_once()
+                # Expect at least 2 warnings: verification failure + revert failure
+                assert mock_logger.warning.call_count >= 2
             else:
                 # Should log error for save failure (exception uses LOGGER.exception)
                 mock_logger.exception.assert_called_once()
@@ -323,8 +336,16 @@ class TestStateManager:
         if not settings_save_success:
             mock_main_window.main_tab.save_settings.side_effect = Exception("Save failed")
 
-        expected_rect_str = "10,20,300,400" if verification_success else ""
-        mock_main_window.settings.value.return_value = expected_rect_str
+        # Set up different return values for pre-state vs post-state capture
+        if verification_success:
+            # First 3 calls (pre-state): old values, next 3 calls (post-state): new values  
+            mock_main_window.settings.value.side_effect = [
+                "", "", "",  # Pre-state: input_directory, crop_rectangle, output_directory
+                "", "10,20,300,400", ""  # Post-state: shows change in crop_rectangle
+            ]
+        else:
+            # All calls return empty string (no change detected)
+            mock_main_window.settings.value.return_value = ""
 
         with patch("goesvfi.gui_components.state_manager.LOGGER") as mock_logger:
             state_manager._save_all_settings_with_crop_fallback(old_rect)
@@ -332,12 +353,16 @@ class TestStateManager:
             if settings_save_success and verification_success:
                 # Should save and verify successfully
                 mock_main_window.main_tab.save_settings.assert_called_once()
-                mock_main_window.settings.value.assert_called_once_with("preview/cropRectangle", "", type=str)
+                # Expect exactly 6 calls: pre-state capture (3) + post-state capture (3) = 6 calls
+                assert mock_main_window.settings.value.call_count == 6
+                # Verify it was called with the right key at least once
+                mock_main_window.settings.value.assert_any_call("preview/cropRectangle", "", type=str)
                 mock_logger.warning.assert_not_called()
             elif settings_save_success and not verification_success:
                 # Should attempt revert after failed verification
                 mock_main_window._save_crop_rect.assert_called_with(old_rect)
-                mock_logger.warning.assert_called_once()
+                # Expect at least 2 warnings: verification failure + revert failure
+                assert mock_logger.warning.call_count >= 2
             else:
                 # Should log error for save failure (exception uses LOGGER.exception)
                 mock_logger.exception.assert_called_once()

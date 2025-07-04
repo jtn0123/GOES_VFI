@@ -105,47 +105,132 @@ class StateManager:
             LOGGER.warning("Could not call main_tab._update_crop_buttons_state()")
 
     def _save_all_settings_with_fallback(self, old_path: Path | None) -> None:
-        """Save all settings with fallback on failure.
+        """Save all settings with atomic transaction and fallback on failure.
 
         Args:
             old_path: Previous path to revert to if save fails
         """
-        try:
-            if hasattr(self.main_window.main_tab, "save_settings"):
-                LOGGER.info("Saving all settings due to input directory change")
-                self.main_window.main_tab.save_settings()
+        # Create atomic settings transaction
+        success = self._atomic_settings_save(self._save_input_directory_settings)
 
-                # Final verification
-                if self.main_window.in_dir:
-                    saved_dir = self.main_window.settings.value("paths/inputDirectory", "", type=str)
-                    LOGGER.debug("Final verification - Input directory: %s", saved_dir)
-
-                    # If saving failed, try to revert
-                    if not saved_dir and old_path:
-                        LOGGER.warning("Input directory not saved, attempting to revert to previous value")
-                        self.main_window._save_input_directory(old_path)
-        except Exception as e:
-            LOGGER.exception("Error saving settings after input directory change: %s", e)
+        if not success and old_path:
+            LOGGER.warning("Settings save failed, reverting to previous path: %s", old_path)
+            # Try to revert atomically
+            self._atomic_settings_save(lambda: self.main_window._save_input_directory(old_path))
 
     def _save_all_settings_with_crop_fallback(self, old_rect: tuple[int, int, int, int] | None) -> None:
-        """Save all settings with fallback for crop rect.
+        """Save all settings with atomic transaction and fallback for crop rect.
 
         Args:
             old_rect: Previous rect to revert to if save fails
         """
+        # Create atomic settings transaction
+        success = self._atomic_settings_save(self._save_crop_settings)
+
+        if not success and old_rect:
+            LOGGER.warning("Crop settings save failed, reverting to previous rect: %s", old_rect)
+            # Try to revert atomically
+            self._atomic_settings_save(lambda: self.main_window._save_crop_rect(old_rect))
+
+    def _atomic_settings_save(self, save_operation: callable) -> bool:
+        """Perform atomic settings save operation with verification.
+
+        Args:
+            save_operation: Function to perform the save operation
+
+        Returns:
+            True if save was successful and verified, False otherwise
+        """
         try:
-            if hasattr(self.main_window.main_tab, "save_settings"):
-                LOGGER.info("Saving all settings due to crop rectangle change")
-                self.main_window.main_tab.save_settings()
+            # Force settings sync before operation
+            self.main_window.settings.sync()
 
-                # Final verification
-                if self.main_window.current_crop_rect:
-                    saved_rect = self.main_window.settings.value("preview/cropRectangle", "", type=str)
-                    LOGGER.debug("Final verification - Crop rectangle: %s", saved_rect)
+            # Store pre-operation state for verification
+            pre_state = self._capture_settings_state()
 
-                    # If saving failed, try to revert
-                    if not saved_rect and old_rect:
-                        LOGGER.warning("Crop rectangle not saved, attempting to revert to previous value")
-                        self.main_window._save_crop_rect(old_rect)
+            # Perform the save operation
+            save_operation()
+
+            # Force sync and verify
+            self.main_window.settings.sync()
+
+            # Verify the operation succeeded
+            post_state = self._capture_settings_state()
+            success = self._verify_settings_change(pre_state, post_state)
+
+            if success:
+                LOGGER.debug("Atomic settings save completed successfully")
+            else:
+                LOGGER.error("Settings save verification failed")
+
+            return success
+
         except Exception as e:
-            LOGGER.exception("Error saving settings after crop rectangle change: %s", e)
+            LOGGER.exception("Error during atomic settings save: %s", e)
+            return False
+
+    def _capture_settings_state(self) -> dict[str, Any]:
+        """Capture current settings state for verification.
+
+        Returns:
+            Dictionary of current settings values
+        """
+        state = {}
+        try:
+            # Capture key settings that we care about
+            state["input_directory"] = self.main_window.settings.value("paths/inputDirectory", "", type=str)
+            state["crop_rectangle"] = self.main_window.settings.value("preview/cropRectangle", "", type=str)
+            state["output_directory"] = self.main_window.settings.value("paths/outputDirectory", "", type=str)
+        except Exception as e:
+            LOGGER.exception("Error capturing settings state: %s", e)
+        return state
+
+    def _verify_settings_change(self, pre_state: dict[str, Any], post_state: dict[str, Any]) -> bool:
+        """Verify that settings change was applied correctly.
+
+        Args:
+            pre_state: Settings state before operation
+            post_state: Settings state after operation
+
+        Returns:
+            True if verification passed, False otherwise
+        """
+        try:
+            # Check if any settings actually changed
+            changes_detected = False
+            for key in post_state:
+                if post_state[key] != pre_state.get(key):
+                    LOGGER.debug("Settings change verified for %s: %s -> %s", key, pre_state.get(key), post_state[key])
+                    changes_detected = True
+                    
+                    # Additional validation: ensure the new value is not empty when we expect a value
+                    if key in ["input_directory", "crop_rectangle"] and not post_state[key]:
+                        LOGGER.warning("Settings verification failed: %s is empty after save", key)
+                        return False
+            
+            # If we expected changes but didn't detect any, verification fails
+            # This can happen if the save operation silently failed
+            if not changes_detected:
+                LOGGER.warning("Settings verification failed: no changes detected after save operation")
+                return False
+                
+            return True
+        except Exception as e:
+            LOGGER.exception("Settings verification failed: %s", e)
+            return False
+
+    def _save_input_directory_settings(self) -> None:
+        """Save input directory settings."""
+        if hasattr(self.main_window.main_tab, "save_settings"):
+            LOGGER.info("Saving input directory settings")
+            self.main_window.main_tab.save_settings()
+        else:
+            LOGGER.warning("Main tab save_settings method not available")
+
+    def _save_crop_settings(self) -> None:
+        """Save crop rectangle settings."""
+        if hasattr(self.main_window.main_tab, "save_settings"):
+            LOGGER.info("Saving crop rectangle settings")
+            self.main_window.main_tab.save_settings()
+        else:
+            LOGGER.warning("Main tab save_settings method not available")

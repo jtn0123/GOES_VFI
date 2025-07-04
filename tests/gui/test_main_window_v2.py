@@ -202,7 +202,7 @@ class TestMainWindowOptimizedV2:
 
             mock_settings_inst.value.side_effect = settings_value_side_effect
 
-            window = MainWindow()
+            window = MainWindow(debug_mode=False)
             QApplication.processEvents()
 
             qtbot.addWidget(window)

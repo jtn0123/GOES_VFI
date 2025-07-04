@@ -222,7 +222,7 @@ def example_safe_gui_test():
         from goesvfi.gui import MainWindow
 
         # This will create a real window but with optimizations
-        window = MainWindow()
+        window = MainWindow(debug_mode=False)
         qtbot.addWidget(window)
 
         # Event processing is sped up but still works
