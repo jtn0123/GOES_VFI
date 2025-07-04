@@ -7,7 +7,7 @@ to prevent common vulnerabilities like command injection and path traversal.
 import os
 import pathlib
 import re
-from typing import Any
+from typing import Any, ClassVar
 
 from goesvfi.utils import log
 
@@ -22,12 +22,12 @@ class InputValidator:
     """Validates and sanitizes user inputs to prevent security vulnerabilities."""
 
     # Allowed file extensions for different purposes
-    ALLOWED_IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".tif"]
-    ALLOWED_VIDEO_EXTENSIONS = [".mp4", ".avi", ".mov", ".mkv", ".webm"]
-    ALLOWED_CONFIG_EXTENSIONS = [".toml", ".json", ".yaml", ".yml"]
+    ALLOWED_IMAGE_EXTENSIONS: ClassVar[list[str]] = [".png", ".jpg", ".jpeg", ".bmp", ".tiff", ".tif"]
+    ALLOWED_VIDEO_EXTENSIONS: ClassVar[list[str]] = [".mp4", ".avi", ".mov", ".mkv", ".webm"]
+    ALLOWED_CONFIG_EXTENSIONS: ClassVar[list[str]] = [".toml", ".json", ".yaml", ".yml"]
 
     # Allowed FFmpeg encoders (whitelist approach)
-    ALLOWED_FFMPEG_ENCODERS = [
+    ALLOWED_FFMPEG_ENCODERS: ClassVar[list[str]] = [
         "Software x265",
         "Software x264",
         "Hardware HEVC (VideoToolbox)",
@@ -40,7 +40,7 @@ class InputValidator:
     ]
 
     # Allowed Sanchez arguments with validation patterns
-    ALLOWED_SANCHEZ_ARGS = {
+    ALLOWED_SANCHEZ_ARGS: ClassVar[dict[str, str]] = {
         "res_km": r"^\d+(\.\d+)?$",
         "false_colour": r"^(true|false)$",
         "crop": r"^[\d,]+$",
@@ -56,6 +56,7 @@ class InputValidator:
     def validate_file_path(
         path: str,
         allowed_extensions: list[str] | None = None,
+        *,
         must_exist: bool = False,
     ) -> bool:
         """Validate file path to prevent directory traversal and ensure safety.
@@ -130,6 +131,7 @@ class InputValidator:
 
         # Check for infinity and NaN values
         import math
+
         if isinstance(value, float) and (math.isinf(value) or math.isnan(value)):
             msg = f"{name} must be a number"
             raise SecurityError(msg)
@@ -165,11 +167,30 @@ class InputValidator:
 
         # Handle Windows reserved names
         windows_reserved = [
-            "CON", "PRN", "AUX", "NUL",
-            "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
-            "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+            "CON",
+            "PRN",
+            "AUX",
+            "NUL",
+            "COM1",
+            "COM2",
+            "COM3",
+            "COM4",
+            "COM5",
+            "COM6",
+            "COM7",
+            "COM8",
+            "COM9",
+            "LPT1",
+            "LPT2",
+            "LPT3",
+            "LPT4",
+            "LPT5",
+            "LPT6",
+            "LPT7",
+            "LPT8",
+            "LPT9",
         ]
-        
+
         # Check if the base name (without extension) is a reserved name
         name_part, ext_part = os.path.splitext(sanitized)
         if name_part.upper() in windows_reserved:
@@ -346,7 +367,7 @@ def secure_subprocess_call(command: list[str], **kwargs: Any) -> Any:
     LOGGER.info("Executing secure subprocess: %s with %s args", command[0], len(command) - 1)
 
     try:
-        return subprocess.run(command, **secure_kwargs)
+        return subprocess.run(command, **secure_kwargs, check=False)
     except subprocess.TimeoutExpired as e:
         msg = f"Command timed out after {secure_kwargs['timeout']} seconds"
         raise SecurityError(msg) from e
