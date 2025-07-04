@@ -459,8 +459,8 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                                     manager,
                                     SatellitePattern.GOES_18,
                                     temp_dir.name,
-                                    interval_minutes=10,
-                                    product_type=product_type,
+                                    10,
+                                    product_type,
                                 )
                                 for product_type in product_types
                             ]

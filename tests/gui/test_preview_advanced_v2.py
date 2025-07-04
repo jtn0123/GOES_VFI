@@ -652,7 +652,9 @@ class TestPreviewAdvancedOptimizedV2:
             def simulate_fullscreen_on_monitor(monitor_index) -> bool:
                 if monitor_index < len(screens):
                     screen = screens[monitor_index]
-                    main_window.windowHandle().setScreen(screen)
+                    window_handle = main_window.windowHandle()
+                    if window_handle:
+                        window_handle.setScreen(screen)
                     return True
                 return False
 
