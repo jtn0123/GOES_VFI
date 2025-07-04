@@ -187,7 +187,7 @@ class TestInputValidatorOptimizedV2:
             # Invalid cases are tested separately
         ],
     )
-    def test_validate_numeric_range_valid_values(
+    def test_validate_numeric_range_valid_values(  # noqa: PLR6301  # needs self for pytest fixture
         self,
         validator: InputValidator,
         value: float,
@@ -482,7 +482,9 @@ class TestSecureFileHandlerOptimizedV2:
 
     @patch("pathlib.Path.mkdir")
     @patch("pathlib.Path.chmod")
-    def test_create_secure_config_dir(self, mock_chmod: MagicMock, mock_mkdir: MagicMock, handler: SecureFileHandler) -> None:
+    def test_create_secure_config_dir(  # noqa: PLR6301  # needs self for patch decorator
+        self, mock_chmod: MagicMock, mock_mkdir: MagicMock, handler: SecureFileHandler
+    ) -> None:
         """Test creation of secure configuration directory."""
         # Test different directory paths
         test_dirs = [
@@ -505,7 +507,7 @@ class TestSecureSubprocessCallOptimizedV2:
     """Optimized secure subprocess execution tests."""
 
     @patch("subprocess.run")
-    def test_secure_subprocess_call_success(self, mock_run: MagicMock) -> None:
+    def test_secure_subprocess_call_success(self, mock_run: MagicMock) -> None:  # noqa: PLR6301  # needs self for patch decorator
         """Test successful secure subprocess calls."""
         mock_result = Mock(returncode=0, stdout="Success", stderr="")
         mock_run.return_value = mock_result
@@ -533,7 +535,7 @@ class TestSecureSubprocessCallOptimizedV2:
             )
 
     @patch("subprocess.run")
-    def test_secure_subprocess_call_with_custom_timeout(self, mock_run: MagicMock) -> None:
+    def test_secure_subprocess_call_with_custom_timeout(self, mock_run: MagicMock) -> None:  # noqa: PLR6301  # needs self for patch decorator
         """Test secure subprocess call with custom timeout."""
         mock_result = Mock()
         mock_run.return_value = mock_result
@@ -572,7 +574,7 @@ class TestSecureSubprocessCallOptimizedV2:
                 secure_subprocess_call(command, shell=True)  # noqa: S604  # Intentional test of security validation
 
     @patch("subprocess.run")
-    def test_secure_subprocess_call_error_handling(self, mock_run: MagicMock) -> None:
+    def test_secure_subprocess_call_error_handling(self, mock_run: MagicMock) -> None:  # noqa: PLR6301  # needs self for patch decorator
         """Test secure subprocess call error handling."""
         # Test timeout error
         mock_run.side_effect = subprocess.TimeoutExpired("cmd", 30)
@@ -701,7 +703,7 @@ class TestSecurityIntegrationOptimizedV2:
                     temp_file.unlink()
 
     @patch("subprocess.run")
-    def test_secure_external_tool_execution(self, mock_run: MagicMock) -> None:
+    def test_secure_external_tool_execution(self, mock_run: MagicMock) -> None:  # noqa: PLR6301  # needs self for patch decorator
         """Test secure execution of external tools."""
         mock_run.return_value = Mock(returncode=0, stdout="Success", stderr="")
 
