@@ -216,6 +216,7 @@ class ConfigurationManager(ConfigurableManager):
     def _load_configuration(self) -> None:
         """Load configuration from file and environment variables."""
         with self._lock:
+            old_config = self._config  # Store old config for notification
             try:
                 # Start with defaults
                 config_dict = self._get_default_config_dict()
@@ -232,9 +233,14 @@ class ConfigurationManager(ConfigurableManager):
 
                 # Create and validate configuration
                 if PYDANTIC_AVAILABLE:
-                    self._config = ApplicationConfig(**config_dict)
+                    new_config = ApplicationConfig(**config_dict)
                 else:
-                    self._config = self._create_dataclass_config(config_dict)
+                    new_config = self._create_dataclass_config(config_dict)
+
+                # Update config and notify watchers if changed
+                self._config = new_config
+                if old_config is not None and old_config != new_config:
+                    self._notify_watchers(old_config, new_config)
 
                 self.log_info("Configuration loaded successfully")
 
