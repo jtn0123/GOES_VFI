@@ -424,7 +424,7 @@ class TestProcessingManagerOptimizedV2:
                         processing_manager.stop_processing()
 
                         # Verify thread was waited on
-                        mock_thread.wait.assert_called_once_with(5000)
+                        mock_thread.wait.assert_called_once_with(2000)
                         results["stop_with_thread"] = True
 
                 self.cleanup_processing_manager(processing_manager)
