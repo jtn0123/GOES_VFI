@@ -36,7 +36,7 @@ class ProcessingHandler:
 
         # Update UI state
         main_window.is_processing = True
-        main_window._set_processing_state(True)
+        main_window._set_processing_state(is_processing=True)
 
         # Terminate any previous worker
         self._terminate_previous_worker(main_window)
@@ -77,7 +77,7 @@ class ProcessingHandler:
         except Exception as e:
             LOGGER.exception("Failed to create VfiWorker: %s", e)
             main_window.is_processing = False
-            main_window._set_processing_state(False)
+            main_window._set_processing_state(is_processing=False)
 
             # Show error message
             QMessageBox.critical(
