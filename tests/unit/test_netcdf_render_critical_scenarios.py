@@ -11,7 +11,6 @@ This test suite covers high-priority missing areas identified in the testing gap
 """
 
 import gc
-import os
 from pathlib import Path
 import tempfile
 import time
@@ -223,7 +222,7 @@ class TestNetCDFRenderCritical:
     def test_invalid_netcdf_structure(self) -> None:
         """Test handling of NetCDF files with invalid or unexpected structure."""
         # Test with dataset missing critical variables (simplified to avoid crashes)
-        
+
         # Dataset with wrong variable names
         invalid_ds = xr.Dataset({
             "invalid_radiance": (["y", "x"], np.random.random((10, 10))),
@@ -489,6 +488,6 @@ class TestNetCDFRenderCritical:
 
         # Force garbage collection
         gc.collect()
-        
+
         # Basic test that the function completed without crashes
         assert True

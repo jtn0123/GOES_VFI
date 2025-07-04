@@ -17,7 +17,6 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 from PIL import Image
 import psutil
-from PyQt6.QtCore import QEventLoop, QTimer
 from PyQt6.QtWidgets import QApplication
 import pytest
 
@@ -203,9 +202,18 @@ class TestPreviewFunctionalityOptimizedV2:
                     main_window.main_view_model.preview_manager, "get_current_frame_data"
                 ) as mock_get_data:
                     mock_data = [
-                        ImageData(image_data=np.zeros((100, 100, 3), dtype=np.uint8), source_path=str(test_dir / "frame_001.png")),
-                        ImageData(image_data=np.zeros((100, 100, 3), dtype=np.uint8), source_path=str(test_dir / "frame_002.png")),
-                        ImageData(image_data=np.zeros((100, 100, 3), dtype=np.uint8), source_path=str(test_dir / "frame_003.png")),
+                        ImageData(
+                            image_data=np.zeros((100, 100, 3), dtype=np.uint8),
+                            source_path=str(test_dir / "frame_001.png"),
+                        ),
+                        ImageData(
+                            image_data=np.zeros((100, 100, 3), dtype=np.uint8),
+                            source_path=str(test_dir / "frame_002.png"),
+                        ),
+                        ImageData(
+                            image_data=np.zeros((100, 100, 3), dtype=np.uint8),
+                            source_path=str(test_dir / "frame_003.png"),
+                        ),
                     ]
                     mock_get_data.return_value = mock_data
                     return mock_get_data
@@ -235,9 +243,18 @@ class TestPreviewFunctionalityOptimizedV2:
                     main_window.main_view_model.preview_manager, "get_current_frame_data"
                 ) as mock_get_data:
                     large_data = [
-                        ImageData(image_data=np.zeros((1000, 1000, 3), dtype=np.uint8), source_path=str(test_dir / "large_001.png")),
-                        ImageData(image_data=np.zeros((1000, 1000, 3), dtype=np.uint8), source_path=str(test_dir / "large_002.png")),
-                        ImageData(image_data=np.zeros((1000, 1000, 3), dtype=np.uint8), source_path=str(test_dir / "large_003.png")),
+                        ImageData(
+                            image_data=np.zeros((1000, 1000, 3), dtype=np.uint8),
+                            source_path=str(test_dir / "large_001.png"),
+                        ),
+                        ImageData(
+                            image_data=np.zeros((1000, 1000, 3), dtype=np.uint8),
+                            source_path=str(test_dir / "large_002.png"),
+                        ),
+                        ImageData(
+                            image_data=np.zeros((1000, 1000, 3), dtype=np.uint8),
+                            source_path=str(test_dir / "large_003.png"),
+                        ),
                     ]
                     mock_get_data.return_value = large_data
                     return mock_get_data
@@ -478,17 +495,16 @@ class TestPreviewFunctionalityOptimizedV2:
                         # Simulate click event
                         if hasattr(test_label, "mouseReleaseEvent"):
                             # Create proper QMouseEvent mock
-                            from PyQt6.QtCore import QPointF
+                            from PyQt6.QtCore import QPointF, Qt
                             from PyQt6.QtGui import QMouseEvent
-                            from PyQt6.QtCore import Qt
-                            
+
                             # Create a proper QMouseEvent instead of MagicMock
                             mock_event = QMouseEvent(
                                 QMouseEvent.Type.MouseButtonRelease,
                                 QPointF(10, 10),
                                 Qt.MouseButton.LeftButton,
                                 Qt.MouseButton.LeftButton,
-                                Qt.KeyboardModifier.NoModifier
+                                Qt.KeyboardModifier.NoModifier,
                             )
 
                             # Trigger click handling

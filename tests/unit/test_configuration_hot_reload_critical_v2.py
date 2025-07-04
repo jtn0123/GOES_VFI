@@ -372,9 +372,7 @@ class TestConfigurationHotReloadCritical:
                 total_notifications = len(notifications_received)
 
             # Should receive some notifications (allowing for file watcher limitations)
-            assert total_notifications >= 1, (
-                f"Expected at least 1 notification, got {total_notifications}"
-            )
+            assert total_notifications >= 1, f"Expected at least 1 notification, got {total_notifications}"
 
             # Verify notification content
             with notification_lock:
