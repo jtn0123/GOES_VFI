@@ -482,7 +482,9 @@ class TestSecureFileHandlerOptimizedV2:
 
     @patch("pathlib.Path.mkdir")
     @patch("pathlib.Path.chmod")
-    def test_create_secure_config_dir(self, mock_chmod: MagicMock, mock_mkdir: MagicMock, handler: SecureFileHandler) -> None:
+    def test_create_secure_config_dir(
+        self, mock_chmod: MagicMock, mock_mkdir: MagicMock, handler: SecureFileHandler
+    ) -> None:
         """Test creation of secure configuration directory."""
         # Test different directory paths
         test_dirs = [
@@ -662,11 +664,11 @@ class TestSecurityIntegrationOptimizedV2:
         # Path traversal should be blocked
         with pytest.raises(SecurityError):
             validator.validate_file_path("../../../etc/passwd")
-        
+
         # FFmpeg encoder validation should reject malicious patterns
         with pytest.raises(SecurityError):
             validator.validate_ffmpeg_encoder("libx264; rm -rf /")
-        
+
         # Test subprocess call with dangerous command
         with pytest.raises((SecurityError, subprocess.CalledProcessError, FileNotFoundError)):
             secure_subprocess_call(["eval", "malicious code"])

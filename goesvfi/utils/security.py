@@ -4,9 +4,12 @@ This module provides security validation and sanitization functions
 to prevent common vulnerabilities like command injection and path traversal.
 """
 
+import math
 import os
 import pathlib
 import re
+import subprocess  # noqa: S404  # subprocess usage is for security validation
+import tempfile
 from typing import Any, ClassVar
 
 from goesvfi.utils import log
@@ -78,25 +81,26 @@ class InputValidator:
 
         # Normalize path and resolve any symlinks
         try:
-            normalized = os.path.normpath(os.path.abspath(path))
+            path_obj = pathlib.Path(path).resolve()
+            normalized = str(path_obj)
         except (OSError, ValueError) as e:
             msg = f"Invalid path format: {e}"
             raise SecurityError(msg) from e
 
         # Check for directory traversal attempts
-        if ".." in path or (path.startswith("/") and not os.path.isabs(path)):
+        if ".." in path or (path.startswith("/") and not pathlib.Path(path).is_absolute()):
             msg = "Path contains directory traversal attempts"
             raise SecurityError(msg)
 
         # Validate extension if specified
         if allowed_extensions:
-            _, ext = os.path.splitext(normalized)
+            ext = pathlib.Path(normalized).suffix
             if ext.lower() not in [e.lower() for e in allowed_extensions]:
                 msg = f"File extension '{ext}' not allowed. Allowed: {allowed_extensions}"
                 raise SecurityError(msg)
 
         # Check if file exists if required
-        if must_exist and not os.path.exists(normalized):
+        if must_exist and not pathlib.Path(normalized).exists():
             msg = f"File does not exist: {normalized}"
             raise SecurityError(msg)
 
@@ -130,8 +134,6 @@ class InputValidator:
             raise SecurityError(msg)
 
         # Check for infinity and NaN values
-        import math
-
         if isinstance(value, float) and (math.isinf(value) or math.isnan(value)):
             msg = f"{name} must be a number"
             raise SecurityError(msg)
@@ -192,13 +194,17 @@ class InputValidator:
         ]
 
         # Check if the base name (without extension) is a reserved name
-        name_part, ext_part = os.path.splitext(sanitized)
+        path_obj = pathlib.Path(sanitized)
+        name_part = path_obj.stem
+        ext_part = path_obj.suffix
         if name_part.upper() in windows_reserved:
             sanitized = name_part + "_" + ext_part
 
         # Limit length
         if len(sanitized) > 255:
-            name, ext = os.path.splitext(sanitized)
+            path_obj = pathlib.Path(sanitized)
+            name = path_obj.stem
+            ext = path_obj.suffix
             max_name_len = 255 - len(ext)
             sanitized = name[:max_name_len] + ext
 
@@ -299,8 +305,6 @@ class SecureFileHandler:
         Returns:
             Path to created temporary file
         """
-        import tempfile
-
         # Create temporary file with restrictive permissions
         fd, path = tempfile.mkstemp(suffix=suffix, prefix=prefix)
         temp_path = pathlib.Path(path)
@@ -342,8 +346,6 @@ def secure_subprocess_call(command: list[str], **kwargs: Any) -> Any:
     Raises:
         SecurityError: If command fails security validation
     """
-    import subprocess
-
     # Validate command arguments
     InputValidator.validate_command_args(command)
 
@@ -367,10 +369,10 @@ def secure_subprocess_call(command: list[str], **kwargs: Any) -> Any:
     LOGGER.info("Executing secure subprocess: %s with %s args", command[0], len(command) - 1)
 
     try:
-        return subprocess.run(command, **secure_kwargs, check=False)
+        return subprocess.run(command, **secure_kwargs)  # noqa: S603, PLW1510  # subprocess call for secure execution, check=True in kwargs
     except subprocess.TimeoutExpired as e:
         msg = f"Command timed out after {secure_kwargs['timeout']} seconds"
         raise SecurityError(msg) from e
-    except Exception as e:
-        LOGGER.exception("Subprocess execution failed: %s", e)
+    except Exception:
+        LOGGER.exception("Subprocess execution failed")
         raise
