@@ -164,7 +164,10 @@ class TestVFIPipelineCritical:
                     for arg in args[0]:
                         if "output.raw.mp4" in str(arg):
                             output_file = Path(arg)
+                            output_file.parent.mkdir(parents=True, exist_ok=True)
                             output_file.touch()
+                            # Write some dummy data to make the file non-empty
+                            output_file.write_bytes(b"dummy video data")
                             break
 
                 return mock_ffmpeg
@@ -187,7 +190,7 @@ class TestVFIPipelineCritical:
 
                     with patch("pathlib.Path.glob") as mock_glob:
                         # Mock glob to return our test images
-                        mock_glob.return_value = iter(image_paths)
+                        mock_glob.return_value = image_paths
 
                         # Run VFI processing
                         results = list(
@@ -239,53 +242,66 @@ class TestVFIPipelineCritical:
         worker.finished.connect(progress_monitor.on_completion)
         worker.error.connect(progress_monitor.on_error)
 
-        # Mock long-running process
-        cancel_requested = threading.Event()
+        # Mock the RIFE executable finder to avoid FileNotFoundError
+        with patch("goesvfi.utils.config.find_rife_executable") as mock_find_rife:
+            mock_find_rife.return_value = str(pipeline_test_generator.create_test_rife_executable(temp_dir))
 
-        def slow_rife_mock(p1, p2, exe, config):
-            # Simulate slow RIFE processing
-            for _i in range(10):
-                if cancel_requested.is_set():
-                    msg = "Processing cancelled"
-                    raise ProcessingError(msg)
-                time.sleep(0.1)
+            # Mock resource manager
+            with patch("goesvfi.pipeline.run_vfi.get_resource_manager") as mock_resource_mgr:
+                mock_mgr = Mock()
+                mock_mgr.check_resources.return_value = None
+                mock_resource_mgr.return_value = mock_mgr
 
-            # Create result
-            interp_path = p1.parent / f"interp_{time.monotonic_ns()}.png"
-            img = Image.new("RGB", (64, 64), color=(100, 150, 200))
-            img.save(interp_path)
-            return interp_path
+                # Mock long-running process
+                cancel_requested = threading.Event()
 
-        with patch("goesvfi.pipeline.run_vfi._run_rife_pair", side_effect=slow_rife_mock):
-            with patch("subprocess.Popen") as mock_popen:
-                mock_ffmpeg = Mock()
-                mock_ffmpeg.stdin = Mock()
-                mock_ffmpeg.stdout = iter([])
-                mock_ffmpeg.poll.return_value = None
-                mock_ffmpeg.terminate = Mock()
-                mock_ffmpeg.kill = Mock()
-                mock_ffmpeg.wait = Mock(return_value=0)
-                mock_popen.return_value = mock_ffmpeg
+                def slow_rife_mock(p1, p2, exe, config):
+                    # Simulate slow RIFE processing
+                    for _i in range(10):
+                        if cancel_requested.is_set():
+                            msg = "Processing cancelled"
+                            raise ProcessingError(msg)
+                        time.sleep(0.1)
 
-                with patch("pathlib.Path.glob") as mock_glob:
-                    # Mock glob to return our test images
-                    mock_glob.return_value = iter(image_paths)
+                    # Create result
+                    interp_path = p1.parent / f"interp_{time.monotonic_ns()}.png"
+                    img = Image.new("RGB", (64, 64), color=(100, 150, 200))
+                    img.save(interp_path)
+                    return interp_path
 
-                    # Start worker in separate thread
-                    worker_thread = threading.Thread(target=worker.run)
-                    worker_thread.start()
+                with patch("goesvfi.pipeline.run_vfi._run_rife_pair", side_effect=slow_rife_mock):
+                    with patch("subprocess.Popen") as mock_popen:
+                        mock_ffmpeg = Mock()
+                        mock_ffmpeg.stdin = Mock()
+                        mock_ffmpeg.stdout = iter([])
+                        mock_ffmpeg.poll.return_value = None
+                        mock_ffmpeg.terminate = Mock()
+                        mock_ffmpeg.kill = Mock()
+                        mock_ffmpeg.wait = Mock(return_value=0)
+                        mock_popen.return_value = mock_ffmpeg
 
-                    # Let it start processing
-                    time.sleep(0.2)
+                        with patch("pathlib.Path.glob") as mock_glob:
+                            # Mock glob to return our test images
+                            mock_glob.return_value = image_paths
 
-                    # Request cancellation
-                    cancel_requested.set()
+                            # Start worker in separate thread
+                            worker_thread = threading.Thread(target=worker.run)
+                            worker_thread.start()
 
-                    # Wait for thread to complete
-                    worker_thread.join(timeout=5.0)
+                            # Let it start processing
+                            time.sleep(0.2)
 
-                    # Verify cancellation was handled
-                    assert len(progress_monitor.error_events) > 0, "Should have error events from cancellation"
+                            # Request cancellation
+                            cancel_requested.set()
+
+                            # Wait for thread to complete
+                            worker_thread.join(timeout=5.0)
+
+                            # Wait a bit more for error events to be processed
+                            time.sleep(0.1)
+
+                            # Verify cancellation was handled
+                            assert len(progress_monitor.error_events) > 0, "Should have error events from cancellation"
 
     def test_resource_limit_enforcement(self, temp_dir: Path, pipeline_test_generator: Any) -> None:
         """Test resource limit enforcement during processing."""
@@ -305,19 +321,36 @@ class TestVFIPipelineCritical:
                 mock_exec = Mock()
                 mock_exec.__enter__ = Mock(return_value=mock_exec)
                 mock_exec.__exit__ = Mock(return_value=None)
+                # Make the executor iterable for parallel processing
+                mock_exec.map = Mock(return_value=iter([]))
                 mock_executor.return_value = mock_exec
 
                 with patch("subprocess.Popen") as mock_popen:
-                    mock_ffmpeg = Mock()
-                    mock_ffmpeg.stdin = Mock()
-                    mock_ffmpeg.stdout = iter([])
-                    mock_ffmpeg.poll.return_value = None
-                    mock_ffmpeg.wait.return_value = 0
-                    mock_popen.return_value = mock_ffmpeg
+                    # Mock FFmpeg process and create output file
+                    def create_resource_output_file(*args, **kwargs):
+                        mock_ffmpeg = Mock()
+                        mock_ffmpeg.stdin = Mock()
+                        mock_ffmpeg.stdout = iter([])
+                        mock_ffmpeg.poll.return_value = None
+                        mock_ffmpeg.wait.return_value = 0
+
+                        # Create the raw output file
+                        if len(args) > 0 and "resource_test.raw.mp4" in str(args[0]):
+                            for arg in args[0]:
+                                if "resource_test.raw.mp4" in str(arg):
+                                    output_file = Path(arg)
+                                    output_file.parent.mkdir(parents=True, exist_ok=True)
+                                    output_file.touch()
+                                    output_file.write_bytes(b"dummy video data")
+                                    break
+
+                        return mock_ffmpeg
+
+                    mock_popen.side_effect = create_resource_output_file
 
                     with patch("pathlib.Path.glob") as mock_glob:
                         # Mock glob to return our test images
-                        mock_glob.return_value = iter(image_paths)
+                        mock_glob.return_value = image_paths
 
                         with patch("goesvfi.pipeline.run_vfi._run_rife_pair") as mock_rife:
                             # Create dummy output
@@ -436,21 +469,40 @@ class TestVFIPipelineCritical:
         large_sequence = pipeline_test_generator.create_test_images(50, width=256, height=256, temp_dir=temp_dir)
         rife_path = pipeline_test_generator.create_test_rife_executable(temp_dir)
 
+        # Ensure all test image files actually exist
+        for img_path in large_sequence:
+            assert img_path.exists(), f"Test image {img_path} does not exist"
+
         # Mock processing to avoid actual heavy computation
         with patch("goesvfi.pipeline.run_vfi._run_rife_pair") as mock_rife:
             mock_rife.return_value = large_sequence[0]  # Return dummy path
 
             with patch("subprocess.Popen") as mock_popen:
-                mock_ffmpeg = Mock()
-                mock_ffmpeg.stdin = Mock()
-                mock_ffmpeg.stdout = iter([])
-                mock_ffmpeg.poll.return_value = None
-                mock_ffmpeg.wait.return_value = 0
-                mock_popen.return_value = mock_ffmpeg
+                # Mock FFmpeg process and create output file
+                def create_memory_output_file(*args, **kwargs):
+                    mock_ffmpeg = Mock()
+                    mock_ffmpeg.stdin = Mock()
+                    mock_ffmpeg.stdout = iter([])
+                    mock_ffmpeg.poll.return_value = None
+                    mock_ffmpeg.wait.return_value = 0
+
+                    # Create the raw output file
+                    if len(args) > 0 and "large_output.raw.mp4" in str(args[0]):
+                        for arg in args[0]:
+                            if "large_output.raw.mp4" in str(arg):
+                                output_file = Path(arg)
+                                output_file.parent.mkdir(parents=True, exist_ok=True)
+                                output_file.touch()
+                                output_file.write_bytes(b"dummy video data")
+                                break
+
+                    return mock_ffmpeg
+
+                mock_popen.side_effect = create_memory_output_file
 
                 with patch("pathlib.Path.glob") as mock_glob:
                     # Mock glob to return our test images
-                    mock_glob.return_value = iter(large_sequence)
+                    mock_glob.return_value = large_sequence
 
                     # Process the large sequence
                     list(
@@ -616,7 +668,7 @@ class TestVFIPipelineCritical:
 
                 with patch("pathlib.Path.glob") as mock_glob:
                     # Mock glob to return our test images
-                    mock_glob.return_value = iter(image_paths)
+                    mock_glob.return_value = image_paths
 
                     # Use a timeout mechanism in the test
                     start_time = time.time()
@@ -658,10 +710,13 @@ class TestVFIPipelineCritical:
 
         # Track signal handling
         signal_received = threading.Event()
+        interrupt_count = 0
 
         def mock_rife_with_signal_check(*args, **kwargs):
+            nonlocal interrupt_count
             # Check for signal during processing
             if signal_received.is_set():
+                interrupt_count += 1
                 msg = "Processing interrupted"
                 raise KeyboardInterrupt(msg)
 
@@ -686,7 +741,7 @@ class TestVFIPipelineCritical:
 
                 with patch("pathlib.Path.glob") as mock_glob:
                     # Mock glob to return our test images
-                    mock_glob.return_value = iter(image_paths)
+                    mock_glob.return_value = image_paths
 
                     # Start processing in a separate thread
                     processing_exception = None
@@ -719,6 +774,9 @@ class TestVFIPipelineCritical:
 
                     # Wait for processing to complete
                     processing_thread.join(timeout=5.0)
+
+                    # Wait a bit more for the exception to be captured
+                    time.sleep(0.1)
 
                     # Verify interruption was handled
                     assert processing_exception is not None, "Should have received interruption exception"

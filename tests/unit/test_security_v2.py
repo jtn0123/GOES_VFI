@@ -482,9 +482,7 @@ class TestSecureFileHandlerOptimizedV2:
 
     @patch("pathlib.Path.mkdir")
     @patch("pathlib.Path.chmod")
-    def test_create_secure_config_dir(
-        self, mock_chmod: MagicMock, mock_mkdir: MagicMock, handler: SecureFileHandler
-    ) -> None:
+    def test_create_secure_config_dir(self, mock_chmod: MagicMock, mock_mkdir: MagicMock, handler: SecureFileHandler) -> None:
         """Test creation of secure configuration directory."""
         # Test different directory paths
         test_dirs = [
@@ -552,7 +550,8 @@ class TestSecureSubprocessCallOptimizedV2:
             call_kwargs = mock_run.call_args[1]
             assert call_kwargs["timeout"] == timeout
 
-    def test_secure_subprocess_call_dangerous_command(self) -> None:
+    @staticmethod
+    def test_secure_subprocess_call_dangerous_command() -> None:
         """Test secure subprocess call rejects dangerous commands."""
         # These should be rejected but the validation isn't fully implemented yet
         # Testing with actual dangerous command that will fail
@@ -658,7 +657,8 @@ class TestSecurityIntegrationOptimizedV2:
             safe_filename = validator.sanitize_filename(scenario["filename"])  # type: ignore[arg-type]
             assert safe_filename == scenario["expected_filename"]
 
-    def test_attack_scenario_prevention(self, validator: InputValidator) -> None:
+    @staticmethod
+    def test_attack_scenario_prevention(validator: InputValidator) -> None:
         """Test prevention of various attack scenarios."""
         # Test only the attacks that are currently implemented
         # Path traversal should be blocked
