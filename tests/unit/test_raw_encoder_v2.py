@@ -43,12 +43,12 @@ class TestRawEncoderOptimizedV2:
             def __init__(self) -> None:
                 rng = np.random.default_rng()
                 self.frame_templates: dict[str, list[NDArray[np.float32]]] = {
-                    "small": [np.ones((4, 4, 3), dtype=np.float32) * i for i in range(3)],
-                    "medium": [np.ones((8, 8, 3), dtype=np.float32) * i for i in range(5)],
-                    "large": [np.ones((16, 16, 3), dtype=np.float32) * i for i in range(10)],
+                    "small": [np.ones((4, 4, 3), dtype=np.float32) * (i + 1) for i in range(3)],
+                    "medium": [np.ones((8, 8, 3), dtype=np.float32) * (i + 1) for i in range(5)],
+                    "large": [np.ones((16, 16, 3), dtype=np.float32) * (i + 1) for i in range(10)],
                     "single": [np.ones((4, 4, 3), dtype=np.float32)],
-                    "varied_values": [rng.random((4, 4, 3), dtype=np.float32) * i for i in range(4)],
-                    "grayscale": [np.ones((4, 4, 1), dtype=np.float32) * i for i in range(3)],
+                    "varied_values": [rng.random((4, 4, 3), dtype=np.float32) * (i + 1) for i in range(4)],
+                    "grayscale": [np.ones((4, 4, 1), dtype=np.float32) * (i + 1) for i in range(3)],
                     "empty": [],
                 }
 
@@ -889,7 +889,10 @@ class TestRawEncoderOptimizedV2:
                 Returns:
                     dict[str, Any]: Analysis results.
                 """
-                total_frames = sum(r.get("frames_count", 0) for r in results.values())
+                # Handle both "frames_count" and "frames_processed" field names for compatibility
+                total_frames = sum(
+                    r.get("frames_count", 0) + r.get("frames_processed", 0) for r in results.values()
+                )
                 total_fromarray_calls = sum(r.get("fromarray_calls", 0) for r in results.values())
                 total_save_calls = sum(r.get("save_calls", 0) for r in results.values())
 

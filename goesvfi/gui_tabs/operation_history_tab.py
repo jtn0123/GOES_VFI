@@ -284,6 +284,9 @@ class RefreshWorker(QThread):
         except Exception as e:
             LOGGER.exception("Error refreshing operation data")
             self.error_occurred.emit(str(e))
+        finally:
+            # Ensure finished signal is emitted for synchronous testing
+            self.finished.emit()
 
 
 class OperationHistoryTab(QWidget):

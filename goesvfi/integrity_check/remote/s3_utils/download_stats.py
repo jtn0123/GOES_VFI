@@ -59,7 +59,7 @@ class DownloadStats:
 class DownloadStatsTracker:
     """Thread-safe tracker for S3 download statistics."""
 
-    def __init__(self, max_errors: int = 20, max_attempts: int = 50) -> None:
+    def __init__(self, max_errors: int = 20, max_attempts: int = 100) -> None:
         """Initialize the statistics tracker.
 
         Args:
@@ -228,6 +228,7 @@ class DownloadStatsTracker:
                     "success_rate": 0,
                     "avg_time": 0,
                     "total_bytes": 0,
+                    "retry_count": 0,
                     "network_speed": "N/A",
                     "avg_download_rate": "N/A",
                 }
@@ -256,6 +257,7 @@ class DownloadStatsTracker:
                 "success_rate": (successful / total_attempts * 100),
                 "avg_time": avg_time,
                 "total_bytes": self._stats.total_bytes,
+                "retry_count": self._stats.retry_count,
                 "network_speed": network_speed,
                 "avg_download_rate": avg_download_rate,
             }

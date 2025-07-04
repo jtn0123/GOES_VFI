@@ -31,9 +31,10 @@ def config_scenarios() -> dict[str, Any]:
         "valid_minimal": {
             "output_dir": "/test/output",
             "cache_dir": "/test/cache",
-            "pipeline": {"default_tile_size": 2048},
+            "pipeline": {"default_tile_size": 2048, "max_workers": 4, "supported_extensions": [".png", ".jpg", ".jpeg"]},
+            "sanchez": {"bin_dir": "/test/sanchez"},
             "logging": {"level": "INFO"},
-            "theme": {"custom_overrides": False},
+            "theme": {"name": "dark_blue", "custom_overrides": False, "density_scale": "0", "fallback_enabled": True},
         },
         "valid_complete": DEFAULTS.copy(),
         "invalid_types": {
@@ -77,7 +78,6 @@ def toml_content_scenarios() -> dict[str, str]:
 
         [logging]
         level = "INFO"
-        enable_file_logging = true
 
         [theme]
         custom_overrides = true
@@ -288,7 +288,7 @@ class TestConfigManagement:
         [
             (123, DEFAULTS["output_dir"]),  # Wrong type
             (None, DEFAULTS["output_dir"]),  # None value
-            ("", DEFAULTS["output_dir"]),  # Empty string
+            ("", DEFAULTS["output_dir"]),  # Empty string - fallback to default
         ],
     )
     def test_directory_getters_fallback(self, malformed_value: Any, expected_fallback: str) -> None:  # noqa: PLR6301

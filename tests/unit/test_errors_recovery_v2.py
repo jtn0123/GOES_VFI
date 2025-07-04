@@ -863,38 +863,48 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
                 return error.category == ErrorCategory.NETWORK
 
             def recover(self, error: StructuredError, context: dict[str, Any] | None = None) -> Any:
-                self.total_attempts += 1
-
                 # Get operation identifier
                 operation_id = error.context.operation
                 if context and "request_id" in context:
                     operation_id = f"{operation_id}_{context['request_id']}"
 
-                current_count = self.retry_counts.get(operation_id, 0)
+                # Initialize retry count if needed
+                if operation_id not in self.retry_counts:
+                    self.retry_counts[operation_id] = 0
 
-                # Check if max retries exceeded
-                if current_count >= self.max_retries:
-                    msg = f"Max retries ({self.max_retries}) exceeded for {operation_id}"
-                    raise RuntimeError(msg)
+                # Perform retries internally
+                for attempt in range(self.max_retries + 1):
+                    self.total_attempts += 1
+                    current_count = attempt
 
-                # Calculate delay with exponential backoff
-                delay = (self.backoff_factor**current_count) * 0.01  # Small delays for testing
-                self.retry_delays.append(delay)
-                time.sleep(delay)
+                    # Calculate delay with exponential backoff
+                    if attempt > 0:
+                        delay = (self.backoff_factor**(attempt - 1)) * 0.01  # Small delays for testing
+                        self.retry_delays.append(delay)
+                        time.sleep(delay)
 
-                self.retry_counts[operation_id] = current_count + 1
+                    # Simulate different network conditions
+                    try:
+                        if "timeout" in error.message.lower():
+                            if attempt < 1:  # Fail first attempt
+                                msg = f"Request timeout (attempt {attempt + 1})"
+                                raise TimeoutError(msg)
+                        elif "refused" in error.message.lower():
+                            if attempt < 2:  # Fail first two attempts
+                                msg = f"Connection refused (attempt {attempt + 1})"
+                                raise ConnectionRefusedError(msg)
 
-                # Simulate different network conditions
-                if "timeout" in error.message.lower():
-                    if current_count < 1:  # Fail first attempt
-                        msg = f"Request timeout (attempt {current_count + 1})"
-                        raise TimeoutError(msg)
-                elif "refused" in error.message.lower():
-                    if current_count < 2:  # Fail first two attempts
-                        msg = f"Connection refused (attempt {current_count + 1})"
-                        raise ConnectionRefusedError(msg)
+                        # Success
+                        self.retry_counts[operation_id] = attempt + 1
+                        return f"Retry {attempt + 1} succeeded for {operation_id}"
+                    except (TimeoutError, ConnectionRefusedError):
+                        if attempt == self.max_retries:
+                            # Final attempt failed
+                            raise
 
-                return f"Retry {current_count + 1} succeeded for {operation_id}"
+                # Should not reach here
+                msg = f"Max retries ({self.max_retries}) exceeded for {operation_id}"
+                raise RuntimeError(msg)
 
         class CircuitBreakerStrategy(RecoveryStrategy):
             def __init__(self, failure_threshold=5, reset_timeout=1.0) -> None:
@@ -1094,12 +1104,15 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
             context=ErrorContext("critical_process", "critical_processor"),
         )
 
+        # Reset primary attempts for new operation
+        primary.attempts = 0  # Reset for new operation
+
         # First attempt - all fail except last resort
         result4 = manager.attempt_recovery(critical_error)
         assert result4 == "Last resort: Processing with reduced quality"
 
         # Second attempt - fallback now ready
-        primary.attempts = 0  # Reset for new operation
+        primary.attempts = 0  # Reset again for clarity
         result5 = manager.attempt_recovery(critical_error)
         assert result5 == "Fallback strategy succeeded for critical_process"
 
@@ -1109,6 +1122,8 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
         )
 
         primary.attempts = 0
+        # Reset fallback attempts to ensure it fails on first try
+        fallback.attempts = 0
         with pytest.raises(StructuredError):
             manager.attempt_recovery(forced_error, {"force_fail": True, "no_last_resort": True})
 

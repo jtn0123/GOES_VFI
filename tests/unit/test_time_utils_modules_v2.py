@@ -115,7 +115,7 @@ class TestPatternsV2(SharedTimeUtilsTestCase):
             (SatellitePattern.GOES_18, SatellitePattern.GOES_18),
             (SatellitePattern.GENERIC, SatellitePattern.GENERIC),
         ]
-        
+
         for satellite, expected_key in test_cases:
             info = get_satellite_info(satellite)
             expected = self.expected_satellite_info[expected_key]
@@ -142,7 +142,7 @@ class TestTimestampExtractorV2(SharedTimeUtilsTestCase):
             ("simple_goes16", SatellitePattern.GOES_16, datetime(2023, 6, 15, 12, 30, 0)),
             ("legacy_goes16", SatellitePattern.GOES_16, datetime(2023, 6, 15, 12, 30, 0)),
         ]
-        
+
         for filename_key, satellite, expected_datetime in test_cases:
             filename = self.test_filenames[filename_key]
             ts = TimestampExtractor.extract_timestamp(filename, satellite)
@@ -169,7 +169,7 @@ class TestTimestampExtractorV2(SharedTimeUtilsTestCase):
             ("GOES18/FD/13/2023/166", datetime(2023, 6, 15, 0, 0, 0)),
             ("invalid_directory", None),
         ]
-        
+
         for dirname, expected_result in test_cases:
             result = TimestampExtractor.extract_timestamp_from_directory_name(dirname)
             assert result == expected_result
@@ -201,7 +201,7 @@ class TestTimestampFormatterV2(SharedTimeUtilsTestCase):
             (SatellitePattern.GOES_18, "test", "test_G18_{timestamp}Z.png"),
             (SatellitePattern.GENERIC, None, "image_{timestamp}Z.png"),
         ]
-        
+
         for satellite, base_name, expected_pattern in test_cases:
             if base_name:
                 pattern = TimestampFormatter.get_filename_pattern(satellite, base_name)
@@ -216,7 +216,7 @@ class TestTimestampFormatterV2(SharedTimeUtilsTestCase):
             (SatellitePattern.GOES_18, "image_G18_20230615T123000Z.png"),
             (SatellitePattern.GENERIC, "image_20230615T123000Z.png"),
         ]
-        
+
         dt = self.test_dates["standard"]
         for satellite, expected_filename in test_cases:
             filename = TimestampFormatter.generate_expected_filename(dt, satellite)
@@ -257,7 +257,7 @@ class TestTimestampGeneratorV2(SharedTimeUtilsTestCase):
             ("regular_10min", 10),
             ("irregular_mixed", 5),  # Most common difference
         ]
-        
+
         for sequence_key, expected_interval in test_cases:
             timestamps = self.test_sequences[sequence_key]
             interval = TimestampGenerator.detect_interval(timestamps)
@@ -313,7 +313,7 @@ class TestS3KeyGeneratorV2(SharedTimeUtilsTestCase):
             (SatellitePattern.GOES_16, None, ["cdn.star.nesdis.noaa.gov/GOES16", "2023166"]),
             (SatellitePattern.GOES_18, "1808x1808", ["cdn.star.nesdis.noaa.gov/GOES18", "1808x1808"]),
         ]
-        
+
         ts = self.test_dates["standard"]
         for satellite, resolution, expected_parts in test_cases:
             if resolution:
@@ -330,7 +330,7 @@ class TestS3KeyGeneratorV2(SharedTimeUtilsTestCase):
             ("RadC", ["ABI-L1b-RadC/2023/166/12/", "M6C13_G16"]),
             ("RadF", ["ABI-L1b-RadF/2023/166/12/", "M6C13_G16"]),
         ]
-        
+
         ts = self.test_dates["standard"].replace(minute=1)  # Ensure minute=1 for RadC
         for product_type, expected_parts in test_cases:
             key = S3KeyGenerator.to_s3_key(ts, self.satellites["goes16"], product_type)
@@ -344,7 +344,7 @@ class TestS3KeyGeneratorV2(SharedTimeUtilsTestCase):
             (SatellitePattern.GOES_16, "noaa-goes16"),
             (SatellitePattern.GOES_18, "noaa-goes18"),
         ]
-        
+
         for satellite, expected_bucket in test_cases:
             bucket = S3KeyGenerator.get_s3_bucket(satellite)
             assert bucket == expected_bucket
@@ -376,7 +376,7 @@ class TestS3KeyGeneratorV2(SharedTimeUtilsTestCase):
             ("RadF", 2),  # 10-minute intervals: before and after
             ("RadC", 2),  # 5-minute intervals: before and after
         ]
-        
+
         ts = self.test_dates["standard"].replace(minute=5)  # 12:05
         for product_type, expected_count in test_cases:
             intervals = S3KeyGenerator.find_nearest_goes_intervals(ts, product_type)
@@ -418,7 +418,7 @@ class TestFilterS3KeysV2(SharedTimeUtilsTestCase):
             (15, 1, "C15"),
             (99, 0, None),  # Invalid band
         ]
-        
+
         for band, expected_count, expected_content in test_cases:
             filtered = filter_s3_keys_by_band(self.test_keys, band)
             assert len(filtered) == expected_count
@@ -525,7 +525,7 @@ class TestTimeIndexV2(SharedTimeUtilsTestCase):
             ("to_s3_key", str),
             ("get_s3_bucket", str),
         ]
-        
+
         ts = self.test_dates["standard"]
         for method_name, expected_type in test_cases:
             if method_name == "to_cdn_url":

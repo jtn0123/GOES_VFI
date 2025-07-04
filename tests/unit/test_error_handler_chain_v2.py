@@ -34,9 +34,16 @@ class MockErrorHandler(ErrorHandler):
         self._handle_count = 0
 
     def can_handle(self, error: Exception) -> bool:
-        self.can_handle_calls.append(error)
+        # Handle both regular exceptions and StructuredError objects
+        if hasattr(error, 'cause') and error.cause is not None:
+            # It's a StructuredError, get the original exception
+            original_error = error.cause
+        else:
+            original_error = error
+            
+        self.can_handle_calls.append(original_error)
         if self.can_handle_types:
-            return type(error).__name__ in self.can_handle_types
+            return type(original_error).__name__ in self.can_handle_types
         return self.should_handle
 
     def handle(self, error: Exception) -> bool:
@@ -48,7 +55,14 @@ class MockErrorHandler(ErrorHandler):
         if self.raise_on_handle:
             raise self.raise_on_handle
 
-        self.handled_errors.append(error)
+        # Handle both regular exceptions and StructuredError objects
+        if hasattr(error, 'cause') and error.cause is not None:
+            # It's a StructuredError, get the original exception
+            original_error = error.cause
+        else:
+            original_error = error
+            
+        self.handled_errors.append(original_error)
         return True
 
     def reset(self) -> None:
@@ -291,8 +305,13 @@ class TestErrorHandlerChainV2(unittest.TestCase):
         ]
 
         for error_type, category in error_categories:
-            handler = MockErrorHandler(f"{category.name}_handler", can_handle_types=[error_type.__name__])
-            category_handlers[category] = handler
+            if category in category_handlers:
+                # Add to existing handler's types
+                category_handlers[category].can_handle_types.append(error_type.__name__)
+            else:
+                # Create new handler
+                handler = MockErrorHandler(f"{category.name}_handler", can_handle_types=[error_type.__name__])
+                category_handlers[category] = handler
 
         # Test each error type
         for error_type, expected_category in error_categories:

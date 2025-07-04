@@ -7,6 +7,7 @@ to disk using Pillow.
 import os
 from typing import Any
 
+import numpy as np
 from PIL import Image
 
 from .image_processing_interfaces import ImageData, ImageProcessor
@@ -23,7 +24,6 @@ class ImageSaver(ImageProcessor):
         """Save image data to the specified destination path using Pillow.
 
         Args:
-            pass
             image_data (ImageData): The image data to save.
             destination_path (str): The path where the image will be saved.
 
@@ -33,10 +33,18 @@ class ImageSaver(ImageProcessor):
         """
         try:
             # Ensure the directory exists
-            os.makedirs(os.path.dirname(destination_path), exist_ok=True)
+            dir_path = os.path.dirname(destination_path)
+            if dir_path:  # Only create directory if dirname returns a non-empty path
+                os.makedirs(dir_path, exist_ok=True)
+
+            # Handle float arrays by converting to uint8
+            array_data = image_data.image_data
+            if np.issubdtype(array_data.dtype, np.floating):
+                # Normalize float data to 0-255 range
+                array_data = (array_data * 255).astype(np.uint8)
 
             # Convert NumPy array to Pillow Image and save
-            img = Image.fromarray(image_data.image_data)
+            img = Image.fromarray(array_data)
             img.save(destination_path)
         except OSError as e:
             msg = f"Error writing image file {destination_path}: {e}"

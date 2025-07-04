@@ -72,6 +72,7 @@ class TestResourceManager:
             mock_get_monitor.return_value = mock_memory_monitor
 
             manager = ResourceManager(limits)
+            manager.initialize()  # Trigger initialization
 
             assert manager.limits == limits
             if limits_key == "custom":
@@ -83,6 +84,8 @@ class TestResourceManager:
 
             mock_memory_monitor.start_monitoring.assert_called_once()
             mock_memory_monitor.add_callback.assert_called_once()
+
+            manager.cleanup()
 
     @pytest.mark.parametrize(
         "memory_scenario,should_warn,should_critical",
@@ -107,21 +110,26 @@ class TestResourceManager:
             mock_get_monitor.return_value = mock_memory_monitor
 
             manager = ResourceManager()
+            manager.initialize()  # Trigger initialization
 
-            with patch("goesvfi.pipeline.resource_manager.LOGGER") as mock_logger:
+            # Use the manager's internal logger instead of the module logger
+            with (
+                patch.object(manager, "log_warning") as mock_log_warning,
+                patch.object(manager, "log_error") as mock_log_error,
+            ):
                 manager._memory_callback(stats)
 
                 if should_warn:
-                    mock_logger.warning.assert_called_once()
-                    assert "Memory usage high" in mock_logger.warning.call_args[0][0]
+                    mock_log_warning.assert_called_once()
                 else:
-                    mock_logger.warning.assert_not_called()
+                    mock_log_warning.assert_not_called()
 
                 if should_critical:
-                    mock_logger.critical.assert_called_once()
-                    assert "Memory usage critical" in mock_logger.critical.call_args[0][0]
+                    mock_log_error.assert_called_once()
                 else:
-                    mock_logger.critical.assert_not_called()
+                    mock_log_error.assert_not_called()
+
+            manager.cleanup()
 
     @pytest.mark.parametrize(
         "memory_scenario,required_memory,should_raise",
@@ -146,6 +154,7 @@ class TestResourceManager:
             mock_get_monitor.return_value = mock_memory_monitor
 
             manager = ResourceManager()
+            manager.initialize()  # Trigger initialization
 
             if should_raise:
                 with pytest.raises(ResourceError):
@@ -153,6 +162,8 @@ class TestResourceManager:
             else:
                 # Should not raise exception
                 manager.check_resources(required_memory_mb=required_memory)
+
+            manager.cleanup()
 
     @pytest.mark.parametrize(
         "cpu_count,memory_available,expected_constraint",
@@ -185,6 +196,7 @@ class TestResourceManager:
             mock_get_monitor.return_value = mock_memory_monitor
 
             manager = ResourceManager()
+            manager.initialize()  # Trigger initialization
             optimal = manager.get_optimal_workers()
 
             # Verify constraint is applied
@@ -201,6 +213,8 @@ class TestResourceManager:
             elif expected_constraint == "fallback":
                 assert optimal >= 1  # Should have sensible fallback
 
+            manager.cleanup()
+
     @pytest.mark.parametrize("limits_scenario", ["default", "strict", "generous"])
     def test_get_optimal_workers_with_limits(
         self, mock_memory_monitor, resource_limits_scenarios, limits_scenario: str
@@ -216,11 +230,14 @@ class TestResourceManager:
             mock_get_monitor.return_value = mock_memory_monitor
 
             manager = ResourceManager(limits)
+            manager.initialize()  # Trigger initialization
             optimal = manager.get_optimal_workers()
 
             # Should never exceed configured max_workers
             assert optimal <= limits.max_workers
             assert optimal >= 1
+
+            manager.cleanup()
 
     @pytest.mark.parametrize(
         "max_workers,uses_optimal",
@@ -237,6 +254,7 @@ class TestResourceManager:
             mock_get_monitor.return_value = mock_memory_monitor
 
             manager = ResourceManager()
+            manager.initialize()  # Trigger initialization
 
             with (
                 patch("goesvfi.pipeline.resource_manager.ProcessPoolExecutor") as mock_executor_class,
@@ -256,6 +274,8 @@ class TestResourceManager:
                     expected = min(max_workers, manager.limits.max_workers)
                     mock_executor_class.assert_called_once_with(max_workers=expected)
 
+            manager.cleanup()
+
     def test_process_executor_resource_checking(self, mock_memory_monitor, memory_stats_scenarios) -> None:
         """Test process executor performs resource checking before creation."""
         # Mock critical memory situation
@@ -265,9 +285,12 @@ class TestResourceManager:
             mock_get_monitor.return_value = mock_memory_monitor
 
             manager = ResourceManager()
+            manager.initialize()  # Trigger initialization
 
             with pytest.raises(ResourceError, match="Memory usage too high"), manager.process_executor():
                 pass
+
+            manager.cleanup()
 
     def test_thread_safety_verification(self, mock_memory_monitor) -> None:
         """Test thread safety of executor management."""
@@ -275,11 +298,14 @@ class TestResourceManager:
             mock_get_monitor.return_value = mock_memory_monitor
 
             manager = ResourceManager()
+            manager.initialize()  # Trigger initialization
 
             # Verify internal thread-safety components
             assert isinstance(manager._lock, type(threading.Lock()))
             assert isinstance(manager._executors, dict)
             assert len(manager._executors) == 0
+
+            manager.cleanup()
 
     @pytest.mark.parametrize("scenario", ["default", "custom"])
     def test_resource_limits_dataclass(self, resource_limits_scenarios, scenario: str) -> None:
@@ -310,6 +336,7 @@ class TestResourceManager:
             mock_get_monitor.return_value = mock_memory_monitor
 
             manager = ResourceManager()
+            manager.initialize()  # Trigger initialization
 
             # Add some mock executors
             mock_executor1 = MagicMock()
@@ -334,6 +361,7 @@ class TestResourceManager:
             mock_get_monitor.return_value = mock_memory_monitor
 
             manager = ResourceManager()
+            manager.initialize()  # Trigger initialization
 
             # Perform multiple check_resources operations
             for _i in range(operation_count):
@@ -341,3 +369,5 @@ class TestResourceManager:
 
             # Should complete without issues
             assert mock_memory_monitor.get_memory_stats.call_count == operation_count
+
+            manager.cleanup()

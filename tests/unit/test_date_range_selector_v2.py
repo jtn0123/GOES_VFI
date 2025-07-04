@@ -115,34 +115,34 @@ class TestUnifiedDateRangeSelectorV2(PyQtAsyncTestCase):
         # Verify signal was emitted
         assert len(self.emitted_ranges) == 2  # Two changes should emit two signals
 
-    @pytest.mark.parametrize(
-        "preset,expected_start_key",
-        [
+    def test_preset_applications_parametrized(self) -> None:
+        """Test applying different date presets using parametrization."""
+        test_cases = [
             ("today", "today_start"),
             ("last_week", "week_ago_start"),
-        ],
-    )
-    def test_preset_applications_parametrized(self, preset: str, expected_start_key: str) -> None:  # noqa: ARG002
-        """Test applying different date presets using parametrization."""
-        initial_signal_count = len(self.emitted_ranges)
+        ]
+        
+        for preset, expected_start_key in test_cases:
+            with self.subTest(preset=preset, expected_start_key=expected_start_key):
+                initial_signal_count = len(self.emitted_ranges)
 
-        # Apply preset
-        self.selector._apply_preset(preset)  # noqa: SLF001
+                # Apply preset
+                self.selector._apply_preset(preset)  # noqa: SLF001
 
-        # Verify preset was applied
-        start, _end = self.selector.get_date_range()
+                # Verify preset was applied
+                start, _end = self.selector.get_date_range()
 
-        if preset == "today":
-            expected_start = self.expected_ranges["today_start"]
-            assert start.date() == expected_start.date()
-            assert start.hour == 0
-            assert start.minute == 0
-        elif preset == "last_week":
-            expected_start = self.expected_ranges["week_ago_start"]
-            assert start.date() == expected_start.date()
+                if preset == "today":
+                    expected_start = self.expected_ranges["today_start"]
+                    assert start.date() == expected_start.date()
+                    assert start.hour == 0
+                    assert start.minute == 0
+                elif preset == "last_week":
+                    expected_start = self.expected_ranges["week_ago_start"]
+                    assert start.date() == expected_start.date()
 
-        # Verify signal emission
-        assert len(self.emitted_ranges) == initial_signal_count + 1
+                # Verify signal emission
+                assert len(self.emitted_ranges) == initial_signal_count + 1
 
     def test_set_date_range_comprehensive(self) -> None:
         """Test the set_date_range method with comprehensive validation."""
@@ -156,11 +156,21 @@ class TestUnifiedDateRangeSelectorV2(PyQtAsyncTestCase):
         # Verify date controls were updated using helper validation
         start_dt = self.selector.start_date_edit.dateTime().toPyDateTime()
         start_dt = start_dt.replace(second=0, microsecond=0)
-        assert start_dt == start
+        # If start has timezone info but start_dt doesn't, convert for comparison
+        if start.tzinfo is not None and start_dt.tzinfo is None:
+            start_naive = start.replace(tzinfo=None)
+            assert start_dt == start_naive
+        else:
+            assert start_dt == start
 
         end_dt = self.selector.end_date_edit.dateTime().toPyDateTime()
         end_dt = end_dt.replace(second=0, microsecond=0)
-        assert end_dt == end
+        # If end has timezone info but end_dt doesn't, convert for comparison
+        if end.tzinfo is not None and end_dt.tzinfo is None:
+            end_naive = end.replace(tzinfo=None)
+            assert end_dt == end_naive
+        else:
+            assert end_dt == end
 
         # Verify internal state
         current_start, current_end = self.selector.get_date_range()
@@ -240,28 +250,28 @@ class TestCompactDateRangeSelectorV2(PyQtAsyncTestCase):
         assert start.date() == expected_start.date()
         assert end.date() == expected_end.date()
 
-    @pytest.mark.parametrize(
-        "preset_text,expected_hour",
-        [
+    def test_preset_change_parametrized(self) -> None:
+        """Test changing presets via dropdown using parametrization."""
+        test_cases = [
             ("Today", 0),
             ("Yesterday", 0),
-        ],
-    )
-    def test_preset_change_parametrized(self, preset_text: str, expected_hour: int) -> None:
-        """Test changing presets via dropdown using parametrization."""
-        initial_count = len(self.emitted_ranges)
+        ]
+        
+        for preset_text, expected_hour in test_cases:
+            with self.subTest(preset_text=preset_text, expected_hour=expected_hour):
+                initial_count = len(self.emitted_ranges)
 
-        # Change to specified preset
-        self.selector.preset_combo.setCurrentText(preset_text)
-        QApplication.processEvents()
+                # Change to specified preset
+                self.selector.preset_combo.setCurrentText(preset_text)
+                QApplication.processEvents()
 
-        # Verify date range updated
-        start, _ = self.selector.get_date_range()
-        assert start.hour == expected_hour
-        assert start.minute == 0
+                # Verify date range updated
+                start, _ = self.selector.get_date_range()
+                assert start.hour == expected_hour
+                assert start.minute == 0
 
-        # Verify signal was emitted
-        assert len(self.emitted_ranges) == initial_count + 1
+                # Verify signal was emitted
+                assert len(self.emitted_ranges) == initial_count + 1
 
     def test_custom_date_range_display(self) -> None:
         """Test custom date range display formatting."""

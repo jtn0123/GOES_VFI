@@ -141,7 +141,9 @@ class RifeCapabilityDetector:
         """Extract version from help text."""
         # Look for patterns like "version 4.6", "v4.6", "Version: 4.6", "RIFE 4.6", etc.
         # Also match any number pattern that appears after common version-related words
-        version_match = re.search(r"(?:version[:\s]+|v|RIFE[:\s]*|Interpolation[:\s]+)([0-9.]+)", help_text_str, re.IGNORECASE)
+        version_match = re.search(
+            r"(?:version[:\s]+|v|RIFE[:\s]*|Interpolation[:\s]+)([0-9.]+)", help_text_str, re.IGNORECASE
+        )
         if not version_match:
             # Fallback: look for any standalone version number pattern
             version_match = re.search(r"\b([0-9]+\.[0-9]+)\b", help_text_str)

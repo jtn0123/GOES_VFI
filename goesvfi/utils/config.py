@@ -38,6 +38,7 @@ DEFAULTS: dict[str, Any] = {
     "cache_dir": str(pathlib.Path.home() / "Documents/goesvfi/cache"),
     "pipeline": {
         "default_tile_size": 2048,
+        "max_workers": 4,
         "supported_extensions": [".png", ".jpg", ".jpeg"],
     },
     "sanchez": {
@@ -188,7 +189,7 @@ FFMPEG_PROFILES: dict[str, FfmpegProfile] = {
 EXPECTED_SCHEMA: dict[str, Any] = {
     "output_dir": str,
     "cache_dir": str,
-    "pipeline": {"default_tile_size": int, "supported_extensions": list},
+    "pipeline": {"default_tile_size": int, "max_workers": int, "supported_extensions": list},
     "sanchez": {"bin_dir": str},
     "logging": {"level": str},
     "theme": {
@@ -281,18 +282,18 @@ def _load_config() -> dict[str, Any]:
 def get_output_dir() -> pathlib.Path:
     # Use .get() with a default to handle potential missing key after loading
     output_dir_str = _load_config().get("output_dir", DEFAULTS["output_dir"])
-    # Ensure it's a string before converting to Path
-    if not isinstance(output_dir_str, str):
-        output_dir_str = DEFAULTS["output_dir"]  # Fallback to default if type is wrong
+    # Ensure it's a string and not empty before converting to Path
+    if not isinstance(output_dir_str, str) or not output_dir_str.strip():
+        output_dir_str = DEFAULTS["output_dir"]  # Fallback to default if type is wrong or empty
     return pathlib.Path(output_dir_str).expanduser()
 
 
 def get_cache_dir() -> pathlib.Path:
     # Use .get() with a default to handle potential missing key after loading
     cache_dir_str = _load_config().get("cache_dir", DEFAULTS["cache_dir"])
-    # Ensure it's a string before converting to Path
-    if not isinstance(cache_dir_str, str):
-        cache_dir_str = DEFAULTS["cache_dir"]  # Fallback to default if type is wrong
+    # Ensure it's a string and not empty before converting to Path
+    if not isinstance(cache_dir_str, str) or not cache_dir_str.strip():
+        cache_dir_str = DEFAULTS["cache_dir"]  # Fallback to default if type is wrong or empty
     return pathlib.Path(cache_dir_str).expanduser()
 
 

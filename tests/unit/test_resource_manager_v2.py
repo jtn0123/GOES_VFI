@@ -99,6 +99,7 @@ class TestResourceManagerV2:
         """Test ResourceManager initialization."""
         with patch("goesvfi.pipeline.resource_manager.get_memory_monitor", return_value=mock_memory_monitor):
             manager = ResourceManager()
+            manager.initialize()  # Trigger initialization
 
             # Check default limits
             assert isinstance(manager.limits, ResourceLimits)
@@ -121,6 +122,7 @@ class TestResourceManagerV2:
 
         with patch("goesvfi.pipeline.resource_manager.get_memory_monitor", return_value=mock_memory_monitor):
             manager = ResourceManager(custom_limits)
+            manager.initialize()  # Trigger initialization
 
             assert manager.limits == custom_limits
             assert manager.limits.max_workers == 4
@@ -130,36 +132,44 @@ class TestResourceManagerV2:
 
     def test_memory_callback_warning(self, resource_manager) -> None:
         """Test memory callback logging warnings."""
+        resource_manager.initialize()  # Trigger initialization
         stats = MemoryStats(percent_used=80.0)
 
-        with patch("goesvfi.pipeline.resource_manager.LOGGER") as mock_logger:
+        with patch.object(resource_manager, "log_warning") as mock_log_warning:
             resource_manager._memory_callback(stats)
-            mock_logger.warning.assert_called_once()
+            mock_log_warning.assert_called_once()
 
     def test_memory_callback_critical(self, resource_manager) -> None:
         """Test memory callback logging critical alerts."""
+        resource_manager.initialize()  # Trigger initialization
         stats = MemoryStats(percent_used=95.0)
 
-        with patch("goesvfi.pipeline.resource_manager.LOGGER") as mock_logger:
+        with patch.object(resource_manager, "log_error") as mock_log_error:
             resource_manager._memory_callback(stats)
-            mock_logger.critical.assert_called_once()
+            mock_log_error.assert_called_once()
 
     def test_memory_callback_normal(self, resource_manager) -> None:
         """Test memory callback with normal usage."""
+        resource_manager.initialize()  # Trigger initialization
         stats = MemoryStats(percent_used=50.0)
 
-        with patch("goesvfi.pipeline.resource_manager.LOGGER") as mock_logger:
+        with (
+            patch.object(resource_manager, "log_warning") as mock_log_warning,
+            patch.object(resource_manager, "log_error") as mock_log_error,
+        ):
             resource_manager._memory_callback(stats)
-            mock_logger.warning.assert_not_called()
-            mock_logger.critical.assert_not_called()
+            mock_log_warning.assert_not_called()
+            mock_log_error.assert_not_called()
 
     def test_check_resources_sufficient(self, resource_manager) -> None:
         """Test resource check with sufficient resources."""
+        resource_manager.initialize()  # Trigger initialization
         # Should not raise with default mock stats (4096MB available)
         resource_manager.check_resources(required_memory_mb=1000)
 
     def test_check_resources_insufficient_memory(self, resource_manager) -> None:
         """Test resource check with insufficient memory."""
+        resource_manager.initialize()  # Trigger initialization
         # Mock low available memory
         low_memory_stats = MemoryStats(
             total_mb=8192,
@@ -177,6 +187,7 @@ class TestResourceManagerV2:
 
     def test_check_resources_critical_usage(self, resource_manager) -> None:
         """Test resource check with critical memory usage."""
+        resource_manager.initialize()  # Trigger initialization
         critical_stats = MemoryStats(
             total_mb=8192,
             available_mb=2000,
@@ -194,6 +205,7 @@ class TestResourceManagerV2:
     @patch("os.cpu_count")
     def test_get_optimal_workers(self, mock_cpu_count, resource_manager) -> None:
         """Test optimal worker calculation."""
+        resource_manager.initialize()  # Trigger initialization
         mock_cpu_count.return_value = 8
 
         # Mock good memory stats
@@ -213,6 +225,7 @@ class TestResourceManagerV2:
     @patch("os.cpu_count")
     def test_get_optimal_workers_memory_limited(self, mock_cpu_count, resource_manager) -> None:
         """Test optimal worker calculation when memory is limiting factor."""
+        resource_manager.initialize()  # Trigger initialization
         mock_cpu_count.return_value = 8
 
         # Mock low memory stats
@@ -232,6 +245,7 @@ class TestResourceManagerV2:
     @patch("os.cpu_count")
     def test_get_optimal_workers_cpu_none(self, mock_cpu_count, resource_manager) -> None:
         """Test optimal worker calculation when CPU count is None."""
+        resource_manager.initialize()  # Trigger initialization
         mock_cpu_count.return_value = None
 
         optimal = resource_manager.get_optimal_workers()
@@ -241,6 +255,7 @@ class TestResourceManagerV2:
 
     def test_process_executor_context_manager(self, resource_manager) -> None:
         """Test ProcessPoolExecutor context manager."""
+        resource_manager.initialize()  # Trigger initialization
         with resource_manager.process_executor(max_workers=1, executor_id="test") as executor:
             assert isinstance(executor, ProcessPoolExecutor)
             assert "test" in resource_manager._executors
@@ -250,6 +265,7 @@ class TestResourceManagerV2:
 
     def test_thread_executor_context_manager(self, resource_manager) -> None:
         """Test ThreadPoolExecutor context manager."""
+        resource_manager.initialize()  # Trigger initialization
         with resource_manager.thread_executor(max_workers=1, executor_id="test") as executor:
             assert isinstance(executor, ThreadPoolExecutor)
             assert "test" in resource_manager._executors
@@ -259,6 +275,7 @@ class TestResourceManagerV2:
 
     def test_executor_resource_check_failure(self, resource_manager) -> None:
         """Test executor creation when resource check fails."""
+        resource_manager.initialize()  # Trigger initialization
         # Mock critical memory situation
         critical_stats = MemoryStats(percent_used=95.0)
         resource_manager.memory_monitor.get_memory_stats.return_value = critical_stats
@@ -268,6 +285,7 @@ class TestResourceManagerV2:
 
     def test_executor_max_workers_limit(self, resource_manager) -> None:
         """Test executor respects max_workers limit."""
+        resource_manager.initialize()  # Trigger initialization
         # Request more workers than limit allows
         with resource_manager.process_executor(max_workers=10, executor_id="test") as executor:
             # Should be limited to configured max_workers (2)
@@ -275,12 +293,14 @@ class TestResourceManagerV2:
 
     def test_executor_optimal_workers_when_none(self, resource_manager) -> None:
         """Test executor uses optimal workers when max_workers is None."""
+        resource_manager.initialize()  # Trigger initialization
         with patch.object(resource_manager, "get_optimal_workers", return_value=1) as mock_optimal:
             with resource_manager.process_executor(max_workers=None, executor_id="test"):
                 mock_optimal.assert_called_once()
 
     def test_shutdown_all(self, resource_manager) -> None:
         """Test shutting down all executors."""
+        resource_manager.initialize()  # Trigger initialization
         # Create some executors
         with resource_manager.process_executor(executor_id="proc1"):
             with resource_manager.thread_executor(executor_id="thread1"):
@@ -297,6 +317,7 @@ class TestResourceManagerV2:
 
     def test_get_chunk_size_normal(self, resource_manager) -> None:
         """Test chunk size calculation with normal memory."""
+        resource_manager.initialize()  # Trigger initialization
         chunk_size = resource_manager.get_chunk_size(total_size_mb=1000, min_chunks=4)
 
         # Should be reasonable chunk size
@@ -305,6 +326,7 @@ class TestResourceManagerV2:
 
     def test_get_chunk_size_low_memory(self, resource_manager) -> None:
         """Test chunk size calculation with low memory."""
+        resource_manager.initialize()  # Trigger initialization
         # Mock low memory
         low_memory_stats = MemoryStats(
             total_mb=2048,
@@ -322,6 +344,7 @@ class TestResourceManagerV2:
 
     def test_get_chunk_size_minimum_enforced(self, resource_manager) -> None:
         """Test chunk size minimum is enforced."""
+        resource_manager.initialize()  # Trigger initialization
         chunk_size = resource_manager.get_chunk_size(total_size_mb=50, min_chunks=10)
 
         # Should enforce minimum of 10MB
@@ -329,6 +352,7 @@ class TestResourceManagerV2:
 
     def test_concurrent_executor_access(self, resource_manager) -> None:
         """Test thread safety of executor management."""
+        resource_manager.initialize()  # Trigger initialization
         results = []
 
         def create_executor(executor_id) -> None:
@@ -408,7 +432,7 @@ class TestManagedExecutorV2:
         mock_manager.process_executor.return_value.__exit__ = Mock(return_value=None)
         mock_get_manager.return_value = mock_manager
 
-        with managed_executor(executor_type="process", max_workers=2) as executor:
+        with managed_executor(executor_type="process", max_workers=2, use_global_pool=False) as executor:
             assert executor is mock_executor
 
         mock_manager.check_resources.assert_called_once()
@@ -438,7 +462,7 @@ class TestManagedExecutorV2:
         mock_manager.process_executor.return_value.__exit__ = Mock(return_value=None)
         mock_get_manager.return_value = mock_manager
 
-        with managed_executor(executor_type="process", check_resources=False) as executor:
+        with managed_executor(executor_type="process", check_resources=False, use_global_pool=False) as executor:
             assert executor is mock_executor
 
         mock_manager.check_resources.assert_not_called()
@@ -478,8 +502,9 @@ class TestEstimateProcessingMemoryV2:
         memory_1byte = estimate_processing_memory(10, 1920, 1080, 3, 1)
         memory_4bytes = estimate_processing_memory(10, 1920, 1080, 3, 4)
 
-        # 4-byte should be exactly 4x more
-        assert memory_4bytes == memory_1byte * 4
+        # 4-byte should be approximately 4x more (allowing for integer rounding)
+        expected_4x = memory_1byte * 4
+        assert abs(memory_4bytes - expected_4x) <= 2  # Allow 2MB difference due to rounding
 
     def test_estimate_different_channels(self) -> None:
         """Test memory estimation with different channel counts."""

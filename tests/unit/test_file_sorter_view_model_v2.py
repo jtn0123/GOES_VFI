@@ -124,6 +124,9 @@ class TestFileSorterViewModelV2(unittest.TestCase):
 
         for scenario in test_scenarios:
             with self.subTest(scenario=scenario["name"]):
+                # Reset view model state before each scenario
+                self.view_model.source_directory = None
+                
                 # Create directory if it doesn't exist and is not empty/None
                 if scenario["directory"] and scenario["directory"] != "":
                     Path(scenario["directory"]).mkdir(parents=True, exist_ok=True)
@@ -198,6 +201,9 @@ class TestFileSorterViewModelV2(unittest.TestCase):
 
         for scenario in test_scenarios:
             with self.subTest(scenario=scenario["name"]):
+                # Reset view model state before each scenario
+                self.view_model.destination_directory = None
+                
                 # Create directory if it doesn't exist and is not empty/None
                 if scenario["directory"] and scenario["directory"] != "":
                     Path(scenario["directory"]).mkdir(parents=True, exist_ok=True)
@@ -347,6 +353,11 @@ class TestFileSorterViewModelV2(unittest.TestCase):
                     signal_emitted.append(status)
 
                 self.view_model.status_message_changed.connect(on_status_changed)
+
+                # Ensure we start with a different value
+                if self.view_model.status_message == message:
+                    self.view_model.status_message = "Different value"
+                    signal_emitted.clear()  # Clear any signals from the setup
 
                 # Set status message
                 self.view_model.status_message = message

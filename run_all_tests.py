@@ -585,7 +585,7 @@ class TestExecutor:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         venv_python = os.path.join(script_dir, ".venv", "bin", "python")
 
-        cmd = [venv_python, "-m", "pytest", test_path, "-v", "-p", "no:cov"]
+        cmd = [venv_python, "-m", "pytest", test_path, "-v", "-p", "no:cov", "--color=no"]
 
         if self.config.debug_mode:
             cmd.extend([
@@ -656,10 +656,12 @@ class ProgressReporter:
         elif result.counts.error > 0 and result.status not in {"CRASHED", "TIMEOUT"}:
             display_status = "ERROR"
 
-        self.emojis.get(display_status, "❓")
-        # Determine color based on overall test file health
-        self._get_file_status_color(result)
-        self._build_count_summary(result)
+        emoji = self.emojis.get(display_status, "❓")
+        color = self._get_file_status_color(result)
+        count_summary = self._build_count_summary(result)
+        
+        # Actually print the progress report
+        print(f"[{index}/{total}] {emoji} {color}{result.path}{self.colors.reset} ({count_summary}) in {result.duration:.1f}s")  # noqa: T201
 
     def report_error(self, index: int, total: int, path: str, error: str) -> None:
         """Report error running test."""
@@ -1368,8 +1370,11 @@ def main() -> int:
 
     print("✅ Creating test runner...", flush=True)  # noqa: T201
     runner = TestRunner(config)
-    print("✅ Running tests...", flush=True)  # noqa: T201
-    return runner.run()
+    print("✅ Test runner created successfully...", flush=True)  # noqa: T201
+    print("✅ Running tests...")  # noqa: T201
+    result = runner.run()
+    print(f"✅ Test run completed with exit code: {result}")  # noqa: T201
+    return result
 
 
 if __name__ == "__main__":

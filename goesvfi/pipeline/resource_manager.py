@@ -72,8 +72,8 @@ class ResourceManager(ConfigurableManager):
 
     def _memory_callback(self, stats: Any) -> None:
         """Handle memory status updates."""
-        critical_percent = self.get_config("critical_memory_percent", 90.0)
-        warn_percent = self.get_config("warn_memory_percent", 75.0)
+        critical_percent = float(self.get_config("critical_memory_percent", 90.0))
+        warn_percent = float(self.get_config("warn_memory_percent", 75.0))
 
         if stats.percent_used > critical_percent:
             msg = f"Memory usage critical: {round(stats.percent_used, 1)}% (limit: {critical_percent}%)"
@@ -86,7 +86,7 @@ class ResourceManager(ConfigurableManager):
                 warn_percent,
             )
 
-    def check_resources(self, required_memory_mb: int = 0) -> None:
+    def check_resources(self, required_memory_mb: int | None = 0) -> None:
         """Check if resources are available for operation.
 
         Args:
@@ -98,7 +98,7 @@ class ResourceManager(ConfigurableManager):
         stats = self.memory_monitor.get_memory_stats()
 
         # Check memory availability
-        if required_memory_mb > 0 and stats.available_mb < required_memory_mb:
+        if required_memory_mb is not None and required_memory_mb > 0 and stats.available_mb < required_memory_mb:
             msg = f"Insufficient memory: {stats.available_mb}MB available, {required_memory_mb}MB required"
             raise ResourceError(
                 msg,
@@ -106,7 +106,7 @@ class ResourceManager(ConfigurableManager):
             )
 
         # Check if we're over the critical threshold
-        critical_percent = self.get_config("critical_memory_percent", 90.0)
+        critical_percent = float(self.get_config("critical_memory_percent", 90.0))
         if stats.percent_used > critical_percent:
             msg = f"Memory usage too high: {stats.percent_used:.1f}% (limit: {critical_percent}%)"
             raise ResourceError(
@@ -133,7 +133,7 @@ class ResourceManager(ConfigurableManager):
         cpu_based_workers = max(1, int(cpu_count * 0.75))
 
         # Take minimum of all constraints
-        max_workers = self.get_config("max_workers", 2)
+        max_workers = int(self.get_config("max_workers", 2))
         optimal = min(max_workers, memory_based_workers, cpu_based_workers)
 
         self.log_info(
@@ -159,7 +159,7 @@ class ResourceManager(ConfigurableManager):
         Yields:
             ProcessPoolExecutor instance
         """
-        max_workers_limit = self.get_config("max_workers", 2)
+        max_workers_limit = int(self.get_config("max_workers", 2))
         max_workers = self.get_optimal_workers() if max_workers is None else min(max_workers, max_workers_limit)
 
         # Check resources before creating executor
@@ -192,7 +192,7 @@ class ResourceManager(ConfigurableManager):
         Yields:
             ThreadPoolExecutor instance
         """
-        max_workers_limit = self.get_config("max_workers", 2)
+        max_workers_limit = int(self.get_config("max_workers", 2))
         max_workers = self.get_optimal_workers() if max_workers is None else min(max_workers, max_workers_limit)
 
         # Check resources before creating executor
@@ -246,7 +246,7 @@ class ResourceManager(ConfigurableManager):
         max_chunk = stats.available_mb // 4
 
         # Apply configured limit
-        chunk_size_mb = self.get_config("chunk_size_mb", 100)
+        chunk_size_mb = int(self.get_config("chunk_size_mb", 100))
         max_chunk = min(max_chunk, chunk_size_mb)
 
         # Ensure we have at least min_chunks
@@ -311,8 +311,12 @@ def managed_executor(
         if use_global_pool:
             # Use the global process pool instead of creating a new one
             global_pool = get_global_process_pool()
+            global_pool.initialize()  # Ensure it's initialized
             with global_pool.batch_context(max_workers):
                 # Return the global pool's executor
+                if global_pool._executor is None:
+                    msg = "Global process pool executor is not available"
+                    raise RuntimeError(msg)
                 yield global_pool._executor
         else:
             with manager.process_executor(max_workers) as executor:

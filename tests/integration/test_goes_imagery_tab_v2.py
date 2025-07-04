@@ -102,25 +102,27 @@ class TestGOESImageryTabOptimizedV2:
                 self.resolution_combo.addItem("1k", "1k")
                 self.resolution_combo.addItem("2k", "2k")
                 self.resolution_combo.addItem("2.7k", "2.7k")
-                self.resolution_combo.setCurrentText("2.7k")
+                self.resolution_combo.setCurrentIndex(3)  # Select "2.7k" by index
 
                 # Processing combo
                 self.processing_combo = QComboBox()
                 self.processing_combo.addItem("Quick Look", ProcessingMode.QUICKLOOK)
                 self.processing_combo.addItem("Full Processing", ProcessingMode.FULL_RESOLUTION)
+                self.processing_combo.setCurrentIndex(0)  # Select "Quick Look" by default
 
                 # Size combo
                 self.size_combo = QComboBox()
                 self.size_combo.addItem("600", "600")
                 self.size_combo.addItem("1200", "1200")
                 self.size_combo.addItem("2048", "2048")
-                self.size_combo.setCurrentText("1200")
+                self.size_combo.setCurrentIndex(1)  # Select "1200" by index
 
                 # Product combo
                 self.product_combo = QComboBox()
                 self.product_combo.addItem("Full Disk", ProductType.FULL_DISK)
                 self.product_combo.addItem("CONUS", ProductType.CONUS)
                 self.product_combo.addItem("Mesoscale", ProductType.MESOSCALE)
+                self.product_combo.setCurrentIndex(0)  # Select "Full Disk" by default
 
                 # Download button
                 self.download_btn = QPushButton("Download")
@@ -130,12 +132,12 @@ class TestGOESImageryTabOptimizedV2:
                 self.image_product_btn.toggled.connect(self.updateUIState)
                 self.raw_data_btn.toggled.connect(self.updateUIState)
 
-                # Set initial state
-                self.updateUIState()
-
-                # Validation state
+                # Validation state (must be initialized before updateUIState call)
                 self.is_valid: bool = True
                 self.validation_errors: list[str] = []
+
+                # Set initial state
+                self.updateUIState()
 
             def updateUIState(self) -> None:  # noqa: N802
                 """Update UI state based on mode selection."""
@@ -223,11 +225,15 @@ class TestGOESImageryTabOptimizedV2:
                 self.progress = QProgressBar()
                 self.progress.setVisible(False)
                 self.progress.setRange(0, 100)
+                # Track visibility state for testing
+                self._progress_visible = False
 
                 # Error label
                 self.error_label = QLabel("")
                 self.error_label.setStyleSheet("color: red;")
                 self.error_label.setVisible(False)
+                # Track visibility state for testing
+                self._error_visible = False
 
                 # Info label
                 self.info_label = QLabel("")
@@ -252,12 +258,14 @@ class TestGOESImageryTabOptimizedV2:
                 self.loading_state = True
                 self.status_label.setText(message)
                 self.error_label.setVisible(False)
+                self._error_visible = False  # Track visibility state
                 self.info_label.setVisible(False)
 
                 # Create empty movie for testing
                 movie = QMovie()
                 self.image_label.setMovie(movie)  # type: ignore[arg-type]
                 self.progress.setVisible(True)
+                self._progress_visible = True  # Track visibility state
                 self.progress.setValue(0)
 
             def clearImage(self) -> None:  # noqa: N802
@@ -270,13 +278,16 @@ class TestGOESImageryTabOptimizedV2:
                 self.image_label.setMovie(None)  # type: ignore[arg-type]
                 self.status_label.setText("")
                 self.progress.setVisible(False)
+                self._progress_visible = False  # Track visibility state
                 self.error_label.setVisible(False)
+                self._error_visible = False  # Track visibility state
                 self.info_label.setVisible(False)
 
             def setProgress(self, value: int, message: str | None = None) -> None:  # noqa: N802
                 """Set progress value with optional message."""
                 self.progress.setValue(min(100, max(0, value)))
                 self.progress.setVisible(True)
+                self._progress_visible = True  # Track visibility state
 
                 if message:
                     self.status_label.setText(message)
@@ -291,7 +302,9 @@ class TestGOESImageryTabOptimizedV2:
 
                 self.status_label.setText(f"Loaded: {file_name}")
                 self.progress.setVisible(False)
+                self._progress_visible = False  # Track visibility state
                 self.error_label.setVisible(False)
+                self._error_visible = False  # Track visibility state
 
                 if metadata:
                     info_text = f"Size: {metadata.get('size', 'Unknown')}, Format: {metadata.get('format', 'Unknown')}"
@@ -305,7 +318,9 @@ class TestGOESImageryTabOptimizedV2:
 
                 self.error_label.setText(f"Error: {error_message}")
                 self.error_label.setVisible(True)
+                self._error_visible = True  # Track visibility state
                 self.progress.setVisible(False)
+                self._progress_visible = False  # Track visibility state
                 self.status_label.setText("Load failed")
 
             def get_current_state(self) -> dict[str, Any]:
@@ -319,9 +334,9 @@ class TestGOESImageryTabOptimizedV2:
                     "has_image": self.current_image_path is not None,
                     "image_path": self.current_image_path,
                     "status_text": self.status_label.text(),
-                    "progress_visible": self.progress.isVisible(),
+                    "progress_visible": self._progress_visible,  # Use tracked state
                     "progress_value": self.progress.value(),
-                    "error_visible": self.error_label.isVisible(),
+                    "error_visible": self._error_visible,  # Use tracked state
                     "error_text": self.error_label.text(),
                     "errors": self.load_errors.copy(),
                 }
@@ -424,6 +439,13 @@ class TestGOESImageryTabOptimizedV2:
                     if selection_panel.product_combo.itemData(i) == ProductType.FULL_DISK:
                         selection_panel.product_combo.setCurrentIndex(i)
                         break
+
+                # Ensure size combo is properly set for image product mode
+                if selection_panel.size_combo.currentData() is None:
+                    selection_panel.size_combo.setCurrentIndex(1)  # Select "1200"
+                
+                # Force validation update after all setup
+                selection_panel.updateUIState()
 
                 # Capture request signal
                 request_data: dict[str, Any] | None = None
@@ -655,7 +677,7 @@ class TestGOESImageryTabOptimizedV2:
                     assert hasattr(tab, "status_label"), f"Missing status_label in {scenario['name']}"
 
                     # Verify initial status
-                    expected_status = "Ready to load imagery"
+                    expected_status = "✅ Ready - Select product and channel to load imagery"
                     actual_status = tab.status_label.text()
                     assert actual_status == expected_status, (
                         f"Wrong initial status: expected '{expected_status}', got '{actual_status}'"

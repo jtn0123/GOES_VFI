@@ -18,19 +18,11 @@ from goesvfi.integrity_check.time_index import (
 )
 
 
-# Skip these tests by default as they access real S3 and may cause rate limiting
-# Run with pytest -xvs tests/unit/test_real_s3_store.py::TestRealS3Store::test_real_s3_exists_recent
-# Add RUN_REAL_S3_TESTS=1 environment variable to run these tests
-@pytest.mark.skipif(
-    os.environ.get("RUN_REAL_S3_TESTS") != "1",
-    reason="Skipping tests that access real S3. Set RUN_REAL_S3_TESTS=1 to run.",
-)
 class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
-    """Test S3Store with real NOAA GOES data patterns.
+    """Test S3Store with mocked NOAA GOES data patterns.
 
-    Note: These tests access the actual NOAA S3 buckets and may be slow
-    or fail due to network issues. They are primarily for validation
-    and debugging purposes.
+    These tests use mocked S3 responses to simulate real data patterns
+    without requiring external network access.
     """
 
     async def asyncSetUp(self) -> None:
@@ -42,32 +34,21 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
         self.temp_dir = tempfile.TemporaryDirectory()
         self.temp_path = Path(self.temp_dir.name)
 
-        # Use yesterday by default for tests to ensure data exists
-        yesterday = datetime.now() - timedelta(days=1)
-        self.test_date = yesterday.replace(hour=12, minute=0, second=0, microsecond=0)
+        # Use fixed test date for consistent testing
+        self.test_date = datetime(2023, 6, 15, 12, 0, 0)
+        self.radf_test_date = self.test_date.replace(minute=0)  # RadF minute
+        self.radc_test_date = self.test_date.replace(minute=1)  # RadC minute
+        self.radm_test_date = self.test_date  # RadM minute
 
-        # Find valid nearest RadF minute (0, 10, 20, 30, 40, 50)
-        # Convert back to 0, 10, 20, 30, 40, 50 minutes
-        for minute in RADF_MINUTES:
-            if abs(minute - self.test_date.minute) <= 5:
-                self.radf_test_date = self.test_date.replace(minute=minute)
-                break
-        else:
-            # Default to nearest 10-minute mark before the hour
-            nearest_10min = (self.test_date.minute // 10) * 10
-            self.radf_test_date = self.test_date.replace(minute=nearest_10min)
+        # Mock S3 client
+        self.s3_client_mock = AsyncMock()
+        self.s3_client_mock.get_paginator = MagicMock()
 
-        # Find valid nearest RadC minute (1, 6, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56)
-        for minute in RADC_MINUTES:
-            if abs(minute - self.test_date.minute) <= 3:
-                self.radc_test_date = self.test_date.replace(minute=minute)
-                break
-        else:
-            # Default to minute 1 past the hour
-            self.radc_test_date = self.test_date.replace(minute=1)
+        # Patch _get_s3_client on the instance to return our mock
+        async def mock_get_s3_client():
+            return self.s3_client_mock
 
-        # RadM test date (any minute should work)
-        self.radm_test_date = self.test_date
+        self.store._get_s3_client = mock_get_s3_client
 
     async def asyncTearDown(self) -> None:
         """Tear down test fixtures."""
@@ -78,58 +59,59 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
         await self.store.close()
 
     async def test_real_s3_exists_recent(self) -> None:
-        """Test checking if a real file exists in S3 for a recent date."""
-        # Try to find a RadF file from yesterday
+        """Test checking if a file exists in S3 with mocked response."""
+        # Configure mock to return success for file existence check
+        self.s3_client_mock.head_object.return_value = {
+            "ContentLength": 2000000,
+            "LastModified": self.radf_test_date,
+            "ETag": '"example-etag"',
+            "ContentType": "application/octet-stream",
+        }
+
+        # Test file exists
         exists = await self.store.check_file_exists(self.radf_test_date, SatellitePattern.GOES_18)
+        assert exists
 
-        # Generate the S3 key for logging
-        to_s3_key(self.radf_test_date, SatellitePattern.GOES_18, product_type="RadF", band=13)
+        # Verify head_object was called
+        self.s3_client_mock.head_object.assert_called_once()
 
-        if exists:
-            pass
-        else:
-            # Try 1 hour earlier
-            earlier_date = self.radf_test_date - timedelta(hours=1)
-            exists = await self.store.check_file_exists(earlier_date, SatellitePattern.GOES_18)
-
-            if exists:
-                pass
-
-        # Test should pass regardless of whether file exists - we're testing the functionality
-        # not the presence of specific data
+        # Test the functionality works correctly
 
     async def test_real_s3_exists_different_bands(self) -> None:
-        """Test checking if real files exist for different bands."""
+        """Test checking if files exist for different bands with mocked responses."""
+        # Configure mock to return success for existence checks
+        self.s3_client_mock.head_object.return_value = {
+            "ContentLength": 2000000,
+            "LastModified": self.radc_test_date,
+            "ETag": '"example-etag"',
+            "ContentType": "application/octet-stream",
+        }
+
         # Test different bands with RadC product type
         bands_to_test = [1, 2, 7, 8, 13, 14]
-        exists_results = {}
+        
+        for _ in bands_to_test:
+            exists = await self.store.check_file_exists(
+                self.radc_test_date,
+                SatellitePattern.GOES_18,
+            )
+            assert exists
 
-        for band in bands_to_test:
-            # For now, use the download method to check existence
-            # since check_file_exists doesn't support product_type/band args
-            try:
-                exists = await self.store.check_file_exists(
-                    self.radc_test_date,
-                    SatellitePattern.GOES_18,
-                )
-            except Exception:
-                exists = False
-            exists_results[band] = exists
-
-            if exists:
-                pass
-
-        # Print summary
-        for band, exists in exists_results.items():
-            pass
-
-        # Test should pass regardless of which bands exist
+        # Verify head_object was called for each band test
+        assert self.s3_client_mock.head_object.call_count == len(bands_to_test)
 
     async def test_real_s3_exists_product_types(self) -> None:
-        """Test checking if real files exist for different product types."""
+        """Test checking if files exist for different product types with mocked responses."""
+        # Configure mock to return success for existence checks
+        self.s3_client_mock.head_object.return_value = {
+            "ContentLength": 2000000,
+            "LastModified": self.test_date,
+            "ETag": '"example-etag"',
+            "ContentType": "application/octet-stream",
+        }
+
         # Test different product types
         product_types = ["RadF", "RadC", "RadM"]
-        exists_results = {}
 
         for product_type in product_types:
             # Use the appropriate test date for each product type
@@ -141,48 +123,39 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
                 test_date = self.radm_test_date
 
             exists = await self.store.check_file_exists(test_date, SatellitePattern.GOES_18)
-            exists_results[product_type] = exists
+            assert exists
 
-            if exists:
-                pass
-
-        # Print summary
-        for product_type, exists in exists_results.items():
-            if product_type == "RadF":
-                test_date = self.radf_test_date
-            elif product_type == "RadC":
-                test_date = self.radc_test_date
-            else:
-                test_date = self.radm_test_date
-
-        # Test should pass regardless of which product types exist
+        # Verify head_object was called for each product type test
+        assert self.s3_client_mock.head_object.call_count == len(product_types)
 
     async def test_real_s3_download_if_exists(self) -> None:
-        """Test downloading a real file from S3 if it exists."""
-        # Try to find a RadC file from yesterday
+        """Test downloading a file from S3 with mocked responses."""
+        # Configure head_object to return success for existence check
+        self.s3_client_mock.head_object.return_value = {
+            "ContentLength": 2000000,
+            "LastModified": self.radc_test_date,
+            "ETag": '"example-etag"',
+            "ContentType": "application/octet-stream",
+        }
+
+        # Configure download_file to succeed
+        self.s3_client_mock.download_file = AsyncMock()
+
+        # Test file exists check
         exists = await self.store.check_file_exists(self.radc_test_date, SatellitePattern.GOES_18)
+        assert exists
 
-        if not exists:
-            # Skip test if file doesn't exist
-            return
-
-        # File exists, try to download it
+        # Test download
         dest_path = self.temp_path / "test_download.nc"
+        downloaded_path = await self.store.download_file(
+            self.radc_test_date,
+            SatellitePattern.GOES_18,
+            dest_path,
+        )
 
-        try:
-            # Use the base download_file method
-            downloaded_path = await self.store.download_file(
-                self.radc_test_date,
-                SatellitePattern.GOES_18,
-                dest_path,
-            )
-
-            # Verify file exists and has content
-            assert downloaded_path.exists()
-            assert downloaded_path.stat().st_size > 0
-        except Exception:
-            # Re-raise for test failure
-            raise
+        # Verify download was attempted
+        self.s3_client_mock.download_file.assert_called_once()
+        assert downloaded_path == dest_path
 
 
 # Mock tests that simulate real S3 responses but don't actually access S3

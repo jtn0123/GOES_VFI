@@ -88,47 +88,53 @@ class TestAllGUIElementsV2:
         """
         elements = {
             "buttons": [
-                MagicMock(spec=QPushButton, objectName="start_button"),
-                MagicMock(spec=QPushButton, objectName="stop_button"),
-                MagicMock(spec=QPushButton, objectName="browse_button"),
-                MagicMock(spec=SuperButton, objectName="super_button"),
+                MagicMock(spec=QPushButton),
+                MagicMock(spec=QPushButton),
+                MagicMock(spec=QPushButton),
+                MagicMock(spec=SuperButton),
             ],
             "checkboxes": [
-                MagicMock(spec=QCheckBox, objectName="enable_preview"),
-                MagicMock(spec=QCheckBox, objectName="auto_save"),
-                MagicMock(spec=QCheckBox, objectName="debug_mode"),
+                MagicMock(spec=QCheckBox),
+                MagicMock(spec=QCheckBox),
+                MagicMock(spec=QCheckBox),
             ],
             "combos": [
-                MagicMock(objectName="model_selector"),
-                MagicMock(objectName="quality_preset"),
-                MagicMock(objectName="output_format"),
+                MagicMock(),
+                MagicMock(),
+                MagicMock(),
             ],
         }
 
         # Configure mock behaviors
-        for button in elements["buttons"]:
+        button_names = ["start_button", "stop_button", "browse_button", "super_button"]
+        for i, button in enumerate(elements["buttons"]):
             button.isEnabled.return_value = True
             button.isVisible.return_value = True
-            button.text.return_value = f"Mock {button.objectName}"
+            button.objectName.return_value = button_names[i]
+            button.text.return_value = f"Mock {button_names[i]}"
             button.click = MagicMock()
 
-        for checkbox in elements["checkboxes"]:
+        checkbox_names = ["enable_preview", "auto_save", "debug_mode"]
+        for i, checkbox in enumerate(elements["checkboxes"]):
             checkbox.isEnabled.return_value = True
             checkbox.isVisible.return_value = True
+            checkbox.objectName.return_value = checkbox_names[i]
             checkbox.isChecked.return_value = False
             checkbox.setChecked = MagicMock()
 
-        for combo in elements["combos"]:
+        combo_names = ["model_selector", "quality_preset", "output_format"]
+        for i, combo in enumerate(elements["combos"]):
             combo.isEnabled.return_value = True
             combo.isVisible.return_value = True
+            combo.objectName.return_value = combo_names[i]
             combo.currentText.return_value = "Default"
             combo.setCurrentText = MagicMock()
 
         return elements
 
     @pytest.mark.parametrize("element_type", ["buttons", "checkboxes", "combos"])
-    @staticmethod
     def test_gui_element_basic_functionality(
+        self,
         shared_app: QApplication,  # noqa: ARG004
         mock_main_window: MainWindow,
         mock_ui_elements: dict[str, list[Any]],
@@ -283,8 +289,8 @@ class TestAllGUIElementsV2:
     @pytest.mark.parametrize(
         "tab_name", ["main_tab", "preview_tab", "batch_processing_tab", "operation_history_tab", "integrity_check_tab"]
     )
-    @staticmethod
     def test_tab_specific_elements(
+        self,
         shared_app: QApplication,  # noqa: ARG004
         mock_main_window: MainWindow,
         mock_ui_elements: dict[str, list[Any]],

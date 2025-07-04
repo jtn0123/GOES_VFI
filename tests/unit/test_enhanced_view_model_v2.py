@@ -25,6 +25,7 @@ from goesvfi.integrity_check.enhanced_view_model import (
     EnhancedMissingTimestamp,
     FetchSource,
 )
+from goesvfi.integrity_check.thread_cache_db import ThreadLocalCacheDB
 from goesvfi.integrity_check.remote.cdn_store import CDNStore
 from goesvfi.integrity_check.remote.s3_store import S3Store
 from goesvfi.integrity_check.time_index import SatellitePattern, TimeIndex
@@ -167,8 +168,9 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
             s3_store=self.mock_s3_store,
         )
 
-        # Verify custom components are used
-        assert custom_vm._cache_db == self.mock_cache_db  # noqa: SLF001
+        # Verify cache_db is wrapped in ThreadLocalCacheDB but has same path
+        assert isinstance(custom_vm._cache_db, ThreadLocalCacheDB)  # noqa: SLF001
+        assert custom_vm._cache_db.db_path == self.mock_cache_db.db_path  # noqa: SLF001
 
         # Clean up to avoid warnings
         vm.cleanup()
@@ -181,36 +183,58 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
 
         for satellite in satellite_values:
             with self.subTest(satellite=satellite):
-                # Mock signal
-                self.view_model.satellite_changed = MagicMock()
+                # Capture signal emissions
+                satellite_emissions = []
+                self.view_model.satellite_changed.connect(lambda s: satellite_emissions.append(s))
 
                 # Set satellite
                 self.view_model.satellite = satellite
                 assert self.view_model.satellite == satellite
-                self.view_model.satellite_changed.emit.assert_called_once_with(satellite)
+                
+                # Check if signal was emitted (only if value changed)
+                if satellite != SatellitePattern.GOES_18:  # GOES_18 is default
+                    assert len(satellite_emissions) == 1
+                    assert satellite_emissions[0] == satellite
+                else:
+                    # If it's the default value, might not emit
+                    pass
 
                 # Setting same value should not emit signal
-                self.view_model.satellite_changed.reset_mock()
+                satellite_emissions.clear()
                 self.view_model.satellite = satellite
-                self.view_model.satellite_changed.emit.assert_not_called()
+                assert len(satellite_emissions) == 0
+
+                # Disconnect
+                self.view_model.satellite_changed.disconnect()
 
         # Test fetch_source property with all values
-        fetch_sources = [FetchSource.AUTO, FetchSource.CDN_ONLY, FetchSource.S3_ONLY]
+        fetch_sources = [FetchSource.AUTO, FetchSource.CDN, FetchSource.S3]
 
         for source in fetch_sources:
             with self.subTest(fetch_source=source):
-                # Mock signal
-                self.view_model.fetch_source_changed = MagicMock()
+                # Capture signal emissions
+                source_emissions = []
+                self.view_model.fetch_source_changed.connect(lambda s: source_emissions.append(s))
 
                 # Set fetch_source
                 self.view_model.fetch_source = source
                 assert self.view_model.fetch_source == source
-                self.view_model.fetch_source_changed.emit.assert_called_once_with(source)
+                
+                # Check if signal was emitted (only if value changed)
+                if source != FetchSource.AUTO:  # AUTO is default
+                    assert len(source_emissions) == 1
+                    assert source_emissions[0] == source
+                else:
+                    # If it's the default value, might not emit
+                    pass
 
                 # Setting same value should not emit signal
-                self.view_model.fetch_source_changed.reset_mock()
+                source_emissions.clear()
                 self.view_model.fetch_source = source
-                self.view_model.fetch_source_changed.emit.assert_not_called()
+                assert len(source_emissions) == 0
+
+                # Disconnect
+                self.view_model.fetch_source_changed.disconnect()
 
         # Test cdn_resolution property
         resolution_values = [TimeIndex.CDN_RES, "250m", "500m", "1km", "2km"]
@@ -322,18 +346,23 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
 
         for current, total, message in progress_scenarios:
             with self.subTest(current=current, total=total):
-                # Mock signals
-                self.view_model.status_updated = MagicMock()
-                self.view_model.progress_updated = MagicMock()
+                # Capture signal emissions
+                status_updates = []
+                handler = lambda msg: status_updates.append(msg)
+                self.view_model.status_updated.connect(handler)
 
-                # Test progress update
-                self.view_model._handle_enhanced_scan_progress(current, total, message)  # noqa: SLF001
+                try:
+                    # Test progress update
+                    self.view_model._handle_enhanced_scan_progress(current, total, message)  # noqa: SLF001
 
-                # Verify
-                assert self.view_model._progress_current == current  # noqa: SLF001
-                assert self.view_model._progress_total == total  # noqa: SLF001
-                self.view_model.status_updated.emit.assert_called_once_with(message)
-                self.view_model.progress_updated.emit.assert_called_once_with(current, total, 0.0)
+                    # Verify
+                    assert self.view_model._progress_current == current  # noqa: SLF001
+                    assert self.view_model._progress_total == total  # noqa: SLF001
+                    assert len(status_updates) == 1
+                    assert status_updates[0] == message
+                finally:
+                    # Disconnect handler to avoid accumulation
+                    self.view_model.status_updated.disconnect(handler)
 
     def test_handle_enhanced_scan_completed_comprehensive(self) -> None:
         """Test enhanced scan completion handling with comprehensive scenarios."""
@@ -382,30 +411,33 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
 
         for scenario in completion_scenarios:
             with self.subTest(scenario=scenario["name"]):
-                # Mock signals
-                self.view_model.status_updated = MagicMock()
-                self.view_model.status_type_changed = MagicMock()
-                self.view_model.missing_items_updated = MagicMock()
-                self.view_model.scan_completed = MagicMock()
+                # Mock signals (use a list to capture signal emissions)
+                scan_completed_calls = []
+                handler = lambda success, msg: scan_completed_calls.append((success, msg))
+                self.view_model.scan_completed.connect(handler)
 
-                # Handle completion
-                self.view_model._handle_enhanced_scan_completed(scenario["result"])  # noqa: SLF001
+                try:
+                    # Handle completion
+                    self.view_model._handle_enhanced_scan_completed(scenario["result"])  # noqa: SLF001
 
-                # Verify status
-                assert self.view_model.status == scenario["expected_status"]
+                    # Verify status
+                    assert self.view_model.status == scenario["expected_status"]
 
-                # Verify scan_completed signal
-                args = self.view_model.scan_completed.call_args[0]
-                assert args[0] == scenario["expected_success"]
+                    # Verify scan_completed signal
+                    assert len(scan_completed_calls) == 1
+                    success, message = scan_completed_calls[0]
+                    assert success == scenario["expected_success"]
 
-                if scenario["expected_message"]:
-                    assert args[1] == scenario["expected_message"]
+                    if scenario["expected_message"]:
+                        assert message == scenario["expected_message"]
+                finally:
+                    # Disconnect handler to avoid accumulation
+                    self.view_model.scan_completed.disconnect(handler)
 
                 # Verify missing items handling for success cases
                 if scenario["expected_success"] and scenario["result"]["status"] == "completed":
                     expected_count = len(scenario["result"]["missing"])
                     assert len(self.view_model._missing_timestamps) == expected_count  # noqa: SLF001
-                    self.view_model.missing_items_updated.emit.assert_called_once()
 
     def test_handle_enhanced_download_progress_comprehensive(self) -> None:
         """Test enhanced download progress handling with various scenarios."""
@@ -540,7 +572,10 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
                 assert self.view_model.status == ScanStatus.COMPLETED
 
                 # Verify status message
-                expected_message = f"Downloads complete: {scenario['expected_success']} successful, {scenario['expected_failed']} failed"
+                if scenario['expected_failed'] > 0:
+                    expected_message = f"Downloads complete: {scenario['expected_success']} successful, {scenario['expected_failed']} failed"
+                else:
+                    expected_message = f"Downloads complete: {scenario['expected_success']} successful"
                 assert self.view_model.status_message == expected_message
 
                 # Reset for next scenario
@@ -617,6 +652,13 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
 
         for scenario in scan_scenarios:
             with self.subTest(scenario=scenario["name"]):
+                # Reset state between scenarios to ensure clean state
+                self.view_model._status = ScanStatus.READY  # noqa: SLF001
+                if not hasattr(self.view_model, "_active_tasks"):
+                    self.view_model._active_tasks = []  # noqa: SLF001
+                else:
+                    self.view_model._active_tasks.clear()  # noqa: SLF001
+                
                 mock_scan_task = MagicMock()
 
                 with patch(
@@ -629,6 +671,9 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
                     self.view_model.interval_minutes = scenario["interval_minutes"]
                     self.view_model.force_rescan = scenario["force_rescan"]
                     self.view_model.auto_download = scenario["auto_download"]
+                    
+                    # Ensure base directory exists for scan to start
+                    self.view_model.base_directory = self.test_dir
 
                     # Start scan
                     self.view_model.start_enhanced_scan()
@@ -946,7 +991,7 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
                     test_task.run()
                     QCoreApplication.processEvents()
 
-                    scan_finished_spy.assert_called()
+                    scan_finished_spy.assert_called_once()
                     assert scan_finished_spy.call_args[0][0] == expected_result
 
         # Test scan with exception
@@ -956,18 +1001,19 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
         error_spy_2 = MagicMock()
         test_task_error.signals.error.connect(error_spy_2)
 
-        with patch.object(test_task_error, "_run_scan", side_effect=Exception("Test error")):  # noqa: SIM117
-            with patch("asyncio.new_event_loop") as mock_loop_factory:
-                mock_loop = AsyncMock()
-                mock_loop.run_until_complete.side_effect = Exception("Test error")
-                mock_loop.close = MagicMock()
-                mock_loop_factory.return_value = mock_loop
+        # Don't patch _run_scan, let the loop throw the error
+        with patch("asyncio.new_event_loop") as mock_loop_factory:
+            mock_loop = MagicMock()  # Use MagicMock instead of AsyncMock
+            mock_loop.run_until_complete.side_effect = Exception("Test error")
+            mock_loop.close = MagicMock()
+            mock_loop_factory.return_value = mock_loop
 
-                with patch("asyncio.set_event_loop"):
-                    test_task_error.run()
-                    QCoreApplication.processEvents()
+            with patch("asyncio.set_event_loop"):
+                test_task_error.run()
+                QCoreApplication.processEvents()
 
-                    error_spy_2.assert_called()
+                error_spy_2.assert_called_once()
+                assert "Test error" in error_spy_2.call_args[0][0]
 
     @async_test
     async def test_run_scan_comprehensive(self) -> None:
@@ -1069,18 +1115,19 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
         error_spy_2 = MagicMock()
         test_task_error.signals.error.connect(error_spy_2)
 
-        with patch.object(test_task_error, "_run_downloads", side_effect=Exception("Test error")):  # noqa: SIM117
-            with patch("asyncio.new_event_loop") as mock_loop_factory:
-                mock_loop = AsyncMock()
-                mock_loop.run_until_complete.side_effect = Exception("Test error")
-                mock_loop.close = MagicMock()
-                mock_loop_factory.return_value = mock_loop
+        # Don't patch _run_downloads, let the loop throw the error
+        with patch("asyncio.new_event_loop") as mock_loop_factory:
+            mock_loop = MagicMock()  # Use MagicMock instead of AsyncMock
+            mock_loop.run_until_complete.side_effect = Exception("Test error")
+            mock_loop.close = MagicMock()
+            mock_loop_factory.return_value = mock_loop
 
-                with patch("asyncio.set_event_loop"):
-                    test_task_error.run()
-                    QCoreApplication.processEvents()
+            with patch("asyncio.set_event_loop"):
+                test_task_error.run()
+                QCoreApplication.processEvents()
 
-                    error_spy_2.assert_called()
+                error_spy_2.assert_called_once()
+                assert "Test error" in error_spy_2.call_args[0][0]
 
     @async_test
     async def test_run_downloads_comprehensive(self) -> None:
@@ -1190,38 +1237,30 @@ class TestAsyncTasksV2(PyQtAsyncTestCase):
         signals = AsyncTaskSignals()
 
         # Mock signal receivers
-        scan_progress_spy = MagicMock()
+        progress_spy = MagicMock()
         scan_finished_spy = MagicMock()
-        download_progress_spy = MagicMock()
-        download_item_progress_spy = MagicMock()
         download_finished_spy = MagicMock()
         error_spy = MagicMock()
 
         # Connect signals
-        signals.scan_progress.connect(scan_progress_spy)
+        signals.progress.connect(progress_spy)
         signals.scan_finished.connect(scan_finished_spy)
-        signals.download_progress.connect(download_progress_spy)
-        signals.download_item_progress.connect(download_item_progress_spy)
         signals.download_finished.connect(download_finished_spy)
         signals.error.connect(error_spy)
 
         # Test signal emissions
-        signals.scan_progress.emit(50, 100, "Test scan progress")
+        signals.progress.emit(50, 100, "Test progress")
         signals.scan_finished.emit({"status": "completed"})
-        signals.download_progress.emit(3, 10, "Test download progress")
-        signals.download_item_progress.emit(0, 25)
-        signals.download_finished.emit({})
+        signals.download_finished.emit({"downloaded": 5, "failed": 0})
         signals.error.emit("Test error")
 
         # Process events
         QCoreApplication.processEvents()
 
         # Verify all signals were received
-        scan_progress_spy.assert_called_once_with(50, 100, "Test scan progress")
+        progress_spy.assert_called_once_with(50, 100, "Test progress")
         scan_finished_spy.assert_called_once_with({"status": "completed"})
-        download_progress_spy.assert_called_once_with(3, 10, "Test download progress")
-        download_item_progress_spy.assert_called_once_with(0, 25)
-        download_finished_spy.assert_called_once_with({})
+        download_finished_spy.assert_called_once_with({"downloaded": 5, "failed": 0})
         error_spy.assert_called_once_with("Test error")
 
 

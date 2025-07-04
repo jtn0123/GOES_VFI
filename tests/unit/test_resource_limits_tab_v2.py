@@ -11,23 +11,24 @@ from PyQt6.QtWidgets import QApplication
 import pytest
 
 
-# Optimized stub implementation with session-scoped fixture
-@pytest.fixture(scope="session", autouse=True)
+# Optimized stub implementation with function-scoped fixture
+@pytest.fixture(autouse=True)
 def stub_resource_manager(monkeypatch) -> Any:  # noqa: ANN001
     """Provide a minimal goesvfi.utils.resource_manager module for testing.
 
     Yields:
         None: This fixture provides a module stub for the test session.
     """
-    module = ModuleType("goesvfi.utils.resource_manager")
+    module = ModuleType("goesvfi.pipeline.resource_manager")
 
     @dataclass
     class ResourceLimits:
-        max_memory_mb: int | None = None
-        max_cpu_percent: int | None = None
-        max_processing_time_sec: int | None = None
-        max_open_files: int | None = None
-        enable_swap_limit: bool = True
+        max_workers: int = 2
+        max_memory_mb: int = 4096
+        max_cpu_percent: float = 80.0
+        chunk_size_mb: int = 100
+        warn_memory_percent: float = 75.0
+        critical_memory_percent: float = 90.0
 
     class ResourceMonitor:
         def __init__(self, limits: ResourceLimits, check_interval: float = 1.0) -> None:  # noqa: ARG002
@@ -56,15 +57,23 @@ def stub_resource_manager(monkeypatch) -> Any:  # noqa: ANN001
             "disk": {"total_gb": 256, "free_gb": 128, "percent_used": 50.0},
         }
 
+    def get_resource_manager() -> ResourceMonitor:
+        return ResourceMonitor(ResourceLimits())
+
+    def managed_executor(*args: Any, **kwargs: Any) -> Any:
+        return None
+
     module.ResourceLimits = ResourceLimits  # type: ignore[attr-defined]
     module.ResourceMonitor = ResourceMonitor  # type: ignore[attr-defined]
     module.get_system_resource_info = get_system_resource_info  # type: ignore[attr-defined]
+    module.get_resource_manager = get_resource_manager  # type: ignore[attr-defined]
+    module.managed_executor = managed_executor  # type: ignore[attr-defined]
 
-    monkeypatch.setitem(sys.modules, "goesvfi.utils.resource_manager", module)
+    monkeypatch.setitem(sys.modules, "goesvfi.pipeline.resource_manager", module)
 
     yield
 
-    monkeypatch.delitem(sys.modules, "goesvfi.utils.resource_manager", raising=False)
+    monkeypatch.delitem(sys.modules, "goesvfi.pipeline.resource_manager", raising=False)
 
 
 @pytest.fixture()
@@ -119,16 +128,16 @@ class TestResourceLimitsTab:
         "limit_config",
         [
             {
-                "memory": {"enabled": True, "value": 1024, "expected_attr": "max_memory_mb"},
-                "time": {"enabled": False, "value": 600, "expected_attr": "max_processing_time_sec"},
+                "memory": {"enabled": True, "value": 1024},
+                "cpu": {"enabled": False, "value": 50},
             },
             {
-                "memory": {"enabled": True, "value": 2048, "expected_attr": "max_memory_mb"},
-                "time": {"enabled": True, "value": 300, "expected_attr": "max_processing_time_sec"},
+                "memory": {"enabled": True, "value": 2048},
+                "cpu": {"enabled": True, "value": 90},
             },
             {
-                "memory": {"enabled": False, "value": 512, "expected_attr": "max_memory_mb"},
-                "time": {"enabled": True, "value": 900, "expected_attr": "max_processing_time_sec"},
+                "memory": {"enabled": False, "value": 512},
+                "cpu": {"enabled": True, "value": 60},
             },
         ],
     )
@@ -144,24 +153,24 @@ class TestResourceLimitsTab:
             resource_tab.memory_limit_spinbox.setValue(memory_config["value"])
         QApplication.processEvents()
 
-        # Configure time limit
-        time_config = limit_config["time"]
-        resource_tab.time_limit_checkbox.setChecked(time_config["enabled"])
-        if time_config["enabled"]:
-            resource_tab.time_limit_spinbox.setValue(time_config["value"])
+        # Configure CPU limit
+        cpu_config = limit_config["cpu"]
+        resource_tab.cpu_limit_checkbox.setChecked(cpu_config["enabled"])
+        if cpu_config["enabled"]:
+            resource_tab.cpu_limit_spinbox.setValue(cpu_config["value"])
         QApplication.processEvents()
 
         # Verify last emitted signal has correct values
         assert len(emitted_limits) > 0
         last_limits = emitted_limits[-1]
 
-        # Check memory limit
-        expected_memory = memory_config["value"] if memory_config["enabled"] else None
-        assert getattr(last_limits, memory_config["expected_attr"]) == expected_memory
+        # Check memory limit (defaults to 4096 when disabled)
+        expected_memory = memory_config["value"] if memory_config["enabled"] else 4096
+        assert last_limits.max_memory_mb == expected_memory
 
-        # Check time limit
-        expected_time = time_config["value"] if time_config["enabled"] else None
-        assert getattr(last_limits, time_config["expected_attr"]) == expected_time
+        # Check CPU limit (defaults to 80.0 when disabled)
+        expected_cpu = float(cpu_config["value"]) if cpu_config["enabled"] else 80.0
+        assert last_limits.max_cpu_percent == expected_cpu
 
     def test_limit_workflow_sequence(self, resource_tab: Any) -> None:  # noqa: PLR6301
         """Test complete workflow of enabling, configuring, and disabling limits."""
@@ -175,29 +184,29 @@ class TestResourceLimitsTab:
 
         current_limits = emitted_limits[-1]
         assert current_limits.max_memory_mb == 1024
-        assert current_limits.max_processing_time_sec is None
+        assert current_limits.max_cpu_percent == 80.0  # default
 
-        # Step 2: Enable processing time limit
-        resource_tab.time_limit_checkbox.setChecked(True)
-        resource_tab.time_limit_spinbox.setValue(600)
+        # Step 2: Enable CPU limit
+        resource_tab.cpu_limit_checkbox.setChecked(True)
+        resource_tab.cpu_limit_spinbox.setValue(60)
         QApplication.processEvents()
 
         current_limits = emitted_limits[-1]
         assert current_limits.max_memory_mb == 1024
-        assert current_limits.max_processing_time_sec == 600
+        assert current_limits.max_cpu_percent == 60.0
 
-        # Step 3: Disable memory limit (time remains enabled)
+        # Step 3: Disable memory limit (CPU remains enabled)
         resource_tab.memory_limit_checkbox.setChecked(False)
         QApplication.processEvents()
 
         current_limits = emitted_limits[-1]
-        assert current_limits.max_memory_mb is None
-        assert current_limits.max_processing_time_sec == 600
+        assert current_limits.max_memory_mb == 4096  # default
+        assert current_limits.max_cpu_percent == 60.0
 
-        # Step 4: Disable time limit (all limits disabled)
-        resource_tab.time_limit_checkbox.setChecked(False)
+        # Step 4: Disable CPU limit (all limits back to defaults)
+        resource_tab.cpu_limit_checkbox.setChecked(False)
         QApplication.processEvents()
 
         current_limits = emitted_limits[-1]
-        assert current_limits.max_memory_mb is None
-        assert current_limits.max_processing_time_sec is None
+        assert current_limits.max_memory_mb == 4096  # default
+        assert current_limits.max_cpu_percent == 80.0  # default

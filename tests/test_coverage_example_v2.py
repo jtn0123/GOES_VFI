@@ -102,7 +102,7 @@ class TestCoverageExampleV2:
         [
             ("hello", True, "HELLO"),  # Normal case, flag=True
             ("hello", False, "hello"),  # Normal case, flag=False
-            ("verylongstring", True, "VERYLONGS..."),  # Long string, flag=True, truncated
+            ("verylongstring", True, "VERYLONGST..."),  # Long string, flag=True, truncated
             ("hi", False, "hi___"),  # Short string, flag=False, padded
             ("test", True, "TEST"),  # Medium string, flag=True
             ("a", False, "a____"),  # Single char, flag=False
@@ -112,7 +112,7 @@ class TestCoverageExampleV2:
     )
     def test_complex_function_comprehensive(self, value, flag, expected) -> None:
         """Test complex function with comprehensive branch coverage."""
-        result = complex_function(value, flag)
+        result = complex_function(value, flag=flag)
         assert result == expected
 
     def test_complex_function_error_cases(self) -> None:
@@ -221,15 +221,15 @@ class TestCoverageExampleV2:
 
         # Test complex_function boundary conditions
         # Exactly 10 characters with flag=True
-        result = complex_function("1234567890", True)
+        result = complex_function("1234567890", flag=True)
         assert result == "1234567890"  # No truncation
 
         # 11 characters with flag=True (should truncate)
-        result = complex_function("12345678901", True)
+        result = complex_function("12345678901", flag=True)
         assert result == "1234567890..."
 
         # Exactly 5 characters with flag=False
-        result = complex_function("12345", False)
+        result = complex_function("12345", flag=False)
         assert result == "12345"  # No padding
 
     def test_performance_and_caching_efficiency(self, example_instance) -> None:
@@ -257,7 +257,7 @@ class TestCoverageExampleV2:
         # Test various scenarios in sequence
         test_scenarios = [
             ("short", False, "short"),
-            ("verylongstringtest", True, "VERYLONGS..."),
+            ("verylongstringtest", True, "VERYLONGST..."),
             ("med", False, "med__"),
             ("UPPER", True, "UPPER"),
             ("", True, "ValueError"),  # Error case
@@ -269,9 +269,9 @@ class TestCoverageExampleV2:
             try:
                 if expected_result == "ValueError":
                     with pytest.raises(ValueError):
-                        complex_function(value, flag)
+                        complex_function(value, flag=flag)
                 else:
-                    result = complex_function(value, flag)
+                    result = complex_function(value, flag=flag)
                     assert result == expected_result
 
                     # Also test with processor

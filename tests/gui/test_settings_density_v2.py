@@ -145,9 +145,8 @@ class TestUIDatensityFunctionalityV2:
             ("2", 4),  # Very Spacious
         ],
     )
-    @staticmethod
     def test_density_scale_config_integration(
-        mock_settings_tab: Any, mock_config: Any, config_density: str, expected_index: int
+        self, mock_settings_tab: Any, mock_config: Any, config_density: str, expected_index: int
     ) -> None:
         """Test that density scale properly integrates with config system."""
         # Configure mock config
@@ -231,8 +230,7 @@ class TestUIDatensityFunctionalityV2:
             (4, "2"),  # Very Spacious
         ],
     )
-    @staticmethod
-    def test_density_mapping_correctness(mock_settings_tab: Any, combo_index: int, expected_config_value: str) -> None:
+    def test_density_mapping_correctness(self, mock_settings_tab: Any, combo_index: int, expected_config_value: str) -> None:
         """Test that the density mapping between UI and config is correct."""
 
         # Mock the mapping behavior
@@ -332,8 +330,7 @@ class TestUIDatensityFunctionalityV2:
         assert settings["theme"]["density_scale"] == "0"
 
     @pytest.mark.parametrize("test_density", ["0", "-1", "-2", "1", "2"])
-    @staticmethod
-    def test_density_persistence_on_reload(mock_settings_tab: Any, mock_config: Any, test_density: str) -> None:
+    def test_density_persistence_on_reload(self, mock_settings_tab: Any, mock_config: Any, test_density: str) -> None:
         """Test that density settings persist when reloading settings."""
         # Configure mock config to return test density
         mock_config.get_theme_density_scale.return_value = test_density
@@ -374,9 +371,8 @@ class TestUIDatensityFunctionalityV2:
             ("-99", 0),
         ],
     )
-    @staticmethod
     def test_density_edge_cases(
-        mock_settings_tab: Any, mock_config: Any, invalid_density: Any, expected_fallback: str
+        self, mock_settings_tab: Any, mock_config: Any, invalid_density: Any, expected_fallback: str
     ) -> None:
         """Test edge cases for density functionality."""
         # Configure mock config with invalid density
@@ -409,9 +405,8 @@ class TestUIDatensityFunctionalityV2:
             ("", False),
         ],
     )
-    @staticmethod
     def test_density_validation_in_theme_manager(
-        mock_theme_manager: Any, density_value: Any, *, is_valid: bool
+        self, mock_theme_manager: Any, density_value: Any, *, is_valid: bool
     ) -> None:
         """Test that ThemeManager validates density scale values properly."""
 

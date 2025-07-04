@@ -566,9 +566,8 @@ class TestRealS3PathOptimizedV2:
     @pytest.mark.parametrize(
         "product_type,schedule", [("RadF", RADF_MINUTES), ("RadC", RADC_MINUTES), ("RadM", RADM_MINUTES)]
     )
-    @staticmethod
-    def test_product_schedule_alignment(
-        s3_path_test_components: dict[str, Any], product_type: str, schedule: list[int]
+    def test_product_schedule_alignment(  # noqa: PLR6301
+        self, s3_path_test_components: dict[str, Any], product_type: str, schedule: list[int]
     ) -> None:
         """Test that product types align with their schedules."""
         manager = s3_path_test_components["manager"]

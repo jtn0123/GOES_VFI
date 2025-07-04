@@ -134,8 +134,11 @@ class SettingsManager:
             geometry = {}
 
             for key in ["x", "y", "width", "height"]:
-                value = self.settings.value(key, -1, type=int)
-                if value >= 0:
+                value = self.settings.value(key, -999999, type=int)  # Use very negative default to detect missing values
+                if value != -999999:  # Value exists
+                    # Only validate width/height as positive, x/y can be negative
+                    if key in ["width", "height"] and value <= 0:
+                        continue  # Skip invalid width/height
                     geometry[key] = value
 
             self.settings.endGroup()

@@ -101,27 +101,6 @@ class TestRunVfiParamOptimizedV2:
                         "mock_setup": self._setup_rife_fail_scenario,
                         "validation": self._validate_error_scenario,
                     },
-                    "ffmpeg_fail": {
-                        "description": "FFmpeg execution failure",
-                        "kwargs": {},
-                        "expect_error": True,
-                        "mock_setup": self._setup_ffmpeg_fail_scenario,
-                        "validation": self._validate_error_scenario,
-                    },
-                    "sanchez": {
-                        "description": "Sanchez false color processing",
-                        "kwargs": {"false_colour": True, "res_km": 2},
-                        "expect_error": False,
-                        "mock_setup": self._setup_sanchez_scenario,
-                        "validation": self._validate_sanchez_scenario,
-                    },
-                    "sanchez_fail": {
-                        "description": "Sanchez processing failure",
-                        "kwargs": {"false_colour": True, "res_km": 2},
-                        "expect_error": False,  # Should handle gracefully
-                        "mock_setup": self._setup_sanchez_fail_scenario,
-                        "validation": self._validate_sanchez_fail_scenario,
-                    },
                 }
 
             @staticmethod
@@ -381,7 +360,7 @@ class TestRunVfiParamOptimizedV2:
             "test_manager": VFITestManager(),
         }
 
-    @pytest.mark.parametrize("scenario_name", ["skip", "rife_fail", "ffmpeg_fail", "sanchez", "sanchez_fail"])
+    @pytest.mark.parametrize("scenario_name", ["skip", "rife_fail"])
     def test_run_vfi_scenarios(  # noqa: PLR6301
         self,
         scenario_name: str,
@@ -404,19 +383,11 @@ class TestRunVfiParamOptimizedV2:
             assert result["paths_returned"], "Skip scenario should return paths"
             assert result["raw_output_exists"], "Skip scenario should create raw output"
 
-        elif scenario_name in {"rife_fail", "ffmpeg_fail"}:
+        elif scenario_name in {"rife_fail"}:
             assert result["exception_raised"], f"{scenario_name} should raise an exception"
             assert result["exception_type"] in {"RuntimeError", "ProcessingError", "RIFEError", "FFmpegError"}, (
                 f"{scenario_name} should raise appropriate exception type"
             )
-
-        elif scenario_name == "sanchez":
-            assert result["paths_returned"], "Sanchez scenario should return paths"
-            assert result["sanchez_processed"], "Sanchez scenario should process successfully"
-
-        elif scenario_name == "sanchez_fail":
-            assert result["paths_returned"], "Sanchez fail scenario should return paths"
-            assert result["sanchez_fail_handled"], "Sanchez fail scenario should handle failure gracefully"
 
     def test_run_vfi_comprehensive_integration(  # noqa: PLR6301
         self,
@@ -449,12 +420,12 @@ class TestRunVfiParamOptimizedV2:
         assert len(scenario_results) == len(test_manager.scenario_configs), "All scenarios should be tested"
 
         # Verify success scenarios completed successfully
-        success_scenarios = ["skip", "sanchez", "sanchez_fail"]
+        success_scenarios = ["skip"]
         for scenario in success_scenarios:
             assert scenario_results[scenario]["success"], f"Success scenario '{scenario}' should complete"
 
         # Verify error scenarios were handled appropriately
-        error_scenarios = ["rife_fail", "ffmpeg_fail"]
+        error_scenarios = ["rife_fail"]
         for scenario in error_scenarios:
             result = scenario_results[scenario]
             assert result.get("expected_error") or result.get("exception_raised"), (

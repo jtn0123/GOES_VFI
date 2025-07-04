@@ -48,6 +48,9 @@ class FFmpegCommandBuilder:
         self._bitrate_kbps: int | None = None
         self._bufsize_kb: int | None = None
         self._pix_fmt: str | None = None
+        self._preset: str | None = None
+        self._tune: str | None = None
+        self._profile: str | None = None
         self._is_two_pass: bool = False
         self._pass_log_prefix: str | None = None
         self._pass_number: int | None = None
@@ -138,6 +141,42 @@ class FFmpegCommandBuilder:
         self._pix_fmt = pix_fmt  # pylint: disable=attribute-defined-outside-init
         return self
 
+    def set_preset(self, preset: str) -> FFmpegCommandBuilder:
+        """Set the encoding preset for the output video.
+
+        Args:
+            preset (str): Encoding preset (e.g., "slow", "medium", "fast").
+
+        Returns:
+            FFmpegCommandBuilder: The builder instance (for chaining).
+        """
+        self._preset = preset  # pylint: disable=attribute-defined-outside-init
+        return self
+
+    def set_tune(self, tune: str) -> FFmpegCommandBuilder:
+        """Set the encoding tune for the output video.
+
+        Args:
+            tune (str): Encoding tune (e.g., "animation", "film", "grain").
+
+        Returns:
+            FFmpegCommandBuilder: The builder instance (for chaining).
+        """
+        self._tune = tune  # pylint: disable=attribute-defined-outside-init
+        return self
+
+    def set_profile(self, profile: str) -> FFmpegCommandBuilder:
+        """Set the encoding profile for the output video.
+
+        Args:
+            profile (str): Encoding profile (e.g., "main", "main10", "high").
+
+        Returns:
+            FFmpegCommandBuilder: The builder instance (for chaining).
+        """
+        self._profile = profile  # pylint: disable=attribute-defined-outside-init
+        return self
+
     def set_two_pass(self, is_two_pass: bool, pass_log_prefix: str, pass_number: int) -> FFmpegCommandBuilder:
         """Configure two-pass encoding parameters.
 
@@ -193,6 +232,28 @@ class FFmpegCommandBuilder:
             str(self._output_path),
         ]
 
+    def _get_preset(self, default: str) -> str:
+        """Get the preset to use, with fallback to default.
+        
+        Args:
+            default (str): Default preset to use if none specified.
+            
+        Returns:
+            str: The preset to use.
+        """
+        return self._preset if self._preset is not None else default
+
+    def _add_tune_and_profile_args(self, cmd: list[str]) -> None:
+        """Add tune and profile arguments if set.
+        
+        Args:
+            cmd (list[str]): Command list to append to.
+        """
+        if self._tune is not None:
+            cmd.extend(["-tune", self._tune])
+        if self._profile is not None:
+            cmd.extend(["-profile:v", self._profile])
+
     def _add_encoder_specific_args(self, cmd: list[str]) -> None:
         """Add encoder-specific arguments to the command."""
         if self._encoder == "Software x265 (2-Pass)":
@@ -213,7 +274,7 @@ class FFmpegCommandBuilder:
         """Add arguments for x265 two-pass encoding."""
         self._validate_two_pass_parameters()
 
-        cmd.extend(["-c:v", "libx265", "-preset", "slower"])
+        cmd.extend(["-c:v", "libx265", "-preset", self._get_preset("slower")])
 
         if self._pass_number == 1:
             self._add_x265_pass1_args(cmd)
@@ -268,7 +329,8 @@ class FFmpegCommandBuilder:
             raise ValueError(msg)
 
         x265_params = "aq-mode=3:aq-strength=1.0:psy-rd=2.0:psy-rdoq=1.0"
-        cmd.extend(["-c:v", "libx265", "-preset", "slower", "-crf", str(self._crf)])
+        cmd.extend(["-c:v", "libx265", "-preset", self._get_preset("slower"), "-crf", str(self._crf)])
+        self._add_tune_and_profile_args(cmd)
         cmd.extend(["-x265-params", x265_params])
 
         args: list[str] = []
@@ -281,7 +343,8 @@ class FFmpegCommandBuilder:
             msg = "CRF must be set for x264."
             raise ValueError(msg)
 
-        cmd.extend(["-c:v", "libx264", "-preset", "slow", "-crf", str(self._crf)])
+        cmd.extend(["-c:v", "libx264", "-preset", self._get_preset("slow"), "-crf", str(self._crf)])
+        self._add_tune_and_profile_args(cmd)
 
         args: list[str] = []
         self._add_common_output_args(args)
@@ -326,9 +389,17 @@ class FFmpegCommandBuilder:
         safe_bufsize = max(1, self._bufsize_kb)
         return safe_bitrate, safe_bufsize
 
+    def _add_format_specific_args(self, args: list[str]) -> None:
+        """Add format-specific arguments based on output file extension."""
+        if self._output_path is not None:
+            output_ext = self._output_path.suffix.lower()
+            if output_ext == ".mp4":
+                args.extend(["-movflags", "+faststart"])
+
     def _add_common_output_args(self, args: list[str]) -> None:
-        """Add common output arguments (pixel format and output path)."""
+        """Add common output arguments (pixel format, format-specific options, and output path)."""
         if self._pix_fmt is not None:
             args.extend(["-pix_fmt", self._pix_fmt])
+        self._add_format_specific_args(args)
         if self._output_path is not None:
             args.append(str(self._output_path))

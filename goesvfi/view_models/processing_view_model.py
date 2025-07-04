@@ -293,8 +293,21 @@ class ProcessingViewModel(QObject):
         builder.set_encoder(ffmpeg_settings.get("encoder", "Software x264"))
         if "crf" in ffmpeg_settings:
             builder.set_crf(int(ffmpeg_settings["crf"]))
+        elif ffmpeg_settings.get("encoder", "Software x264") in ["Software x264", "Software x265"]:
+            # Set default CRF for software encoders if not specified
+            builder.set_crf(23)
         if "pix_fmt" in ffmpeg_settings:
             builder.set_pix_fmt(str(ffmpeg_settings["pix_fmt"]))
+        if "preset" in ffmpeg_settings:
+            builder.set_preset(str(ffmpeg_settings["preset"]))
+        if "tune" in ffmpeg_settings:
+            builder.set_tune(str(ffmpeg_settings["tune"]))
+        if "profile" in ffmpeg_settings:
+            builder.set_profile(str(ffmpeg_settings["profile"]))
+        if "bitrate_kbps" in ffmpeg_settings:
+            builder.set_bitrate(int(ffmpeg_settings["bitrate_kbps"]))
+        if "bufsize_kb" in ffmpeg_settings:
+            builder.set_bufsize(int(ffmpeg_settings["bufsize_kb"]))
         cmd = builder.build()
 
         filters: list[str] = []
@@ -308,5 +321,9 @@ class ProcessingViewModel(QObject):
             idx = cmd.index(str(output_path))
             cmd.insert(idx, "-filter:v")
             cmd.insert(idx + 1, ",".join(filters))
-        cmd.extend(["-framerate", str(fps)])
+        
+        # Add framerate before output path
+        idx = cmd.index(str(output_path))
+        cmd.insert(idx, "-framerate")
+        cmd.insert(idx + 1, str(fps))
         return cmd

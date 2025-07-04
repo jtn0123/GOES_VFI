@@ -151,7 +151,7 @@ class TestGlobalProcessPool(unittest.TestCase):
         future = pool.submit(failing_task, 5)
 
         # Should raise exception
-        with pytest.raises(ValueError, match="Task failed with input 42"):
+        with pytest.raises(ValueError, match="Task failed with input 5"):
             future.result(timeout=2)
 
         # Check stats
@@ -271,7 +271,7 @@ class TestGlobalProcessPool(unittest.TestCase):
 
         # Update configuration
         pool.set_config("max_tasks_per_child", 50)
-        pool.set_config("auto_scale", new=False)
+        pool.set_config("auto_scale", False)
 
         assert pool.get_config("max_tasks_per_child") == 50
         assert not pool.get_config("auto_scale")

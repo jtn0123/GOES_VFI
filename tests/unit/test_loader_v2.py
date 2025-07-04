@@ -71,19 +71,22 @@ class TestLoaderV2:
             ("case_variations", True),  # Should handle case insensitive
         ],
     )
-    @staticmethod
     def test_discover_frames_extension_filtering(
-        temp_dir_with_files: Path, shared_file_data: dict[str, list[str]], file_group: str, *, should_be_included: bool
+        self, tmp_path: Path, shared_file_data: dict[str, list[str]], file_group: str, *, should_be_included: bool
     ) -> None:
         """Test that only supported extensions are returned."""
-        result = loader.discover_frames(temp_dir_with_files)
-        result_filenames = [p.name for p in result]
-
+        # Create only the files for this specific test to avoid conflicts
         test_files = shared_file_data[file_group]
+        
+        for filename in test_files:
+            (tmp_path / filename).write_text("dummy content")
+        
+        result = loader.discover_frames(tmp_path)
+        result_filenames = [p.name for p in result]
 
         for filename in test_files:
             if should_be_included:
-                assert filename in result_filenames, f"Supported file {filename} should be included"
+                assert filename in result_filenames, f"Supported file {filename} should be included. Found: {result_filenames}"
             else:
                 assert filename not in result_filenames, f"Unsupported file {filename} should be excluded"
 

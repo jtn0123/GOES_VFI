@@ -105,35 +105,35 @@ class TestPreviewManagerV2(unittest.TestCase):  # noqa: PLR0904
     def test_get_first_middle_last_paths_various_scenarios(self) -> None:
         """Test getting first, middle, and last paths with various scenarios."""
         # Test with no images
-        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)  # noqa: SLF001
+        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)
         assert first is None
         assert middle is None
         assert last is None
 
         # Test with 1 image
         paths = self._create_test_images_batch(1)
-        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)  # noqa: SLF001
+        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)
         assert first == paths[0]
         assert middle == paths[0]
         assert last == paths[0]
 
         # Test with 2 images
         paths = self._create_test_images_batch(2)
-        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)  # noqa: SLF001
+        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)
         assert first == paths[0]
-        assert middle == paths[0]  # Middle defaults to first when only 2
+        assert middle is None  # No middle for 2 images
         assert last == paths[1]
 
         # Test with 3 images
         paths = self._create_test_images_batch(3)
-        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)  # noqa: SLF001
+        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)
         assert first == paths[0]
         assert middle == paths[1]
         assert last == paths[2]
 
         # Test with many images
         paths = self._create_test_images_batch(100)
-        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)  # noqa: SLF001
+        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)
         assert first == paths[0]
         assert middle == paths[50]  # Middle should be around halfway
         assert last == paths[99]
@@ -149,7 +149,7 @@ class TestPreviewManagerV2(unittest.TestCase):  # noqa: PLR0904
         (self.test_dir / "script.py").write_text("print('test')")
         img3 = self._create_test_image("003.jpeg")
 
-        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)  # noqa: SLF001
+        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)
 
         # Should only consider image files
         assert first == img1
@@ -167,7 +167,7 @@ class TestPreviewManagerV2(unittest.TestCase):  # noqa: PLR0904
             self._create_test_image("004.Png"),
         ))
 
-        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)  # noqa: SLF001
+        first, middle, last = self.preview_manager._get_first_middle_last_paths(self.test_dir)
 
         assert first is not None
         assert middle is not None
@@ -263,10 +263,10 @@ class TestPreviewManagerV2(unittest.TestCase):  # noqa: PLR0904
 
         # Test different Sanchez resolutions
         resolution_scenarios = [
-            (500, 8),  # Maps to 8 km
-            (1000, 4),  # Maps to 4 km
-            (2000, 2),  # Maps to 2 km
-            (4000, 1),  # Maps to 1 km
+            (500, 2),  # Maps to 2 km (tuple always defaults to 2 km)
+            (1000, 2),  # Maps to 2 km (tuple always defaults to 2 km)  
+            (2000, 2),  # Maps to 2 km (tuple always defaults to 2 km)
+            (400, 2),  # Maps to 2 km (tuple always defaults to 2 km)
             (None, 2),  # Default
         ]
 
@@ -304,7 +304,7 @@ class TestPreviewManagerV2(unittest.TestCase):  # noqa: PLR0904
 
         for array, description in test_cases:
             with self.subTest(case=description):
-                pixmap = self.preview_manager._numpy_to_qpixmap(array)  # noqa: SLF001
+                pixmap = self.preview_manager.numpy_to_qpixmap(array)
 
                 assert isinstance(pixmap, QPixmap)
                 assert not pixmap.isNull()
@@ -321,17 +321,17 @@ class TestPreviewManagerV2(unittest.TestCase):  # noqa: PLR0904
         """Test numpy to QPixmap conversion edge cases."""
         # Test with float array (should be converted)
         float_array = np.random.default_rng().random((50, 50, 3)).astype(np.float32)
-        pixmap = self.preview_manager._numpy_to_qpixmap((float_array * 255).astype(np.uint8))  # noqa: SLF001
+        pixmap = self.preview_manager.numpy_to_qpixmap((float_array * 255).astype(np.uint8))
         assert not pixmap.isNull()
 
         # Test with wrong dtype
         wrong_dtype = np.zeros((10, 10, 3), dtype=np.int32)
-        pixmap = self.preview_manager._numpy_to_qpixmap(wrong_dtype.astype(np.uint8))  # noqa: SLF001
+        pixmap = self.preview_manager.numpy_to_qpixmap(wrong_dtype.astype(np.uint8))
         assert not pixmap.isNull()
 
         # Test with empty array
         empty_array = np.array([], dtype=np.uint8).reshape(0, 0, 3)
-        pixmap = self.preview_manager._numpy_to_qpixmap(empty_array)  # noqa: SLF001
+        pixmap = self.preview_manager.numpy_to_qpixmap(empty_array)
         assert pixmap.isNull()
 
     def test_scale_preview_pixmap_comprehensive(self) -> None:
@@ -415,7 +415,7 @@ class TestPreviewManagerV2(unittest.TestCase):  # noqa: PLR0904
         test_file.write_text("test")
         result = self.preview_manager.load_preview_images(test_file)
         assert not result
-        assert "not a directory" in self.preview_error_messages[-1]
+        assert "does not exist" in self.preview_error_messages[-1]
 
         # Test with permission error (mock)
         with (

@@ -30,7 +30,7 @@ class LoggingErrorHandler(ErrorHandler):
     """Error handler that logs errors."""
 
     def __init__(self, logger: logging.Logger | None = None, log_level: int = logging.ERROR) -> None:
-        self.logger = logger or logging.getLogger(__name__)
+        self.logger = logger or logging.getLogger("goesvfi.error_handler")
         self.log_level = log_level
 
     def can_handle(self, _error: StructuredError) -> bool:
@@ -73,10 +73,20 @@ class ErrorHandlerChain:
         self.handlers.append(handler)
         return self
 
-    def handle_error(self, error: StructuredError) -> bool:
+    def handle_error(self, error: StructuredError | Exception) -> bool:
         """Process error through the handler chain.
+
+        Args:
+            error: Either a StructuredError or regular Exception
 
         Returns:
             True if error was handled, False otherwise
         """
-        return any(handler.can_handle(error) and handler.handle(error) for handler in self.handlers)
+        if isinstance(error, Exception) and not isinstance(error, StructuredError):
+            # Convert regular exception to StructuredError
+            from .classifier import default_classifier
+            structured_error = default_classifier.create_structured_error(error)
+        else:
+            structured_error = error
+
+        return any(handler.can_handle(structured_error) and handler.handle(structured_error) for handler in self.handlers)

@@ -311,8 +311,8 @@ class ReconcileManager(ConfigurableManager):
         if missing:
             await self.fetch_missing_files(
                 missing_timestamps=list(missing),
-                satellite=satellite,
-                destination_dir=directory,
+                _satellite=satellite,
+                _destination_dir=directory,
                 progress_callback=None,  # Don't pass through to avoid conflicting messages
             )
 

@@ -89,7 +89,8 @@ class TestConcurrentOperations:
             return mock_s3_client
 
         with patch("aioboto3.Session", return_value=mock_session):
-            store = S3Store()
+            # Disable connection pooling for this test to access _get_s3_client directly
+            store = S3Store(use_connection_pool=False)
             original_get_client = store._get_s3_client
 
             async def tracked_get_client():
@@ -448,7 +449,8 @@ class TestConcurrentOperations:
         _mock_s3_client, mock_session = mock_s3_components
 
         with patch("aioboto3.Session", return_value=mock_session):
-            store = S3Store()
+            # Disable connection pooling for this test to access _get_s3_client directly
+            store = S3Store(use_connection_pool=False)
 
             async def client_operation(client_id):
                 # Simulate getting client multiple times

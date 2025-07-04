@@ -83,13 +83,27 @@ class TestResourceTracker(unittest.TestCase):
         # Resource with cleanup method
         resource1 = MockResource("cleanup_method")
 
-        # Resource with close method
-        resource2 = MagicMock()
-        resource2.close = MagicMock()
+        # Resource with close method - create a simple class with close
+        class MockCloseableResource:
+            def __init__(self):
+                self.close_called = False
+            
+            def close(self):
+                self.close_called = True
+        
+        resource2 = MockCloseableResource()
 
-        # Resource with __exit__ method
-        resource3 = MagicMock()
-        resource3.__exit__ = MagicMock()
+        # Resource with __exit__ method - create a simple class with __exit__
+        class MockExitableResource:
+            def __init__(self):
+                self.exit_called = False
+                self.exit_args = None
+            
+            def __exit__(self, exc_type, exc_val, exc_tb):
+                self.exit_called = True
+                self.exit_args = (exc_type, exc_val, exc_tb)
+        
+        resource3 = MockExitableResource()
 
         tracker.track(resource1)
         tracker.track(resource2)
@@ -98,8 +112,9 @@ class TestResourceTracker(unittest.TestCase):
         tracker.cleanup_all()
 
         assert resource1.cleaned_up
-        resource2.close.assert_called_once()
-        resource3.__exit__.assert_called_once_with(None, None, None)
+        assert resource2.close_called
+        assert resource3.exit_called
+        assert resource3.exit_args == (None, None, None)
 
 
 class TestManagedResource(unittest.TestCase):
@@ -354,23 +369,35 @@ class TestMemoryMonitor(unittest.TestCase):
 
         assert monitor1 is monitor2
 
-    @patch("goesvfi.core.modern_resources.psutil")
-    def test_memory_usage_with_psutil(self, mock_psutil: Any) -> None:  # noqa: PLR6301
+    def test_memory_usage_with_psutil(self) -> None:  # noqa: PLR6301
         """Test memory usage with psutil available."""
-        # Mock psutil
+        # Mock psutil by patching the import within get_memory_usage
         mock_memory = MagicMock()
         mock_memory.total = 8000000000  # 8GB
         mock_memory.available = 4000000000  # 4GB
         mock_memory.percent = 50.0
         mock_memory.used = 4000000000
         mock_memory.free = 4000000000
-        mock_psutil.virtual_memory.return_value = mock_memory
+        
+        # Create a mock psutil module
+        mock_psutil_module = MagicMock()
+        mock_psutil_module.virtual_memory.return_value = mock_memory
+        
+        # Patch the import call within the method
+        import sys
+        original_import = __builtins__['__import__']
+        
+        def mock_import(name, *args, **kwargs):
+            if name == 'psutil':
+                return mock_psutil_module
+            return original_import(name, *args, **kwargs)
+        
+        with patch('builtins.__import__', side_effect=mock_import):
+            monitor = MemoryMonitor()
+            usage = monitor.get_memory_usage()
 
-        monitor = MemoryMonitor()
-        usage = monitor.get_memory_usage()
-
-        assert usage["total"] == 8000000000
-        assert usage["percent"] == 50.0
+            assert usage["total"] == 8000000000
+            assert usage["percent"] == 50.0
 
     def test_memory_usage_without_psutil(self) -> None:  # noqa: PLR6301
         """Test memory usage without psutil."""

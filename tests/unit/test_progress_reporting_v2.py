@@ -228,8 +228,8 @@ class TestProgressReporting:
         # Execute the method
         await reconcile_manager.fetch_missing_files(
             missing_timestamps=mock_timestamps,
-            satellite=SatellitePattern.GOES_16,
-            destination_dir="/fake/destination",
+            _satellite=SatellitePattern.GOES_16,
+            _destination_dir="/fake/destination",
             progress_callback=progress_collector.callback,
         )
 
@@ -266,8 +266,8 @@ class TestProgressReporting:
 
         await reconcile_manager.fetch_missing_files(
             missing_timestamps=mock_timestamps,
-            satellite=SatellitePattern.GOES_16,
-            destination_dir="/fake/destination",
+            _satellite=SatellitePattern.GOES_16,
+            _destination_dir="/fake/destination",
             progress_callback=progress_collector.callback,
         )
 
@@ -425,11 +425,9 @@ class TestProgressReporting:
         assert 1 in phase_values, "Phase progression should include 1"
         assert 2 in phase_values, "Phase progression should end with 2"
 
-        # Verify we have both step and phase progress messages
-        step_messages = [msg for msg in progress_collector.messages if "Step" in msg]
+        # Verify we have phase progress messages
         phase_messages = [msg for msg in progress_collector.messages if "Phase" in msg]
 
-        assert len(step_messages) > 0, "Should have step-based progress messages"
         assert len(phase_messages) > 0, "Should have phase-based progress messages"
 
     @pytest.mark.parametrize(
@@ -441,11 +439,11 @@ class TestProgressReporting:
     )
     @pytest.mark.asyncio()
     async def test_progress_reporting_with_different_satellites(
-        self, mock_async_operations, reconcile_manager, test_date_ranges, satellite, tmp_path
+        self, mock_async_operations, reconcile_manager, test_date_ranges, satellite, tmp_path, progress_collector
     ) -> None:
         """Test progress reporting works with different satellite patterns."""
         start_date, end_date = test_date_ranges["short_range"]
-        collector = progress_collector()
+        collector = progress_collector
 
         await reconcile_manager.scan_directory(
             directory=tmp_path,

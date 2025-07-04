@@ -51,10 +51,12 @@ class ItemPreviewWidget(QWidget):
         self.current_item = item
         # Update button states based on item
         if item:
-            # Enable download button for missing items
-            self.download_btn.setEnabled(not getattr(item, "is_downloaded", False))
+            # Enable download button for missing items (not downloaded and not downloading)
+            is_downloaded = getattr(item, "is_downloaded", False)
+            is_downloading = getattr(item, "is_downloading", False)
+            self.download_btn.setEnabled(not is_downloaded and not is_downloading)
             # Enable view button for downloaded items
-            self.view_btn.setEnabled(getattr(item, "is_downloaded", False))
+            self.view_btn.setEnabled(is_downloaded)
 
     def clear(self) -> None:
         """Clear the preview."""

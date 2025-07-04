@@ -137,9 +137,7 @@ class TestS3Band13OptimizedV2:
 
                 if scenario_name == "list_success":
                     # Mock successful listing
-                    with patch(
-                        "tests.unit.test_s3_band13_v2.S3Band13TestManager.mock_list_s3_objects_band13"
-                    ) as mock_list:
+                    with patch.object(self.__class__, "mock_list_s3_objects_band13") as mock_list:
                         mock_list.return_value = self.mock_s3_objects
 
                         result = await self.mock_list_s3_objects_band13(bucket, prefix, limit=5)
@@ -153,9 +151,7 @@ class TestS3Band13OptimizedV2:
 
                 elif scenario_name == "list_no_objects":
                     # Mock empty listing
-                    with patch(
-                        "tests.unit.test_s3_band13_v2.S3Band13TestManager.mock_list_s3_objects_band13"
-                    ) as mock_list:
+                    with patch.object(self.__class__, "mock_list_s3_objects_band13") as mock_list:
                         mock_list.return_value = []
 
                         result = await self.mock_list_s3_objects_band13(bucket, prefix, limit=5)
@@ -167,9 +163,7 @@ class TestS3Band13OptimizedV2:
                     # Test listing with different limits
                     limits = [1, 3, 5, 10]
                     for limit in limits:
-                        with patch(
-                            "tests.unit.test_s3_band13_v2.S3Band13TestManager.mock_list_s3_objects_band13"
-                        ) as mock_list:
+                        with patch.object(self.__class__, "mock_list_s3_objects_band13") as mock_list:
                             expected_results = (
                                 self.mock_s3_objects[:limit]
                                 if limit <= len(self.mock_s3_objects)
@@ -198,126 +192,110 @@ class TestS3Band13OptimizedV2:
                 product_type = "RadC"
 
                 if scenario_name == "download_mocked":
-                    # Test mocked download
-                    with patch("goesvfi.integrity_check.remote.s3_store.S3Store") as mock_s3_store_class:
+                    # Test mocked download - fully mock S3 operations
+                    test_filename = self.test_filenames["valid_band13"]
+                    test_file = self.create_test_file(tmp_path, test_filename)
+                    
+                    # Mock TimeIndex methods
+                    with (
+                        patch.object(TimeIndex, "get_s3_bucket") as mock_get_bucket,
+                        patch.object(TimeIndex, "find_nearest_intervals") as mock_find_nearest,
+                        patch.object(self.__class__, "mock_list_s3_objects_band13") as mock_list_objects,
+                    ):
+                        mock_get_bucket.return_value = "noaa-goes16"
+                        mock_find_nearest.return_value = [timestamp]
+                        mock_list_objects.return_value = [f"ABI-L1b-{product_type}/2023/166/12/{test_filename}"]
+
+                        # Fully mock S3Store for download scenario
                         mock_s3_store = self.create_mock_s3_store()
-                        mock_s3_store_class.return_value = mock_s3_store
+                        mock_s3_store.download = AsyncMock(return_value=test_file)
+                        mock_s3_store.close = AsyncMock(return_value=None)
 
-                        # Create test file
-                        test_filename = self.test_filenames["valid_band13"]
-                        test_file = self.create_test_file(tmp_path, test_filename)
-                        mock_s3_store.download.return_value = test_file
+                        # Get bucket name
+                        bucket = TimeIndex.get_s3_bucket(satellite_pattern)
 
-                        # Mock TimeIndex methods
-                        with (
-                            patch.object(TimeIndex, "get_s3_bucket") as mock_get_bucket,
-                            patch.object(TimeIndex, "find_nearest_intervals") as mock_find_nearest,
-                            patch(
-                                "tests.unit.test_s3_band13_v2.S3Band13TestManager.mock_list_s3_objects_band13"
-                            ) as mock_list_objects,
-                        ):
-                            mock_get_bucket.return_value = "noaa-goes16"
-                            mock_find_nearest.return_value = [timestamp]
-                            mock_list_objects.return_value = [f"ABI-L1b-{product_type}/2023/166/12/{test_filename}"]
+                        # Find nearest valid timestamps
+                        nearest_times = TimeIndex.find_nearest_intervals(timestamp, product_type)
+                        assert nearest_times, "Should find valid scan times"
 
-                            # Create S3 store
-                            s3_store = S3Store(timeout=60)
+                        # Convert date to DOY format
+                        year = timestamp.year
+                        doy = date_utils.date_to_doy(timestamp.date())
+                        doy_str = f"{doy:03d}"
+                        hour = timestamp.strftime("%H")
 
-                            try:
-                                # Get bucket name
-                                bucket = TimeIndex.get_s3_bucket(satellite_pattern)
+                        # List Band 13 objects
+                        prefix = f"ABI-L1b-{product_type}/{year}/{doy_str}/{hour}/"
+                        band13_keys = await mock_list_objects(bucket, prefix, limit=5)
 
-                                # Find nearest valid timestamps
-                                nearest_times = TimeIndex.find_nearest_intervals(timestamp, product_type)
-                                assert nearest_times, "Should find valid scan times"
+                        assert band13_keys, "Should find Band 13 files"
 
-                                # Convert date to DOY format
-                                year = timestamp.year
-                                doy = date_utils.date_to_doy(timestamp.date())
-                                doy_str = f"{doy:03d}"
-                                hour = timestamp.strftime("%H")
+                        # Download file using mocked store
+                        test_key = band13_keys[0]
+                        filename = test_key.split("/")[-1]
+                        dest_path = tmp_path / filename
 
-                                # List Band 13 objects
-                                prefix = f"ABI-L1b-{product_type}/{year}/{doy_str}/{hour}/"
-                                band13_keys = await mock_list_objects(bucket, prefix, limit=5)
+                        # Extract timestamp and download
+                        pattern = r"_s(\d{4})(\d{3})(\d{2})(\d{2})(\d{3})_"
+                        match = re.search(pattern, filename)
 
-                                assert band13_keys, "Should find Band 13 files"
+                        assert match, f"Should extract timestamp from filename: {filename}"
 
-                                # Download file
-                                test_key = band13_keys[0]
-                                filename = test_key.split("/")[-1]
-                                dest_path = tmp_path / filename
+                        # Extract components
+                        file_year = int(match.group(1))
+                        file_doy = int(match.group(2))
+                        file_hour = int(match.group(3))
+                        file_minute = int(match.group(4))
 
-                                # Extract timestamp and download
-                                pattern = r"_s(\d{4})(\d{3})(\d{2})(\d{2})(\d{3})_"
-                                match = re.search(pattern, filename)
+                        # Convert DOY to date
+                        date_obj = date_utils.doy_to_date(file_year, file_doy)
 
-                                assert match, f"Should extract timestamp from filename: {filename}"
+                        # Create timestamp for download
+                        file_ts = datetime(
+                            date_obj.year,
+                            date_obj.month,
+                            date_obj.day,
+                            hour=file_hour,
+                            minute=file_minute,
+                            second=0,
+                            tzinfo=UTC,
+                        )
 
-                                # Extract components
-                                file_year = int(match.group(1))
-                                file_doy = int(match.group(2))
-                                file_hour = int(match.group(3))
-                                file_minute = int(match.group(4))
+                        # Download using mocked S3Store
+                        result = await mock_s3_store.download(
+                            file_ts, satellite_pattern, dest_path, product_type=product_type, band=13
+                        )
 
-                                # Convert DOY to date
-                                date_obj = date_utils.doy_to_date(file_year, file_doy)
+                        # Verify download
+                        assert result.exists(), "Downloaded file should exist"
+                        file_size = result.stat().st_size
+                        assert file_size > 0, "Downloaded file should have content"
 
-                                # Create timestamp for download
-                                file_ts = datetime(
-                                    date_obj.year,
-                                    date_obj.month,
-                                    date_obj.day,
-                                    hour=file_hour,
-                                    minute=file_minute,
-                                    second=0,
-                                    tzinfo=UTC,
-                                )
+                        results["download_successful"] = True
+                        results["file_size"] = file_size
 
-                                # Download using S3Store
-                                result = await s3_store.download(
-                                    file_ts, satellite_pattern, dest_path, product_type=product_type, band=13
-                                )
-
-                                # Verify download
-                                assert result.exists(), "Downloaded file should exist"
-                                file_size = result.stat().st_size
-                                assert file_size > 0, "Downloaded file should have content"
-
-                                results["download_successful"] = True
-                                results["file_size"] = file_size
-
-                            finally:
-                                await s3_store.close()
+                        await mock_s3_store.close()
 
                 elif scenario_name == "download_error_handling":
-                    # Test download error scenarios
-                    with patch("goesvfi.integrity_check.remote.s3_store.S3Store") as mock_s3_store_class:
-                        # Test different error types
-                        error_scenarios = [
-                            Exception("Network error"),
-                            OSError("File system error"),
-                            ValueError("Invalid parameters"),
-                        ]
+                    # Test download error scenarios - fully mocked
+                    error_scenarios = [
+                        Exception("Network error"),
+                        OSError("File system error"),
+                        ValueError("Invalid parameters"),
+                    ]
 
-                        for i, error in enumerate(error_scenarios):
-                            mock_s3_store = self.create_mock_s3_store(download_exception=error)
-                            mock_s3_store_class.return_value = mock_s3_store
-
-                            s3_store = S3Store(timeout=60)
-
-                            try:
-                                with pytest.raises(type(error)):
-                                    await s3_store.download(
-                                        timestamp,
-                                        satellite_pattern,
-                                        tmp_path / f"test_{i}.nc",
-                                        product_type=product_type,
-                                        band=13,
-                                    )
-                                results[f"error_{i}_handled"] = True
-                            finally:
-                                await s3_store.close()
+                    for i, error in enumerate(error_scenarios):
+                        mock_s3_store = self.create_mock_s3_store(download_exception=error)
+                        
+                        with pytest.raises(type(error)):
+                            await mock_s3_store.download(
+                                timestamp,
+                                satellite_pattern,
+                                tmp_path / f"test_{i}.nc",
+                                product_type=product_type,
+                                band=13,
+                            )
+                        results[f"error_{i}_handled"] = True
 
                 return {"scenario": scenario_name, "results": results}
 
@@ -574,69 +552,63 @@ class TestS3Band13OptimizedV2:
                 results = {}
 
                 if scenario_name == "complete_band13_workflow":
-                    # Test complete Band 13 workflow
+                    # Test complete Band 13 workflow - fully mocked
                     timestamp = self.test_configs["timestamp"]
                     satellite_pattern = SatellitePattern.GOES_16
                     product_type = "RadC"
 
-                    with patch("goesvfi.integrity_check.remote.s3_store.S3Store") as mock_s3_store_class:
+                    # Create test file
+                    test_filename = self.test_filenames["valid_band13"]
+                    test_file = self.create_test_file(tmp_path, test_filename)
+
+                    # Mock all dependencies
+                    with (
+                        patch.object(TimeIndex, "get_s3_bucket") as mock_get_bucket,
+                        patch.object(TimeIndex, "find_nearest_intervals") as mock_find_nearest,
+                        patch.object(self.__class__, "mock_list_s3_objects_band13") as mock_list_objects,
+                    ):
+                        mock_get_bucket.return_value = "noaa-goes16"
+                        mock_find_nearest.return_value = [timestamp]
+                        mock_list_objects.return_value = self.mock_s3_objects
+
+                        # Fully mock S3Store
                         mock_s3_store = self.create_mock_s3_store()
-                        mock_s3_store_class.return_value = mock_s3_store
+                        mock_s3_store.download = AsyncMock(return_value=test_file)
+                        mock_s3_store.close = AsyncMock(return_value=None)
 
-                        # Create test file
-                        test_filename = self.test_filenames["valid_band13"]
-                        test_file = self.create_test_file(tmp_path, test_filename)
-                        mock_s3_store.download.return_value = test_file
+                        # Step 1: Get bucket
+                        bucket = TimeIndex.get_s3_bucket(satellite_pattern)
+                        assert bucket == "noaa-goes16"
 
-                        # Mock all dependencies
-                        with (
-                            patch.object(TimeIndex, "get_s3_bucket") as mock_get_bucket,
-                            patch.object(TimeIndex, "find_nearest_intervals") as mock_find_nearest,
-                            patch(
-                                "tests.unit.test_s3_band13_v2.S3Band13TestManager.mock_list_s3_objects_band13"
-                            ) as mock_list_objects,
-                        ):
-                            mock_get_bucket.return_value = "noaa-goes16"
-                            mock_find_nearest.return_value = [timestamp]
-                            mock_list_objects.return_value = self.mock_s3_objects
+                        # Step 2: Find intervals
+                        intervals = TimeIndex.find_nearest_intervals(timestamp, product_type)
+                        assert intervals == [timestamp]
 
-                            s3_store = S3Store(timeout=60)
+                        # Step 3: List objects
+                        year = timestamp.year
+                        doy = date_utils.date_to_doy(timestamp.date())
+                        doy_str = f"{doy:03d}"
+                        hour = timestamp.strftime("%H")
+                        prefix = f"ABI-L1b-{product_type}/{year}/{doy_str}/{hour}/"
 
-                            try:
-                                # Step 1: Get bucket
-                                bucket = TimeIndex.get_s3_bucket(satellite_pattern)
-                                assert bucket == "noaa-goes16"
+                        band13_keys = await mock_list_objects(bucket, prefix, limit=5)
+                        assert len(band13_keys) == 3
 
-                                # Step 2: Find intervals
-                                intervals = TimeIndex.find_nearest_intervals(timestamp, product_type)
-                                assert intervals == [timestamp]
+                        # Step 4: Download file using mocked store
+                        test_key = band13_keys[0]
+                        filename = test_key.split("/")[-1]
+                        dest_path = tmp_path / filename
 
-                                # Step 3: List objects
-                                year = timestamp.year
-                                doy = date_utils.date_to_doy(timestamp.date())
-                                doy_str = f"{doy:03d}"
-                                hour = timestamp.strftime("%H")
-                                prefix = f"ABI-L1b-{product_type}/{year}/{doy_str}/{hour}/"
+                        result = await mock_s3_store.download(
+                            timestamp, satellite_pattern, dest_path, product_type=product_type, band=13
+                        )
 
-                                band13_keys = await mock_list_objects(bucket, prefix, limit=5)
-                                assert len(band13_keys) == 3
+                        assert result.exists()
 
-                                # Step 4: Download file
-                                test_key = band13_keys[0]
-                                filename = test_key.split("/")[-1]
-                                dest_path = tmp_path / filename
+                        results["workflow_complete"] = True
+                        results["steps_completed"] = 4
 
-                                result = await s3_store.download(
-                                    timestamp, satellite_pattern, dest_path, product_type=product_type, band=13
-                                )
-
-                                assert result.exists()
-
-                                results["workflow_complete"] = True
-                                results["steps_completed"] = 4
-
-                            finally:
-                                await s3_store.close()
+                        await mock_s3_store.close()
 
                 return {"scenario": scenario_name, "results": results}
 
@@ -707,7 +679,7 @@ class TestS3Band13OptimizedV2:
                         # Generate mock filenames
                         mock_files = []
                         for i in range(batch_size):
-                            filename = f"OR_ABI-L1b-RadC-M6C13_G16_s2023166120{i:02d}176_e2023166120{i:02d}549_c2023166120{i:02d}597.nc"
+                            filename = f"OR_ABI-L1b-RadC-M6C13_G16_s20231661200{i:03d}_e20231661203{i:03d}_c20231661203{i:03d}.nc"
                             mock_files.append(filename)
 
                         # Test parsing all files
@@ -787,15 +759,14 @@ class TestS3Band13OptimizedV2:
             assert len(result["results"]) > 0
 
     @pytest.mark.parametrize(
-        "satellite,expected_bucket",
+        "satellite_pattern,expected_bucket",
         [
             (SatellitePattern.GOES_16, "noaa-goes16"),
             (SatellitePattern.GOES_18, "noaa-goes18"),
         ],
     )
-    @staticmethod
     def test_bucket_pattern_validation(
-        s3_band13_test_components: dict[str, Any], satellite: Any, expected_bucket: str
+        self, s3_band13_test_components: dict[str, Any], satellite_pattern: Any, expected_bucket: str
     ) -> None:
         """Test bucket pattern validation for different satellites."""
         s3_band13_test_components["manager"]
@@ -803,13 +774,12 @@ class TestS3Band13OptimizedV2:
         with patch.object(TimeIndex, "get_s3_bucket") as mock_get_bucket:
             mock_get_bucket.return_value = expected_bucket
 
-            bucket = TimeIndex.get_s3_bucket(satellite)
+            bucket = TimeIndex.get_s3_bucket(satellite_pattern)
             assert bucket == expected_bucket
-            mock_get_bucket.assert_called_once_with(satellite)
+            mock_get_bucket.assert_called_once_with(satellite_pattern)
 
-    @pytest.mark.parametrize("product_type", ["RadF", "RadC", "RadM"])
-    @staticmethod
-    def test_product_type_validation(s3_band13_test_components: dict[str, Any], product_type: str) -> None:
+    @pytest.mark.parametrize("product_type_param", ["RadF", "RadC", "RadM"])
+    def test_product_type_validation(self, s3_band13_test_components: dict[str, Any], product_type_param: str) -> None:
         """Test product type validation scenarios."""
         timestamp = s3_band13_test_components["test_timestamp"]
 
@@ -819,9 +789,9 @@ class TestS3Band13OptimizedV2:
         doy_str = f"{doy:03d}"
         hour = timestamp.strftime("%H")
 
-        expected_prefix = f"ABI-L1b-{product_type}/{year}/{doy_str}/{hour}/"
+        expected_prefix = f"ABI-L1b-{product_type_param}/{year}/{doy_str}/{hour}/"
 
-        assert product_type in expected_prefix, "Product type should be in prefix"
+        assert product_type_param in expected_prefix, "Product type should be in prefix"
         assert "2023" in expected_prefix, "Year should be in prefix"
         assert "166" in expected_prefix, "DOY should be in prefix"
         assert "12" in expected_prefix, "Hour should be in prefix"

@@ -575,6 +575,8 @@ class PreviewManager(QObject):
         self.first_frame_data = None
         self.middle_frame_data = None
         self.last_frame_data = None
+        self.current_input_dir = None
+        self.current_crop_rect = None
 
     def clear_cache(self) -> None:
         """Clear the thumbnail cache to free memory."""

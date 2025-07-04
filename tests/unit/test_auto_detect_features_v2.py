@@ -19,7 +19,6 @@ from unittest.mock import MagicMock, patch
 
 from PyQt6.QtCore import QCoreApplication
 from PyQt6.QtWidgets import QApplication
-import pytest
 
 from goesvfi.integrity_check.enhanced_gui_tab import EnhancedIntegrityCheckTab
 from goesvfi.integrity_check.enhanced_view_model import EnhancedIntegrityCheckViewModel
@@ -179,12 +178,12 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
             (SatellitePattern.GOES_16, 15, 21, 6),
             (SatellitePattern.GOES_18, 15, 14, 7),
         ]
-        
+
         for satellite, expected_start_day, expected_end_day, expected_end_month in test_cases:
             with self.subTest(satellite=satellite):
                 # Set satellite
                 self.mock_view_model.satellite = satellite
-                
+
                 # Point to the satellite-specific directory
                 if satellite == SatellitePattern.GOES_16:
                     self.mock_view_model.base_directory = self.base_dir / "goes16"
@@ -275,7 +274,7 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
             ("empty", "No Valid Files Found"),
             ("non_matching", "No Valid Files Found"),
         ]
-        
+
         for directory_type, expected_message in test_cases:
             with self.subTest(directory_type=directory_type):
                 # Create appropriate test directory
@@ -346,13 +345,13 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
             ("date_range_detection", "critical"),
             ("no_files_found", "information"),
         ]
-        
-        for error_scenario, expected_dialog in test_cases:
+
+        for error_scenario, _expected_dialog in test_cases:
             with self.subTest(error_scenario=error_scenario):
                 if error_scenario == "date_range_detection":
                     # Ensure we have a valid directory with files
                     self.mock_view_model.base_directory = self.base_dir / "goes16"
-                    
+
                     with (
                         patch(
                             "goesvfi.integrity_check.time_index.TimeIndex.find_date_range_in_directory",
@@ -399,21 +398,22 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
 
             # Capture log messages using a mock handler
             import logging
-            
+
             # Get the actual logger
             from goesvfi.integrity_check import enhanced_gui_tab
+
             logger = logging.getLogger(enhanced_gui_tab.__name__)
-            
+
             # Create a mock handler to capture messages
             mock_handler = MagicMock()
             mock_handler.handle = MagicMock()
             mock_handler.level = logging.INFO
-            
+
             # Add handler temporarily
             logger.addHandler(mock_handler)
             original_level = logger.level
             logger.setLevel(logging.INFO)
-            
+
             try:
                 with patch("goesvfi.integrity_check.enhanced_gui_tab.QMessageBox"):
                     # Call auto-detect satellite
@@ -425,13 +425,15 @@ class TestAutoDetectFeaturesV2(PyQtAsyncTestCase):
                 for call in mock_handler.handle.call_args_list:
                     if call[0]:
                         record = call[0][0]
-                        if hasattr(record, 'getMessage'):
+                        if hasattr(record, "getMessage"):
                             logged_messages.append(record.getMessage())
 
                 # Check for expected log messages
                 assert any(f"Starting scan of directory {self.base_dir}" in msg for msg in logged_messages)
                 assert any("Scanning for GOES-16 files" in msg for msg in logged_messages)
-                assert any("Found" in msg and "GOES-16 files and" in msg and "GOES-18 files" in msg for msg in logged_messages)
+                assert any(
+                    "Found" in msg and "GOES-16 files and" in msg and "GOES-18 files" in msg for msg in logged_messages
+                )
                 assert any("Selected GOES-18 based on file count" in msg for msg in logged_messages)
                 assert any("Completed successfully, selected GOES-18" in msg for msg in logged_messages)
             finally:

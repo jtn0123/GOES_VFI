@@ -64,7 +64,9 @@ class ProductType(Enum):
             ProductType.CMIP: "ABI-L2-CMIPC",
             ProductType.CMIPF: "ABI-L2-CMIPF",
         }
-        return prefix_map.get(product_type, product_type.value)
+        if product_type not in prefix_map:
+            raise KeyError(f"Unknown product type: {product_type}")
+        return prefix_map[product_type]
 
     @staticmethod
     def to_web_path(product_type: "ProductType") -> str:
@@ -80,13 +82,15 @@ class ProductType(Enum):
         path_map = {
             ProductType.FULL_DISK: "FD",
             ProductType.CONUS: "CONUS",
-            ProductType.MESOSCALE: "MESO",
+            ProductType.MESOSCALE: "M",
             ProductType.MESO1: "MESO1",
             ProductType.MESO2: "MESO2",
             ProductType.CMIP: "CMIP_CONUS",
             ProductType.CMIPF: "CMIP_FD",
         }
-        return path_map.get(product_type, product_type.value)
+        if product_type not in path_map:
+            raise KeyError(f"Unknown product type: {product_type}")
+        return path_map[product_type]
 
 
 class ImageryMode(Enum):
@@ -115,15 +119,15 @@ class ChannelType(Enum):
     """
 
     # Visible channels
-    CH01 = (1, "Blue (Visible)", "0.47 μm", "Aerosols, smoke, haze detection")
-    CH02 = (2, "Red (Visible)", "0.64 μm", "Cloud, fog, insolation, winds")
-    CH03 = (3, "Veggie (Near-IR)", "0.86 μm", "Vegetation, burn scar, aerosol, winds")
+    CH01 = (1, "Blue", "0.47 μm", "Aerosols, smoke, haze detection")
+    CH02 = (2, "Red", "0.64 μm", "Cloud, fog, insolation, winds")
+    CH03 = (3, "Veggie", "0.86 μm", "Vegetation, burn scar, aerosol, winds")
 
     # Near-IR channels
     CH04 = (4, "Cirrus (Near-IR)", "1.37 μm", "Cirrus cloud detection")
     CH05 = (
         5,
-        "Snow/Ice (Near-IR)",
+        "Snow/Ice",
         "1.6 μm",
         "Cloud-top phase, snow/ice discrimination",
     )
@@ -137,25 +141,25 @@ class ChannelType(Enum):
     # IR channels
     CH07 = (
         7,
-        "Shortwave Window IR",
+        "Shortwave Window",
         "3.9 μm",
         "Fire detection, fog detection, night fog, winds",
     )
     CH08 = (
         8,
-        "Upper-Level Water Vapor IR",
+        "Upper-Level Water Vapor",
         "6.2 μm",
         "High-level moisture, winds, rainfall",
     )
     CH09 = (
         9,
-        "Mid-Level Water Vapor IR",
+        "Mid-Level Water Vapor",
         "6.9 μm",
         "Mid-level moisture, winds, rainfall",
     )
     CH10 = (
         10,
-        "Lower-level Water Vapor IR",
+        "Lower-Level Water Vapor",
         "7.3 μm",
         "Lower-level moisture, winds, rainfall",
     )
@@ -163,7 +167,7 @@ class ChannelType(Enum):
     CH12 = (12, "Ozone IR", "9.6 μm", "Atmospheric total column ozone")
     CH13 = (
         13,
-        "Clean Longwave Window IR",
+        "Clean Longwave Window",
         "10.3 μm",
         "Surface temp, cloud detection, rainfall",
     )
@@ -174,7 +178,7 @@ class ChannelType(Enum):
         "12.3 μm",
         "Air temperature, cloud heights",
     )
-    CH16 = (16, "CO2 Longwave IR", "13.3 μm", "Air temperature, cloud heights")
+    CH16 = (16, "CO2 Longwave", "13.3 μm", "Air temperature, cloud heights")
 
     # RGB composites
     TRUE_COLOR = (
@@ -183,13 +187,31 @@ class ChannelType(Enum):
         "RGB",
         "Natural color composite of channels 1, 2, 3",
     )
-    WATER_VAPOR = (
+    GEOCOLOR = (
         101,
+        "GeoColor",
+        "RGB",
+        "Enhanced color composite with day/night blend",
+    )
+    NATURAL_COLOR = (
+        102,
+        "Natural Color",
+        "RGB",
+        "Natural color composite",
+    )
+    RGB_AIRMASS = (
+        103,
+        "RGB Airmass",
+        "RGB",
+        "RGB airmass composite",
+    )
+    WATER_VAPOR = (
+        104,
         "Water Vapor",
         "6.2/7.3/9.6 μm",
         "Atmospheric moisture at different levels",
     )
-    IR_COMPOSITE = (102, "IR Composite", "10.3/11.2 μm", "Enhanced infrared imagery")
+    IR_COMPOSITE = (105, "IR Composite", "10.3/11.2 μm", "Enhanced infrared imagery")
 
     def __init__(self, number: int, display_name: str, wavelength: str, description: str) -> None:
         """Initialize channel type."""
@@ -229,8 +251,10 @@ class ChannelType(Enum):
         return WATER_VAPOR_CHANNEL_MIN <= self.number <= WATER_VAPOR_CHANNEL_MAX
 
     @classmethod
-    def from_number(cls: type["ChannelType"], number: int) -> Optional["ChannelType"]:
+    def from_number(cls: type["ChannelType"], number: int | None) -> Optional["ChannelType"]:
         """Get channel type from number."""
+        if number is None:
+            return None
         for channel in cls:
             if channel.number == number:
                 return channel
@@ -394,6 +418,7 @@ class GOESImageryDownloader:
         """
         self.satellite = satellite
         self.output_dir = output_dir or Path(tempfile.mkdtemp())
+        self.output_dir.mkdir(parents=True, exist_ok=True)
         self.timeout = timeout
         self.s3_client = None  # Will be set externally or created as needed
         LOGGER.info("Initialized GOESImageryDownloader for %s", satellite)
@@ -456,7 +481,13 @@ class GOESImageryDownloader:
         satellite = "GOES16" if self.satellite == "G16" else "GOES18"
         product_path = ProductType.to_web_path(product_type)
 
-        url = f"{base_url}/{satellite}/ABI/{product_path}/latest/{channel.number}_{size}.jpg"
+        # Handle composite channels that don't have simple numbers
+        if channel.is_composite:
+            channel_str = channel.name.lower()
+        else:
+            channel_str = str(channel.number)
+        
+        url = f"{base_url}/{satellite}/ABI/{product_path}/latest/{channel_str}_{size}.jpg"
 
         try:
             # Download the image
@@ -609,7 +640,7 @@ class GOESImageProcessor:
         return image
 
     @staticmethod
-    def _extract_timestamp_from_filename(filename: str) -> str:
+    def _extract_timestamp_from_filename(filename: str | None) -> str | None:
         """Extract timestamp from GOES filename.
 
         Args:
@@ -623,10 +654,13 @@ class GOESImageProcessor:
 
         import re
 
+        if not filename:
+            return None
+
         # Extract start time from filename
         match = re.search(r"_s(\d{4})(\d{3})(\d{6})", filename)
         if not match:
-            return ""
+            return None
 
         year = int(match.group(1))
         day_of_year = int(match.group(2))
@@ -643,9 +677,10 @@ class GOESImageProcessor:
 
     def process_raw_data(
         self,
-        _file_path: Path,
-        _channel: ChannelType | None = None,
-        _output_format: str = "png",
+        file_path: Path,
+        channel: ChannelType | None = None,
+        output_format: str = "png",
+        **kwargs,  # Accept additional kwargs for flexibility
     ) -> Path | None:
         """Process raw GOES data file.
 
@@ -653,6 +688,7 @@ class GOESImageProcessor:
             file_path: Path to raw data file
             channel: Channel type (optional)
             output_format: Output format
+            **kwargs: Additional arguments (ignored in stub)
 
         Returns:
             Path to processed file or None if failed

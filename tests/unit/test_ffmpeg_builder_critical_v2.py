@@ -119,7 +119,7 @@ class TestFFmpegCommandBuilderCriticalV2:
                     .set_output(temp_workspace["output_path"])
                     .set_encoder("Software x265 (2-Pass)")
                     .set_bitrate(5000)
-                    .set_two_pass(enabled=True, logfile="passlog", pass_num=1)
+                    .set_two_pass(is_two_pass=True, pass_log_prefix="passlog", pass_number=1)
                     .build()
                 )
 
@@ -158,7 +158,7 @@ class TestFFmpegCommandBuilderCriticalV2:
                     .set_output(temp_workspace["output_path"])
                     .set_encoder("Software x265 (2-Pass)")
                     .set_bitrate(5000)
-                    .set_two_pass(enabled=True, logfile="passlog", pass_num=2)
+                    .set_two_pass(is_two_pass=True, pass_log_prefix="passlog", pass_number=2)
                     .build()
                 )
 
@@ -571,7 +571,10 @@ class TestFFmpegCommandBuilderCriticalV2:
             except Exception as e:  # noqa: BLE001
                 if scenario["name"] != "Invalid Parameters Handling":
                     pytest.fail(f"Unexpected error in {scenario['name']}: {e}")
-                # Error scenarios are expected to have exceptions internally handled
+                else:
+                    # For error scenarios, still add the results if we have them
+                    if 'scenario_results' in locals():
+                        all_results[scenario["name"]] = scenario_results
 
         # Overall validation
         assert len(all_results) == len(critical_scenarios), "Not all critical scenarios completed"
@@ -770,11 +773,11 @@ class TestFFmpegCommandBuilderCriticalV2:
 
         # Should fail with invalid pass number
         with pytest.raises(ValueError, match=r".*"):
-            builder.set_two_pass(enabled=True, logfile="logfile", pass_num=3).build()
+            builder.set_two_pass(is_two_pass=True, pass_log_prefix="logfile", pass_number=3).build()
 
         # Should fail with missing pass number
         with pytest.raises(ValueError, match=r".*"):
-            builder.set_two_pass(enabled=True, logfile="logfile", pass_num=None).build()
+            builder.set_two_pass(is_two_pass=True, pass_log_prefix="logfile", pass_number=None).build()
 
         return {"success": True, "edge_cases_handled": True}
 

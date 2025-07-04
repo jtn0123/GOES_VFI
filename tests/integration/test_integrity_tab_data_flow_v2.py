@@ -195,8 +195,8 @@ class TestIntegrityTabDataFlowV2:
         ]
 
         for error_name, error in error_scenarios:
-            # Configure error
-            mock_composite_store.check_file_exists.side_effect = error
+            # Configure error on the method that is actually called
+            mock_date_selector.get_date_range.side_effect = error
 
             # Execute pipeline with error handling
             flow_result = await self._execute_data_flow_pipeline(mock_composite_store, mock_date_selector, scenario)
@@ -204,6 +204,9 @@ class TestIntegrityTabDataFlowV2:
             # Verify error handling
             assert "error" in flow_result
             assert error_name.split("_")[0] in flow_result["error"].lower()
+            
+            # Reset for next iteration
+            mock_date_selector.get_date_range.side_effect = None
 
     def test_data_flow_state_management(
         self,
@@ -251,7 +254,7 @@ class TestIntegrityTabDataFlowV2:
         # Execute concurrent operations
         tasks = []
         for scenario in scenarios:
-            task = TestIntegrityTabDataFlowV2._execute_data_flow_pipeline(
+            task = self._execute_data_flow_pipeline(
                 mock_composite_store, mock_date_selector, scenario
             )
             tasks.append(task)
@@ -302,19 +305,18 @@ class TestIntegrityTabDataFlowV2:
         # Mock progress tracking
         progress_updates = []
 
-        async def mock_fetch_with_progress() -> int:
+        def mock_get_date_range_with_progress():
             for i in range(5):
                 progress = (i + 1) * 20  # 20%, 40%, 60%, 80%, 100%
                 progress_updates.append(progress)
-                await asyncio.sleep(0.01)
-            return scenario["expected_files"]
+            return ("2023-01-01", "2023-01-02")  # Return a valid date range
 
-        mock_composite_store.check_file_exists.side_effect = mock_fetch_with_progress
+        mock_date_selector.get_date_range.side_effect = mock_get_date_range_with_progress
 
         # Execute with progress tracking
-        await TestIntegrityTabDataFlowV2._execute_data_flow_pipeline(mock_composite_store, mock_date_selector, scenario)
+        await self._execute_data_flow_pipeline(mock_composite_store, mock_date_selector, scenario)
 
-        # Verify progress tracking
+        # Verify progress tracking - the mock function was called and progress was recorded
         assert len(progress_updates) == 5
         assert progress_updates[-1] == 100  # Final progress should be 100%
 

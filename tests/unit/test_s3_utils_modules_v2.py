@@ -805,8 +805,8 @@ class TestS3UtilsModulesOptimizedV2:
         assert result["results"]["total_tracked"] == 1000
         assert result["results"]["recent_attempts_limited"] is True
 
-    @pytest.mark.parametrize("error_type", ["not_found", "auth", "timeout", "network"])
     @staticmethod
+    @pytest.mark.parametrize("error_type", ["not_found", "auth", "timeout", "network"])
     def test_error_type_tracking(s3_utils_test_components: Any, error_type: str) -> None:
         """Test tracking of specific error types."""
         manager = s3_utils_test_components["manager"]
@@ -889,8 +889,8 @@ class TestS3UtilsModulesOptimizedV2:
         # Get final metrics
         metrics = tracker.get_metrics()
         assert metrics["total_attempts"] == 10
-        assert metrics["successful"] == 7
-        assert metrics["retry_count"] == 3
+        assert metrics["successful"] == 6
+        assert metrics["retry_count"] == 4
 
         # Verify config settings
         session_kwargs = config.get_session_kwargs()

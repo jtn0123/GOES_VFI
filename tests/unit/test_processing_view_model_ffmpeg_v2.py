@@ -59,7 +59,7 @@ class TestProcessingViewModelFFmpegV2:
         assert str(output) in cmd
 
         # Verify other parameters
-        assert "-r" in cmd
+        assert "-framerate" in cmd
         assert "30" in cmd
         assert "-crf" in cmd
         assert "20" in cmd
@@ -80,7 +80,7 @@ class TestProcessingViewModelFFmpegV2:
         assert str(output) in cmd
 
         # Verify framerate
-        assert "-r" in cmd
+        assert "-framerate" in cmd
         assert "24" in cmd
 
     @pytest.mark.parametrize(
@@ -88,9 +88,9 @@ class TestProcessingViewModelFFmpegV2:
         [
             ("Software x264", ["-c:v", "libx264"]),
             ("Software x265", ["-c:v", "libx265"]),
-            ("Hardware H.264 (NVENC)", ["-c:v", "h264_nvenc"]),
-            ("Hardware HEVC (NVENC)", ["-c:v", "hevc_nvenc"]),
-            ("None (copy original)", ["-c:v", "copy"]),
+            ("Hardware H.264 (VideoToolbox)", ["-c:v", "h264_videotoolbox"]),
+            ("Hardware HEVC (VideoToolbox)", ["-c:v", "hevc_videotoolbox"]),
+            ("None (copy original)", ["-c", "copy"]),
         ],
     )
     def test_build_ffmpeg_command_encoders(  # noqa: PLR6301
@@ -99,6 +99,14 @@ class TestProcessingViewModelFFmpegV2:
         """Test building FFmpeg command with different encoders."""
         output = test_paths["output"]
         settings = {"encoder": encoder}
+        
+        # Add CRF for encoders that require it
+        if encoder in ["Software x264", "Software x265"]:
+            settings["crf"] = 23
+        # Add bitrate for hardware encoders that require it
+        elif "Hardware" in encoder:
+            settings["bitrate_kbps"] = 5000
+            settings["bufsize_kb"] = 10000
 
         cmd = view_model.build_ffmpeg_command(output, 30, None, settings)
 
@@ -115,13 +123,13 @@ class TestProcessingViewModelFFmpegV2:
     ) -> None:
         """Test building FFmpeg command with various frame rates."""
         output = test_paths["output"]
-        settings = {"encoder": "Software x264"}
+        settings = {"encoder": "Software x264", "crf": 23}
 
         cmd = view_model.build_ffmpeg_command(output, fps, None, settings)
 
         # Verify framerate is set
-        assert "-r" in cmd
-        idx = cmd.index("-r")
+        assert "-framerate" in cmd
+        idx = cmd.index("-framerate")
         assert cmd[idx + 1] == str(fps)
 
     @pytest.mark.parametrize("crf", [0, 15, 23, 28, 51])
@@ -145,7 +153,7 @@ class TestProcessingViewModelFFmpegV2:
     ) -> None:
         """Test building FFmpeg command with various pixel formats."""
         output = test_paths["output"]
-        settings = {"encoder": "Software x264", "pix_fmt": pix_fmt}
+        settings = {"encoder": "Software x264", "pix_fmt": pix_fmt, "crf": 23}
 
         cmd = view_model.build_ffmpeg_command(output, 30, None, settings)
 
@@ -193,7 +201,7 @@ class TestProcessingViewModelFFmpegV2:
     ) -> None:
         """Test building FFmpeg command with different output formats."""
         output = tmp_path / f"output{output_ext}"
-        settings = {"encoder": "Software x264"}
+        settings = {"encoder": "Software x264", "crf": 23}
 
         cmd = view_model.build_ffmpeg_command(output, 30, None, settings)
 
@@ -217,7 +225,7 @@ class TestProcessingViewModelFFmpegV2:
 
         # Test with zero crop dimensions (should handle gracefully)
         crop = (0, 0, 0, 0)
-        cmd = view_model.build_ffmpeg_command(output, 30, crop, {"encoder": "Software x264"})
+        cmd = view_model.build_ffmpeg_command(output, 30, crop, {"encoder": "Software x264", "crf": 23})
 
         # Should either skip crop or handle it appropriately
         # Implementation dependent - just verify no crash

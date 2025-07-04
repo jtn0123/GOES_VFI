@@ -21,7 +21,6 @@ import pytest
 
 from goesvfi.integrity_check.goes_imagery import ProductType
 from goesvfi.integrity_check.sample_processor import SampleProcessor
-from goesvfi.integrity_check.visualization_manager import VisualizationManager
 
 
 class TestDownloadRealV2:  # noqa: PLR0904
@@ -229,10 +228,12 @@ class TestDownloadRealV2:  # noqa: PLR0904
         """Test sample processor initialization with different configurations."""
         # Test initialization
         processor = SampleProcessor(visualization_manager=mock_visualization_manager)
-        
+
         # Verify processor was created successfully
         assert processor is not None
-        assert processor.viz_manager is not None  # The actual implementation uses viz_manager, not visualization_manager
+        assert (
+            processor.viz_manager is not None
+        )  # The actual implementation uses viz_manager, not visualization_manager
 
     @pytest.mark.parametrize("product_name", ["full_disk", "conus", "mesoscale"])
     @pytest.mark.parametrize("channel_category", ["visible_channels", "infrared_channels", "popular_channels"])
@@ -316,7 +317,10 @@ class TestDownloadRealV2:  # noqa: PLR0904
     @pytest.mark.parametrize("channel", [2, 7, 13])
     def test_download_web_sample(
         self,
-        product_type_configurations: dict[str, Any], mock_sample_processor: MagicMock, product_name: str, channel: int
+        product_type_configurations: dict[str, Any],
+        mock_sample_processor: MagicMock,
+        product_name: str,
+        channel: int,
     ) -> None:
         """Test web sample download functionality."""
         product_config = product_type_configurations[product_name]

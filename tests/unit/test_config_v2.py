@@ -279,7 +279,7 @@ default_tile_size = 512
     def test_config_module_integration(self, monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path) -> None:  # noqa: PLR6301
         """Test complete configuration module integration."""
         # Create comprehensive config
-        config_content = """
+        config_content = f"""
 output_dir = "/tmp/integration_test/output"
 cache_dir = "/tmp/integration_test/cache"
 
@@ -288,13 +288,13 @@ default_tile_size = 4096
 supported_extensions = [".png", ".jpg", ".tiff"]
 
 [sanchez]
-bin_dir = "/usr/local/bin/sanchez"
+bin_dir = "{tmp_path}/sanchez"
 
 [logging]
 level = "DEBUG"
 
 [rife]
-models_dir = "/opt/rife/models"
+models_dir = "{tmp_path}/rife/models"
 default_model = "rife-v4.6"
 """
 
@@ -311,9 +311,9 @@ default_model = "rife-v4.6"
         assert cfg["cache_dir"] == "/tmp/integration_test/cache"
         assert cfg["pipeline"]["default_tile_size"] == 4096
         assert cfg["pipeline"]["supported_extensions"] == [".png", ".jpg", ".tiff"]
-        assert cfg["sanchez"]["bin_dir"] == "/usr/local/bin/sanchez"
+        assert cfg["sanchez"]["bin_dir"] == f"{tmp_path}/sanchez"
         assert cfg["logging"]["level"] == "DEBUG"
-        assert cfg["rife"]["models_dir"] == "/opt/rife/models"
+        assert cfg["rife"]["models_dir"] == f"{tmp_path}/rife/models"
         assert cfg["rife"]["default_model"] == "rife-v4.6"
 
         # Test getter functions work with integration config

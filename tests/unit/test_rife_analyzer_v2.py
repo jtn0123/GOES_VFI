@@ -161,6 +161,7 @@ class TestRifeCapabilityDetectorV2:
             # The actual build_command method has different parameters
             # Let me check what parameters it expects
             from pathlib import Path as PathType
+
             cmd = builder.build_command(
                 input_frame1=PathType("/path/to/frame1.png"),
                 input_frame2=PathType("/path/to/frame2.png"),
@@ -192,6 +193,7 @@ class TestRifeCapabilityDetectorV2:
             builder = RifeCommandBuilder(rife_path)
 
             from pathlib import Path as PathType
+
             cmd = builder.build_command(
                 input_frame1=PathType("/path/to/frame1.png"),
                 input_frame2=PathType("/path/to/frame2.png"),
@@ -225,6 +227,7 @@ class TestRifeCapabilityDetectorV2:
             builder = RifeCommandBuilder(rife_path)
 
             from pathlib import Path as PathType
+
             cmd = builder.build_command(
                 input_frame1=PathType("/path/to/frame1.png"),
                 input_frame2=PathType("/path/to/frame2.png"),
@@ -284,6 +287,7 @@ class TestAnalyzeRifeExecutableV2:
             patch("pathlib.Path.exists", return_value=True),
         ):
             from pathlib import Path
+
             result = analyze_rife_executable(Path("/path/to/rife"))
 
             assert result["version"] == "4.6"
@@ -297,6 +301,7 @@ class TestAnalyzeRifeExecutableV2:
         """Test analysis when file not found."""
         with patch("pathlib.Path.exists", return_value=False):
             from pathlib import Path
+
             result = analyze_rife_executable(Path("/nonexistent/rife"))
 
             assert result["success"] is False
@@ -311,6 +316,7 @@ class TestAnalyzeRifeExecutableV2:
             patch("pathlib.Path.exists", return_value=True),
         ):
             from pathlib import Path
+
             result = analyze_rife_executable(Path("/path/to/rife"))
 
             assert result["success"] is False
@@ -318,10 +324,10 @@ class TestAnalyzeRifeExecutableV2:
             assert result["capabilities"] == {}
             assert "detection failed" in result["error"].lower()
 
-    def test_analyze_edge_cases(self, mock_detector: MagicMock) -> None:  # noqa: PLR6301, ARG002
+    def test_analyze_edge_cases(self, mock_detector: MagicMock) -> None:  # noqa: PLR6301
         """Test edge cases for analyze function."""
         from pathlib import Path
-        
+
         # Test with non-existent path
         with patch("pathlib.Path.exists", return_value=False):
             result = analyze_rife_executable(Path("/nonexistent"))
@@ -329,7 +335,7 @@ class TestAnalyzeRifeExecutableV2:
             assert result["version"] is None
             assert result["capabilities"] == {}
 
-        # Test with valid Path object  
+        # Test with valid Path object
         with (
             patch("goesvfi.utils.rife_analyzer.RifeCapabilityDetector", return_value=mock_detector),
             patch("pathlib.Path.exists", return_value=True),

@@ -6,7 +6,7 @@ GOES-16 and GOES-18 Band 13 imagery.
 """
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import Enum
 import os
 from pathlib import Path
@@ -84,6 +84,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
     satellite_changed = pyqtSignal(SatellitePattern)
     download_item_progress = pyqtSignal(int, int)  # index, progress percentage
     disk_space_updated = pyqtSignal(float, float)  # used_gb, total_gb
+    scan_completed = pyqtSignal(bool, str)  # success, message
 
     def __init__(
         self,
@@ -391,6 +392,10 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
         if self._status == ScanStatus.DOWNLOADING:
             LOGGER.warning("Download already in progress")
             return
+            
+        if self._status == ScanStatus.SCANNING:
+            LOGGER.warning("Cannot start download while scanning is in progress")
+            return
 
         if not self.has_missing_items:
             LOGGER.warning("No missing items to download")
@@ -585,7 +590,12 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
             item.satellite = cast("Any", self._satellite)
 
             # Determine source based on recency
-            cutoff = datetime.utcnow() - timedelta(days=TimeIndex.RECENT_WINDOW_DAYS)
+            cutoff = datetime.now(UTC) - timedelta(days=TimeIndex.RECENT_WINDOW_DAYS)
+            # Make cutoff naive if ts is naive, or ensure both are aware
+            if ts.tzinfo is None:
+                cutoff = cutoff.replace(tzinfo=None)
+            elif cutoff.tzinfo is None:
+                cutoff = cutoff.replace(tzinfo=UTC)
             if ts >= cutoff:
                 item.source = "cdn"
             else:

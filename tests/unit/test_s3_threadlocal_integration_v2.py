@@ -35,7 +35,8 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
     """Optimized ThreadLocalCacheDB integration tests with full coverage."""
 
     @pytest.fixture(scope="class")
-    def threadlocal_integration_test_components(self) -> dict[str, Any]:  # noqa: PLR6301, C901
+    @staticmethod
+    def threadlocal_integration_test_components() -> dict[str, Any]:  # noqa: PLR6301, C901
         """Create shared components for ThreadLocalCacheDB integration testing.
 
         Returns:
@@ -137,18 +138,18 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                 s3_store.__aenter__ = AsyncMock(return_value=s3_store)
                 s3_store.__aexit__ = AsyncMock(return_value=None)
                 s3_store.exists = AsyncMock(return_value=True)
-                s3_store.download = AsyncMock(
-                    side_effect=lambda *args, **kwargs: self._mock_s3_download(*args, cache_db=cache_db, **kwargs)
-                )
+                async def s3_download_wrapper(*args, **kwargs):
+                    return await self._mock_s3_download(*args, cache_db=cache_db, **kwargs)
+                s3_store.download = AsyncMock(side_effect=s3_download_wrapper)
 
                 # Mock CDN store
                 cdn_store = MagicMock(spec=CDNStore)
                 cdn_store.__aenter__ = AsyncMock(return_value=cdn_store)
                 cdn_store.__aexit__ = AsyncMock(return_value=None)
                 cdn_store.exists = AsyncMock(return_value=True)
-                cdn_store.download = AsyncMock(
-                    side_effect=lambda *args, **kwargs: self._mock_cdn_download(*args, cache_db=cache_db, **kwargs)
-                )
+                async def cdn_download_wrapper(*args, **kwargs):
+                    return await self._mock_cdn_download(*args, cache_db=cache_db, **kwargs)
+                cdn_store.download = AsyncMock(side_effect=cdn_download_wrapper)
 
                 return {"s3_store": s3_store, "cdn_store": cdn_store}
 
@@ -175,7 +176,7 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                 dest_path: Path,
                 cache_db: ThreadLocalCacheDB,
                 product_type: str = "RadC",
-                _band: int = 13,
+                band: int = 13,
             ) -> Path:
                 """Mock S3 download that records thread ID and updates cache DB.
 
@@ -212,7 +213,7 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                 dest_path.write_text(content, encoding="utf-8")
 
                 # Add to cache DB
-                await cache_db.add_timestamp(ts, satellite, str(dest_path), exists=True)
+                await cache_db.add_timestamp(ts, satellite, str(dest_path), True)
 
                 # Record processing
                 with self.thread_tracking["lock"]:
@@ -252,7 +253,7 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
 
                 dest_path.write_text(content, encoding="utf-8")
 
-                await cache_db.add_timestamp(ts, satellite, str(dest_path), exists=True)
+                await cache_db.add_timestamp(ts, satellite, str(dest_path), True)
 
                 with self.thread_tracking["lock"]:
                     self.thread_tracking["thread_id_to_db"][thread_id].add(ts)
@@ -381,9 +382,11 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
 
                     # Mock fetch_missing_files
                     with patch.object(ReconcileManager, "fetch_missing_files") as mock_fetch:
-                        mock_fetch.side_effect = lambda *args, **kwargs: self._mock_fetch_missing_files(
-                            *args, stores=stores, cache_db=cache_db, **kwargs
-                        )
+                        async def mock_fetch_coroutine(*args, **kwargs):
+                            return await self._mock_fetch_missing_files(
+                                *args, stores=stores, _cache_db=cache_db, **kwargs
+                            )
+                        mock_fetch.side_effect = mock_fetch_coroutine
 
                         # Run concurrent downloads
                         with concurrent.futures.ThreadPoolExecutor(
@@ -440,9 +443,11 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                     product_types = ["RadF", "RadC", "RadM"]
 
                     with patch.object(ReconcileManager, "fetch_missing_files") as mock_fetch:
-                        mock_fetch.side_effect = lambda *args, **kwargs: self._mock_fetch_missing_files(
-                            *args, stores=stores, cache_db=cache_db, **kwargs
-                        )
+                        async def mock_fetch_coroutine(*args, **kwargs):
+                            return await self._mock_fetch_missing_files(
+                                *args, stores=stores, _cache_db=cache_db, **kwargs
+                            )
+                        mock_fetch.side_effect = mock_fetch_coroutine
 
                         # Run with different product types
                         with concurrent.futures.ThreadPoolExecutor(max_workers=len(product_types)) as executor:
@@ -506,7 +511,7 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
 
                             # Mock fetch call
                             await self._mock_fetch_missing_files(
-                                list(timestamp_set), SatellitePattern.GOES_18, temp_dir.name, stores, cache_db
+                                list(timestamp_set), SatellitePattern.GOES_18, temp_dir.name, stores, _cache_db=cache_db
                             )
 
                             return len(timestamp_set)
@@ -578,7 +583,7 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                         base_time = datetime.now(tz=UTC) - timedelta(days=1)
                         for i in range(10):
                             ts = base_time + timedelta(minutes=i * 5)
-                            await cache_db.add_timestamp(ts, satellite, f"/test/path_{i}.nc", exists=True)
+                            await cache_db.add_timestamp(ts, satellite, f"/test/path_{i}.nc", True)
 
                     # Run cache operations
                     loop = asyncio.new_event_loop()
@@ -756,7 +761,7 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                         for i in range(operation_count):
                             ts = base_time + timedelta(minutes=i * 3)
                             task = cache_db.add_timestamp(
-                                ts, SatellitePattern.GOES_18, f"/test/perf_{i}.nc", exists=True
+                                ts, SatellitePattern.GOES_18, f"/test/perf_{i}.nc", True
                             )
                             tasks.append(task)
 
@@ -916,9 +921,8 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
         assert result["scenario"] == "throughput_testing"
         assert result["results"]["performance_success"] is True
 
-    @staticmethod
     @pytest.mark.parametrize("product_type", ["RadF", "RadC", "RadM"])
-    def test_product_type_specific_operations(test_setup: dict[str, Any], product_type: str) -> None:
+    def test_product_type_specific_operations(self, test_setup: dict[str, Any], product_type: str) -> None:  # noqa: PLR6301
         """Test operations with specific product types."""
         setup = test_setup
         manager = setup["manager"]

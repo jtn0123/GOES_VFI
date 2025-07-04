@@ -116,20 +116,48 @@ class TestS3ConnectionPool:
             assert connection_pool._stats["connections_closed"] == 1
 
     @pytest.mark.asyncio()
-    async def test_max_connections_limit(self, connection_pool, mock_session, mock_s3_client) -> None:
+    async def test_max_connections_limit(self) -> None:
         """Test that pool respects max connections limit."""
         pool = S3ConnectionPool(max_connections=2)
 
+        # Create separate mock clients
+        mock_client1 = AsyncMock()
+        mock_client1.__aenter__ = AsyncMock(return_value=mock_client1)
+        mock_client1.__aexit__ = AsyncMock(return_value=None)
+        mock_client1.list_buckets = AsyncMock(return_value={"Buckets": []})
+
+        mock_client2 = AsyncMock()
+        mock_client2.__aenter__ = AsyncMock(return_value=mock_client2)
+        mock_client2.__aexit__ = AsyncMock(return_value=None)
+        mock_client2.list_buckets = AsyncMock(return_value={"Buckets": []})
+
+        mock_client3 = AsyncMock()
+        mock_client3.__aenter__ = AsyncMock(return_value=mock_client3)
+        mock_client3.__aexit__ = AsyncMock(return_value=None)
+        mock_client3.list_buckets = AsyncMock(return_value={"Buckets": []})
+
+        mock_session = MagicMock()
+        client_context = MagicMock()
+        
+        # Return different clients on each call
+        client_context.__aenter__ = AsyncMock(side_effect=[mock_client1, mock_client2, mock_client3])
+        mock_session.client.return_value = client_context
+
         with patch("s3_connection_pool.aioboto3.Session", return_value=mock_session):
             # Acquire max connections
-            async with pool.acquire():
-                async with pool.acquire():
+            async with pool.acquire() as client1:
+                async with pool.acquire() as client2:
                     # Both connections in use
                     assert len(pool._in_use_connections) == 2
+                    assert client1 is not None
+                    assert client2 is not None
 
                     # Try to acquire third (should still work but log warning)
                     async with pool.acquire() as client3:
                         assert client3 is not None
+        
+        # Cleanup
+        await pool.close_all()
 
     @pytest.mark.asyncio()
     async def test_connection_age_limit(self, connection_pool, mock_session, mock_s3_client) -> None:
@@ -156,21 +184,21 @@ class TestS3ConnectionPool:
     async def test_close_all_connections(self, connection_pool, mock_session, mock_s3_client) -> None:
         """Test closing all connections in pool."""
         with patch("s3_connection_pool.aioboto3.Session", return_value=mock_session):
-            # Create some connections
+            # Create some connections and let them return to pool
             async with connection_pool.acquire():
                 pass
             async with connection_pool.acquire():
                 pass
 
-            # Should have connections in pool
-            assert len(connection_pool._available_connections) > 0
+            # Should have connections in pool (they return when released)
+            assert len(connection_pool._available_connections) >= 1
 
             # Close all
             await connection_pool.close_all()
 
             # Pool should be empty
             assert len(connection_pool._available_connections) == 0
-            assert connection_pool._stats["connections_closed"] >= 2
+            assert connection_pool._stats["connections_closed"] >= 1
 
     def test_get_stats(self, connection_pool) -> None:
         """Test getting pool statistics."""

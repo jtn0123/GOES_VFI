@@ -102,29 +102,30 @@ class TestSuperButtonV2:  # noqa: PLR0904
         assert mock_button.parent() == parent
         assert mock_button.click_callback is None
 
-    @pytest.mark.parametrize("callback_type", ["function", "lambda", "method", "none"])
     @staticmethod
-    def test_set_click_callback_scenarios(mock_super_button: Any, callback_type: Any) -> None:
+    def test_set_click_callback_scenarios(mock_super_button: Any) -> None:
         """Test setting click callback with various callback types."""
-        if callback_type == "function":
+        # Test function callback
+        def test_callback() -> None:
+            pass
 
-            def test_callback() -> None:
-                pass
+        mock_super_button.set_click_callback(test_callback)
+        assert mock_super_button.click_callback == test_callback
 
-            callback = test_callback
-        elif callback_type == "lambda":
+        # Test lambda callback
+        lambda_callback = lambda: None  # noqa: E731
+        mock_super_button.set_click_callback(lambda_callback)
+        assert mock_super_button.click_callback == lambda_callback
 
-            def callback() -> None:
-                return None
+        # Test method callback
+        method_callback = Mock()
+        method_callback.__name__ = "mock_method"
+        mock_super_button.set_click_callback(method_callback)
+        assert mock_super_button.click_callback == method_callback
 
-        elif callback_type == "method":
-            callback = Mock()
-            callback.__name__ = "mock_method"
-        elif callback_type == "none":
-            callback = None
-
-        mock_super_button.set_click_callback(callback)
-        assert mock_super_button.click_callback == callback
+        # Test None callback
+        mock_super_button.set_click_callback(None)
+        assert mock_super_button.click_callback is None
 
     @staticmethod
     def test_mouse_press_event_handling(mock_super_button: Any) -> None:
@@ -135,10 +136,10 @@ class TestSuperButtonV2:  # noqa: PLR0904
             mock_event = MagicMock(spec=QMouseEvent)
             mock_event.button.return_value = Qt.MouseButton.LeftButton
 
-            # Simulate mouse press event handling
+            # Simulate mouse press event handling with print
             def mock_mouse_press(event: Any) -> None:
                 if event and hasattr(event, "button"):
-                    pass
+                    print(f"SuperButton MOUSE PRESS: {event.button()}")
 
             mock_super_button.mousePressEvent = mock_mouse_press
             mock_super_button.mousePressEvent(mock_event)
@@ -159,47 +160,47 @@ class TestSuperButtonV2:  # noqa: PLR0904
         # Should not raise exception
         mock_super_button.mousePressEvent(None)
 
-    @pytest.mark.parametrize(
-        "button_type,should_trigger",
-        [
-            (Qt.MouseButton.LeftButton, True),
-            (Qt.MouseButton.RightButton, False),
-            (Qt.MouseButton.MiddleButton, False),
-        ],
-    )
     @staticmethod
-    def test_mouse_release_event_button_types(mock_super_button: Any, button_type: Any, should_trigger: Any) -> None:
+    def test_mouse_release_event_button_types(mock_super_button: Any) -> None:
         """Test mouse release event with different button types."""
         callback = Mock()
         callback.__name__ = "mock_callback"
         mock_super_button.set_click_callback(callback)
 
-        # Mock QTimer.singleShot
-        with patch("PyQt6.QtCore.QTimer.singleShot") as mock_timer:
-            # Create mock mouse event
-            mock_event = MagicMock(spec=QMouseEvent)
-            mock_event.button.return_value = button_type
+        # Test scenarios
+        test_scenarios = [
+            (Qt.MouseButton.LeftButton, True),
+            (Qt.MouseButton.RightButton, False),
+            (Qt.MouseButton.MiddleButton, False),
+        ]
 
-            # Simulate mouse release event handling
-            def mock_mouse_release(event: Any) -> None:
-                if (
-                    event
-                    and hasattr(event, "button")
-                    and event.button() == Qt.MouseButton.LeftButton
-                    and mock_super_button.click_callback
-                ):
-                    mock_timer(10, mock_super_button.click_callback)
+        for button_type, should_trigger in test_scenarios:
+            # Mock QTimer.singleShot
+            with patch("PyQt6.QtCore.QTimer.singleShot") as mock_timer:
+                # Create mock mouse event
+                mock_event = MagicMock(spec=QMouseEvent)
+                mock_event.button.return_value = button_type
 
-            mock_super_button.mouseReleaseEvent = mock_mouse_release
+                # Simulate mouse release event handling
+                def mock_mouse_release(event: Any) -> None:
+                    if (
+                        event
+                        and hasattr(event, "button")
+                        and event.button() == Qt.MouseButton.LeftButton
+                        and mock_super_button.click_callback
+                    ):
+                        mock_timer(10, mock_super_button.click_callback)
 
-            with patch("builtins.print"):
-                mock_super_button.mouseReleaseEvent(mock_event)
+                mock_super_button.mouseReleaseEvent = mock_mouse_release
 
-            # Verify timer was called only for left button
-            if should_trigger:
-                mock_timer.assert_called_once_with(10, callback)
-            else:
-                mock_timer.assert_not_called()
+                with patch("builtins.print"):
+                    mock_super_button.mouseReleaseEvent(mock_event)
+
+                # Verify timer was called only for left button
+                if should_trigger:
+                    mock_timer.assert_called_once_with(10, callback)
+                else:
+                    mock_timer.assert_not_called()
 
     @staticmethod
     def test_mouse_release_event_no_callback(mock_super_button: Any) -> None:
@@ -211,8 +212,9 @@ class TestSuperButtonV2:  # noqa: PLR0904
             mock_event.button.return_value = Qt.MouseButton.LeftButton
 
             def mock_mouse_release(event: Any) -> None:
-                if event and event.button() == Qt.MouseButton.LeftButton and mock_super_button.click_callback:
-                    pass
+                if event and event.button() == Qt.MouseButton.LeftButton:
+                    if not mock_super_button.click_callback:
+                        print("SuperButton: No callback registered")
 
             mock_super_button.mouseReleaseEvent = mock_mouse_release
             mock_super_button.mouseReleaseEvent(mock_event)
@@ -369,27 +371,27 @@ class TestSuperButtonV2:  # noqa: PLR0904
         mock_super_button.pressed.connect.assert_called_with(pressed_signal)
         mock_super_button.released.connect.assert_called_with(released_signal)
 
-    @pytest.mark.parametrize(
-        "width,height",
-        [
+    @staticmethod
+    def test_geometry_and_visibility(mock_super_button: Any) -> None:
+        """Test button geometry and visibility settings."""
+        # Test scenarios
+        size_scenarios = [
             (100, 50),
             (200, 100),
             (150, 75),
-        ],
-    )
-    @staticmethod
-    def test_geometry_and_visibility(mock_super_button: Any, width: Any, height: Any) -> None:
-        """Test button geometry and visibility settings."""
-        # Test resize
-        mock_super_button.resize(width, height)
-        mock_super_button.width.return_value = width
-        mock_super_button.height.return_value = height
+        ]
 
-        mock_super_button.resize.assert_called_with(width, height)
-        assert mock_super_button.width() == width
-        assert mock_super_button.height() == height
+        for width, height in size_scenarios:
+            # Test resize
+            mock_super_button.resize(width, height)
+            mock_super_button.width.return_value = width
+            mock_super_button.height.return_value = height
 
-        # Test visibility
+            mock_super_button.resize.assert_called_with(width, height)
+            assert mock_super_button.width() == width
+            assert mock_super_button.height() == height
+
+        # Test visibility (only test once since it's state-based)
         assert mock_super_button.isVisible()
 
         mock_super_button.hide()

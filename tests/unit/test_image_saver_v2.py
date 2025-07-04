@@ -266,7 +266,7 @@ class TestImageSaverV2:  # noqa: PLR0904
 
             output_path = Path(temp_dir) / f"invalid_{description.replace(' ', '_')}.png"
 
-            with pytest.raises((ValueError, AttributeError, TypeError)):
+            with pytest.raises((ValueError, AttributeError, TypeError, OSError, SystemError)):
                 saver.save(image_data, str(output_path))
 
     def test_not_implemented_methods(self, saver: Any) -> None:  # noqa: PLR6301

@@ -112,21 +112,29 @@ def _get_colormap(colormap_name: str) -> Any:
     if colormap_name == "gray":
         # Custom grayscale with enhanced contrast
         return LinearSegmentedColormap.from_list("enhanced_gray", [(0, 0, 0), (1, 1, 1)], N=256)
-    # Get the colormap - we just need a Colormap,
-    # not specifically LinearSegmentedColormap
-    cmap = plt.get_cmap(colormap_name)
+    
+    try:
+        # Get the colormap - we just need a Colormap,
+        # not specifically LinearSegmentedColormap
+        cmap = plt.get_cmap(colormap_name)
+    except ValueError:
+        # If colormap doesn't exist, fall back to viridis
+        cmap = plt.get_cmap("viridis")
+        colormap_name = "viridis"
+    
     # Create a new LinearSegmentedColormap with the data from _cmap
     # This ensures type safety while maintaining the colormap
     return LinearSegmentedColormap.from_list(colormap_name, cmap(np.linspace(0, 1, 256)), N=256)
 
 
-def _create_figure(data: npt.NDArray[np.float64], colormap_name: str, output_path: Path) -> None:
+def _create_figure(data: npt.NDArray[np.float64], colormap_name: str, output_path: Path, dpi: int = 100) -> None:
     """Create a matplotlib figure and save it to a file.
 
     Args:
         data: Normalized data to visualize
         colormap_name: Name of the colormap to use
         output_path: Path to save the figure
+        dpi: DPI for output image (default: 100)
 
     Returns:
         None
@@ -137,7 +145,6 @@ def _create_figure(data: npt.NDArray[np.float64], colormap_name: str, output_pat
     cmap = _get_colormap(colormap_name)
 
     # Create a figure
-    dpi = 100
     fig_width = data.shape[1] / dpi
     fig_height = data.shape[0] / dpi
 
@@ -193,6 +200,7 @@ def render_png(
     colormap: str = DEFAULT_COLORMAP,
     satellite: SatellitePattern | None = None,
     resolution: tuple[int, int] | None = None,
+    dpi: int = 100,
 ) -> Path:
     """Render a PNG image from a GOES NetCDF file.
 
@@ -204,6 +212,7 @@ def render_png(
         colormap: Colormap name (from matplotlib)  # type: ignore[import-not-found]
         satellite: Satellite pattern enum (used for metadata)
         resolution: Optional output resolution (width, height)
+        dpi: DPI for output image (default: 100)
 
     Returns:
         Path to the rendered PNG image
@@ -241,7 +250,7 @@ def render_png(
             normalized_data = _convert_radiance_to_temperature(data, ds, min_temp_k, max_temp_k)
 
             # 4. Create figure and save to file
-            _create_figure(normalized_data, colormap, final_output_path)
+            _create_figure(normalized_data, colormap, final_output_path, dpi)
 
             # 5. Optional resize
             if resolution is not None:

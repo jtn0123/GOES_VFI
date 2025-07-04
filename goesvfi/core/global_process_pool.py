@@ -237,11 +237,12 @@ class GlobalProcessPool(ConfigurableManager):
         if self._active_futures:
             self.log_info("Waiting for %d active tasks", len(self._active_futures))
 
-            # Wait for completion
-            _completed, pending = as_completed(self._active_futures, timeout=timeout)
-
-            if pending:
-                self.log_warning("Timed out waiting for %d tasks", len(pending))
+            # Wait for completion using as_completed iterator
+            try:
+                for _ in as_completed(self._active_futures, timeout=timeout):
+                    pass  # Just consume the iterator
+            except Exception as e:
+                self.log_warning("Error waiting for tasks: %s", e)
 
     @contextmanager
     def batch_context(self, max_concurrent: int | None = None) -> Generator[None]:
@@ -285,10 +286,7 @@ def get_global_process_pool() -> GlobalProcessPool:
     Returns:
         GlobalProcessPool singleton instance
     """
-    global _global_pool
-    if _global_pool is None:
-        _global_pool = GlobalProcessPool()
-    return _global_pool
+    return GlobalProcessPool()
 
 
 def submit_to_pool[T](fn: Callable[..., T], *args: Any, **kwargs: Any) -> Future[T]:

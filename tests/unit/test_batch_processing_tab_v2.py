@@ -392,11 +392,11 @@ class TestBatchProcessingTab:
         processor.create_job_from_paths.side_effect = Exception("Job creation failed")
 
         # Mock QMessageBox to capture error message
-        with patch("goesvfi.gui_tabs.batch_processing_tab.QMessageBox") as mock_msgbox:
+        with patch("goesvfi.gui_tabs.batch_processing_tab.QMessageBox"):
             # The method should handle the exception gracefully
             # Currently it doesn't have error handling, so it will raise
             # We need to wrap the entire method call
-            with patch.object(tab, '_add_to_queue', wraps=tab._add_to_queue) as mock_method:
+            with patch.object(tab, "_add_to_queue", wraps=tab._add_to_queue):
                 try:
                     tab._add_to_queue()  # noqa: SLF001
                 except Exception:

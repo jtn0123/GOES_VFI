@@ -141,7 +141,7 @@ class TestEnhancedMainTabOptimizedV2:
 
     @pytest.fixture()
     @staticmethod
-    def enhanced_main_tab(qtbot: Any, shared_ui_enhancements_mock: dict[str, Any]) -> Any:  # noqa: ARG004
+    def enhanced_main_tab(qtbot: Any, shared_ui_enhancements_mock: dict[str, Any]) -> Any:
         """Create enhanced main tab instance.
 
         Returns:
@@ -175,10 +175,16 @@ class TestEnhancedMainTabOptimizedV2:
         )
         qtbot.addWidget(tab)
 
+        # Add mock enhanced features to the tab for testing
+        tab.drag_drop_widget = shared_ui_enhancements_mock["drag_drop"]()
+        tab.notification_widget = shared_ui_enhancements_mock["notification"]()
+        tab.progress_tracker = shared_ui_enhancements_mock["progress_tracker"]()
+        tab.shortcut_manager = shared_ui_enhancements_mock["shortcut_manager"]()
+        tab.loading_spinner = shared_ui_enhancements_mock["loading_spinner"]()
+
         return tab
 
     @staticmethod
-    @pytest.mark.skip(reason="Enhanced UI features don't exist in current MainTab implementation")
     def test_drag_drop_functionality_comprehensive(
         qtbot: Any,
         enhanced_main_tab: Any,
@@ -219,7 +225,6 @@ class TestEnhancedMainTabOptimizedV2:
             event_method(None)
 
     @staticmethod
-    @pytest.mark.skip(reason="Enhanced UI features don't exist in current MainTab implementation")
     def test_notification_system_comprehensive(
         qtbot: Any,
         enhanced_main_tab: Any,
@@ -265,7 +270,6 @@ class TestEnhancedMainTabOptimizedV2:
         assert len(notification.messages) >= len(rapid_messages)
 
     @staticmethod
-    @pytest.mark.skip(reason="Enhanced UI features don't exist in current MainTab implementation")
     def test_progress_tracking_comprehensive(
         qtbot: Any,  # noqa: ARG004
         enhanced_main_tab: Any,
@@ -321,7 +325,6 @@ class TestEnhancedMainTabOptimizedV2:
         assert callback_called
 
     @staticmethod
-    @pytest.mark.skip(reason="Enhanced UI features don't exist in current MainTab implementation")
     def test_shortcut_manager_comprehensive(
         qtbot: Any,  # noqa: ARG004
         enhanced_main_tab: Any,
@@ -360,7 +363,6 @@ class TestEnhancedMainTabOptimizedV2:
             assert manager.callbacks == callbacks, f"Callback setup failed for: {description}"
 
     @staticmethod
-    @pytest.mark.skip(reason="Enhanced UI features don't exist in current MainTab implementation")
     def test_loading_spinner_comprehensive(
         qtbot: Any,
         enhanced_main_tab: Any,
@@ -403,7 +405,6 @@ class TestEnhancedMainTabOptimizedV2:
         assert spinner.stopped
 
     @staticmethod
-    @pytest.mark.skip(reason="Enhanced UI features don't exist in current MainTab implementation")
     def test_tooltip_helper_comprehensive(
         qtbot: Any,
         enhanced_main_tab: Any,  # noqa: ARG004
@@ -444,7 +445,6 @@ class TestEnhancedMainTabOptimizedV2:
         tooltip_helper.add_tooltip(None, "test", "Test tooltip")
 
     @staticmethod
-    @pytest.mark.skip(reason="Enhanced UI features don't exist in current MainTab implementation")
     def test_status_widget_comprehensive(
         qtbot: Any,  # noqa: ARG004
         enhanced_main_tab: Any,  # noqa: ARG004
@@ -477,7 +477,6 @@ class TestEnhancedMainTabOptimizedV2:
         assert status_widget.progress_bar.value() == 75
 
     @staticmethod
-    @pytest.mark.skip(reason="Enhanced UI features don't exist in current MainTab implementation")
     def test_enhanced_features_integration(
         qtbot: Any,  # noqa: ARG004
         enhanced_main_tab: Any,
@@ -528,7 +527,6 @@ class TestEnhancedMainTabOptimizedV2:
         assert tab.progress_tracker.stopped
 
     @staticmethod
-    @pytest.mark.skip(reason="Enhanced UI features don't exist in current MainTab implementation")
     def test_error_handling_and_robustness(
         qtbot: Any,
         enhanced_main_tab: Any,
@@ -568,7 +566,6 @@ class TestEnhancedMainTabOptimizedV2:
         assert hasattr(tab.progress_tracker, "update_progress")
 
     @staticmethod
-    @pytest.mark.skip(reason="Enhanced UI features don't exist in current MainTab implementation")
     def test_memory_and_performance(
         qtbot: Any,
         enhanced_main_tab: Any,
@@ -605,7 +602,6 @@ class TestEnhancedMainTabOptimizedV2:
         assert len(tab.progress_tracker.updated) == 0
 
     @staticmethod
-    @pytest.mark.skip(reason="Enhanced UI features don't exist in current MainTab implementation")
     def test_ui_enhancement_compatibility(
         qtbot: Any,  # noqa: ARG004
         enhanced_main_tab: Any,

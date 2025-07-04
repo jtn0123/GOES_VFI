@@ -271,7 +271,7 @@ class TestEncodeOptimizedV2:
                             f"{bufsize_kb}k",
                         ])
 
-                    expected_cmd = base_cmd + encoder_args + ["-pix_fmt", pix_fmt, str(final)]
+                    expected_cmd = base_cmd + encoder_args + ["-pix_fmt", pix_fmt, "-movflags", "+faststart", str(final)]
 
                     with patch("goesvfi.pipeline.encode.subprocess.Popen") as mock_popen:
                         mock_popen_factory = create_mock_popen(
@@ -377,6 +377,8 @@ class TestEncodeOptimizedV2:
                         pass_log_prefix,
                         "-pix_fmt",
                         pix_fmt,
+                        "-movflags",
+                        "+faststart",
                         str(final),
                     ]
 
@@ -536,3 +538,111 @@ class TestEncodeOptimizedV2:
         return {
             "test_manager": EncodingTestManager(),
         }
+
+    @pytest.fixture()
+    @staticmethod
+    def temp_workspace(tmp_path: Any) -> dict[str, Any]:
+        """Create temporary workspace for testing.
+
+        Returns:
+            dict[str, Any]: Dictionary containing workspace paths.
+        """
+        workspace = {
+            "temp_dir": tmp_path,
+            "intermediate": tmp_path / "intermediate.mp4",
+            "final": tmp_path / "final.mp4",
+        }
+        # Create intermediate file
+        workspace["intermediate"].touch()
+        return workspace
+
+    @pytest.fixture()
+    @staticmethod
+    def mock_registry() -> dict[str, Any]:
+        """Create registry for storing mock results.
+
+        Returns:
+            dict[str, Any]: Empty registry dictionary.
+        """
+        return {}
+
+    def test_stream_copy_success(
+        self,
+        encoding_test_components: dict[str, Any],
+        temp_workspace: dict[str, Any],
+        mock_registry: dict[str, Any],
+    ) -> None:
+        """Test successful stream copy operation."""
+        test_manager = encoding_test_components["test_manager"]
+        result = test_manager.run_test_scenario("stream_copy_success", temp_workspace, mock_registry)
+        assert result["success"]
+        assert result["file_created"]
+
+    def test_stream_copy_fallback(
+        self,
+        encoding_test_components: dict[str, Any],
+        temp_workspace: dict[str, Any],
+        mock_registry: dict[str, Any],
+    ) -> None:
+        """Test stream copy fallback to rename when FFmpeg fails."""
+        test_manager = encoding_test_components["test_manager"]
+        result = test_manager.run_test_scenario("stream_copy_fallback", temp_workspace, mock_registry)
+        assert result["success"]
+        assert result["ffmpeg_failed"]
+        assert result["fallback_used"]
+
+    def test_single_pass_encoders(
+        self,
+        encoding_test_components: dict[str, Any],
+        temp_workspace: dict[str, Any],
+        mock_registry: dict[str, Any],
+    ) -> None:
+        """Test various single-pass encoder configurations."""
+        test_manager = encoding_test_components["test_manager"]
+        results = test_manager.run_test_scenario("single_pass_encoders", temp_workspace, mock_registry)
+
+        # Verify all encoders were tested successfully
+        for encoder_name, result in results.items():
+            assert result["success"], f"Encoder {encoder_name} failed"
+            assert result["file_created"], f"Output file not created for {encoder_name}"
+
+    def test_two_pass_encoding(
+        self,
+        encoding_test_components: dict[str, Any],
+        temp_workspace: dict[str, Any],
+        mock_registry: dict[str, Any],
+    ) -> None:
+        """Test two-pass encoding functionality."""
+        test_manager = encoding_test_components["test_manager"]
+        result = test_manager.run_test_scenario("two_pass_encoding", temp_workspace, mock_registry)
+        assert result["success"]
+        assert result["pass_count"] == 2
+        assert result["file_created"]
+        assert result["used_temp_file"]
+
+    def test_error_conditions(
+        self,
+        encoding_test_components: dict[str, Any],
+        temp_workspace: dict[str, Any],
+        mock_registry: dict[str, Any],
+    ) -> None:
+        """Test error handling for unsupported encoders and invalid scenarios."""
+        test_manager = encoding_test_components["test_manager"]
+        results = test_manager.run_test_scenario("error_conditions", temp_workspace, mock_registry)
+
+        # Verify error handling
+        assert results["unsupported_encoder"]["success"]
+        assert results["unsupported_encoder"]["raises_error"]
+        assert results["invalid_input"]["success"]
+
+    def test_edge_cases(
+        self,
+        encoding_test_components: dict[str, Any],
+        temp_workspace: dict[str, Any],
+        mock_registry: dict[str, Any],
+    ) -> None:
+        """Test edge cases for encoding functionality."""
+        test_manager = encoding_test_components["test_manager"]
+        results = test_manager.run_test_scenario("edge_cases", temp_workspace, mock_registry)
+        assert results["minimal_params"]["success"]
+        assert results["minimal_params"]["ffmpeg_called"]

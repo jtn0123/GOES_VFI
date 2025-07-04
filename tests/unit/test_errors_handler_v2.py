@@ -1235,7 +1235,7 @@ class TestErrorHandlerIntegrationV2(unittest.TestCase):
         priority_medium = PriorityHandler(min_priority=4)
         priority_low = PriorityHandler(min_priority=1)
         rate_limiter = RateLimitHandler(max_errors_per_second=5)
-        fallback = CustomErrorHandlerV2(list(ErrorCategory), should_stop=True)
+        fallback = CustomErrorHandlerV2(list(ErrorCategory), should_stop=False)
 
         # Create chain
         chain = (

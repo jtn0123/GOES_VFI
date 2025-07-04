@@ -115,6 +115,10 @@ class SanchezHealthStatus:
                 "memory_mb": self.memory_available_mb,
                 "disk_mb": self.disk_space_available_mb,
             },
+            "diagnostics": {
+                "temp_dir_writable": self.temp_dir_writable,
+                "execution_time": self.execution_time,
+            },
             "errors": self.errors,
             "warnings": self.warnings,
         }
@@ -132,8 +136,10 @@ class SanchezHealthChecker:
         """Get the expected Sanchez binary path for this platform."""
         lookup = {
             ("Darwin", "x86_64"): self.sanchez_dir / "osx-x64" / "Sanchez",
-            ("Darwin", "arm64"): self.sanchez_dir / "osx-x64" / "Sanchez",
+            ("Darwin", "arm64"): self.sanchez_dir / "osx-arm64" / "Sanchez",
+            ("Linux", "x86_64"): self.sanchez_dir / "linux-x64" / "Sanchez",
             ("Windows", "AMD64"): self.sanchez_dir / "win-x64" / "Sanchez.exe",
+            ("Windows", "x86"): self.sanchez_dir / "win-x86" / "Sanchez.exe",
         }
 
         return lookup.get(self.platform_key)

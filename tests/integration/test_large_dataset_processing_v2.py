@@ -119,8 +119,8 @@ class TestLargeDatasetProcessingV2:
 
     @pytest.mark.asyncio()
     @pytest.mark.parametrize("data_size", ["small", "medium", "large"])
-    @staticmethod
     async def test_streaming_netcdf_processing(
+        self,
         shared_memory_monitor: MemoryMonitor,
         temp_dir_factory: Callable[[], Any],
         mock_netcdf_data_factory: Callable[[str], dict[str, Any]],
@@ -186,8 +186,9 @@ class TestLargeDatasetProcessingV2:
         psutil.Process().memory_info().rss if psutil else 0
 
         # Simulate memory-intensive operation
-        with patch.object(shared_memory_monitor, "check_memory_usage") as mock_check:
-            mock_check.return_value = True  # Memory OK
+        with patch.object(shared_memory_monitor, "get_memory_stats") as mock_stats:
+            from goesvfi.utils.memory_manager import MemoryStats
+            mock_stats.return_value = MemoryStats(total_mb=8192, available_mb=4096, used_mb=4096, percent_used=50.0)
 
             # Simulate data processing
             temp_array = large_data["Rad"] * 2.0  # Simple operation
@@ -207,10 +208,10 @@ class TestLargeDatasetProcessingV2:
             (10, 1),  # Large chunks, few pieces
         ],
     )
-    @staticmethod
     def test_streaming_processor_chunking_strategies(
+        self,
         chunk_size_mb: int,
-        expected_chunks: int,  # noqa: ARG004
+        expected_chunks: int,  # noqa: ARG002
         mock_netcdf_data_factory: Callable[[str], dict[str, Any]],
     ) -> None:
         """Test streaming processor with different chunking strategies."""
@@ -345,8 +346,8 @@ class TestLargeDatasetProcessingV2:
         assert memory_growth < max_acceptable_growth or initial_memory == 0
 
     @pytest.mark.parametrize("error_scenario", ["insufficient_memory", "io_error", "processing_failure"])
-    @staticmethod
     def test_large_dataset_error_handling(
+        self,
         shared_memory_monitor: MemoryMonitor,
         mock_netcdf_data_factory: Callable[[str], dict[str, Any]],
         error_scenario: str,
@@ -361,7 +362,10 @@ class TestLargeDatasetProcessingV2:
 
         if error_scenario == "insufficient_memory":
             # Mock memory shortage
-            with patch.object(shared_memory_monitor, "check_memory_usage", return_value=False):
+            from goesvfi.utils.memory_manager import MemoryStats
+            with patch.object(shared_memory_monitor, "get_memory_stats") as mock_stats:
+                # Mock critically low memory
+                mock_stats.return_value = MemoryStats(total_mb=8192, available_mb=100, used_mb=8092, percent_used=98.8)
                 # Simulate memory constraint handling
                 try:
                     # Mock operation that would fail due to memory

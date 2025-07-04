@@ -79,9 +79,8 @@ class TestExceptionHierarchy:
             ("base", [GoesVfiError, Exception]),
         ],
     )
-    @staticmethod
     def test_exception_inheritance(
-        all_exceptions: dict[str, GoesVfiError], error_type: str, parent_types: list[type]
+        self, all_exceptions: dict[str, GoesVfiError], error_type: str, parent_types: list[type]
     ) -> None:
         """Test exception inheritance chains."""
         error = all_exceptions[error_type]
@@ -116,8 +115,7 @@ class TestExternalToolError:
             ("tool", "Failed", "Multi\nline\nerror", "Error executing tool: Failed"),
         ],
     )
-    @staticmethod
-    def test_external_tool_error_creation(tool_name: str, message: str, stderr: str | None, expected_str: str) -> None:
+    def test_external_tool_error_creation(self, tool_name: str, message: str, stderr: str | None, expected_str: str) -> None:
         """Test creating external tool errors with various parameters."""
         error = ExternalToolError(tool_name, message, stderr=stderr)
 
@@ -193,7 +191,7 @@ class TestExceptionUsagePatterns:
         """Test exception catching at different hierarchy levels."""
         for catch_type in catch_types:
             with pytest.raises(catch_type):
-                raise_func()
+                raise raise_func()
 
     def test_exception_chaining(self) -> None:  # noqa: PLR6301
         """Test exception chaining and context preservation."""

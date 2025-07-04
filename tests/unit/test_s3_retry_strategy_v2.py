@@ -12,7 +12,7 @@ import asyncio
 from datetime import datetime
 from pathlib import Path
 import tempfile
-from typing import Any, Dict, List
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import botocore.exceptions
@@ -88,7 +88,7 @@ class TestS3RetryStrategyOptimizedV2:
                 return tempfile.TemporaryDirectory()
 
             def create_mock_session_with_retry_behavior(
-                self, retry_config: Dict[str, Any], success_on_attempt: int = 2
+                self, retry_config: dict[str, Any], success_on_attempt: int = 2
             ) -> MagicMock:
                 """Create a mock aioboto3.Session with configurable retry behavior."""
                 mock_session = MagicMock()
@@ -106,10 +106,9 @@ class TestS3RetryStrategyOptimizedV2:
                             raise botocore.exceptions.ClientError(
                                 retry_config["error_response"], retry_config["operation_name"]
                             )
-                        else:
-                            error_type = retry_config["error_type"]
-                            error_message = retry_config["error_message"]
-                            raise error_type(error_message)
+                        error_type = retry_config["error_type"]
+                        error_message = retry_config["error_message"]
+                        raise error_type(error_message)
                     return mock_client
 
                 mock_client_context.__aenter__ = mock_aenter
@@ -152,14 +151,14 @@ class TestS3RetryStrategyOptimizedV2:
 
             async def test_client_creation_retry_scenario(
                 self, scenario_name: str, temp_dir, **kwargs
-            ) -> Dict[str, Any]:
+            ) -> dict[str, Any]:
                 """Test client creation retry scenarios."""
                 results = {}
 
                 if scenario_name == "retry_success":
                     # Test successful retry after initial failures
                     retry_config = self.retry_configs["client_creation_timeout"]
-                    mock_session, mock_client, mock_context = self.create_mock_session_with_retry_behavior(
+                    mock_session, mock_client, _mock_context = self.create_mock_session_with_retry_behavior(
                         retry_config, success_on_attempt=2
                     )
 
@@ -178,7 +177,7 @@ class TestS3RetryStrategyOptimizedV2:
                 elif scenario_name == "retry_exhausted":
                     # Test retry exhaustion (all attempts fail)
                     retry_config = self.retry_configs["client_creation_timeout"]
-                    mock_session, _, mock_context = self.create_mock_session_with_retry_behavior(
+                    mock_session, _, _mock_context = self.create_mock_session_with_retry_behavior(
                         retry_config,
                         success_on_attempt=10,  # Never succeeds
                     )
@@ -211,7 +210,8 @@ class TestS3RetryStrategyOptimizedV2:
                             nonlocal call_count
                             call_count += 1
                             if call_count <= 2:
-                                raise TimeoutError("Transient network error")
+                                msg = "Transient network error"
+                                raise TimeoutError(msg)
                             return mock_client
 
                         mock_client_context.__aenter__ = failing_aenter
@@ -229,7 +229,7 @@ class TestS3RetryStrategyOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            async def test_download_retry_scenario(self, scenario_name: str, temp_dir, **kwargs) -> Dict[str, Any]:
+            async def test_download_retry_scenario(self, scenario_name: str, temp_dir, **kwargs) -> dict[str, Any]:
                 """Test download retry scenarios."""
                 results = {}
                 store = self.create_s3_store()
@@ -277,7 +277,7 @@ class TestS3RetryStrategyOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            async def test_statistics_tracking_scenario(self, scenario_name: str, temp_dir, **kwargs) -> Dict[str, Any]:
+            async def test_statistics_tracking_scenario(self, scenario_name: str, temp_dir, **kwargs) -> dict[str, Any]:
                 """Test statistics tracking scenarios."""
                 results = {}
 
@@ -292,7 +292,9 @@ class TestS3RetryStrategyOptimizedV2:
 
                     stats_updates = []
 
-                    def mock_update_stats(success, download_time=0, file_size=0, error_type=None, error_message=None):
+                    def mock_update_stats(
+                        success, download_time=0, file_size=0, error_type=None, error_message=None
+                    ) -> None:
                         stats_updates.append({
                             "success": success,
                             "download_time": download_time,
@@ -312,7 +314,7 @@ class TestS3RetryStrategyOptimizedV2:
                         patch("pathlib.Path.mkdir"),
                     ):
                         mock_stat.return_value.st_size = 1024
-                        result = await store.download_file(test_timestamp, test_satellite, test_dest_path)
+                        await store.download_file(test_timestamp, test_satellite, test_dest_path)
 
                         assert len(stats_updates) > 0
                         assert stats_updates[0]["success"] is True
@@ -333,7 +335,9 @@ class TestS3RetryStrategyOptimizedV2:
 
                     stats_updates = []
 
-                    def mock_update_stats(success, download_time=0, file_size=0, error_type=None, error_message=None):
+                    def mock_update_stats(
+                        success, download_time=0, file_size=0, error_type=None, error_message=None
+                    ) -> None:
                         stats_updates.append({
                             "success": success,
                             "download_time": download_time,
@@ -361,7 +365,7 @@ class TestS3RetryStrategyOptimizedV2:
 
             async def test_concurrency_limiting_scenario(
                 self, scenario_name: str, temp_dir, **kwargs
-            ) -> Dict[str, Any]:
+            ) -> dict[str, Any]:
                 """Test concurrency limiting scenarios."""
                 results = {}
 
@@ -460,7 +464,7 @@ class TestS3RetryStrategyOptimizedV2:
 
                 return {"scenario": scenario_name, "results": results}
 
-            async def test_network_diagnostics_scenario(self, scenario_name: str, temp_dir, **kwargs) -> Dict[str, Any]:
+            async def test_network_diagnostics_scenario(self, scenario_name: str, temp_dir, **kwargs) -> dict[str, Any]:
                 """Test network diagnostics collection scenarios."""
                 results = {}
 
@@ -468,7 +472,7 @@ class TestS3RetryStrategyOptimizedV2:
                     # Test network diagnostics collection during S3Store initialization
                     with patch("goesvfi.integrity_check.remote.s3_store.get_system_network_info") as mock_diagnostics:
                         # Create a new S3Store which triggers diagnostics collection during init
-                        store = self.create_s3_store()
+                        self.create_s3_store()
 
                         # Verify diagnostics were collected during initialization
                         mock_diagnostics.assert_called()
@@ -639,4 +643,3 @@ class TestS3RetryStrategyOptimizedV2:
         # All categories should have successful results
         assert all(results_summary.values()), f"Failed categories: {results_summary}"
         assert len(results_summary) == 5  # All categories tested
-

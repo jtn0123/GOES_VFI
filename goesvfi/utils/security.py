@@ -33,6 +33,10 @@ class InputValidator:
         "Hardware HEVC (VideoToolbox)",
         "Hardware H.264 (VideoToolbox)",
         "None (copy original)",
+        "Hardware HEVC (NVENC)",
+        "Hardware H.264 (NVENC)",
+        "Hardware HEVC (QSV)",
+        "Hardware H.264 (QSV)",
     ]
 
     # Allowed Sanchez arguments with validation patterns
@@ -119,7 +123,14 @@ class InputValidator:
         Raises:
             SecurityError: If value is out of range
         """
-        if not isinstance(value, int | float):
+        # Check for invalid types (including booleans which are subclass of int)
+        if not isinstance(value, int | float) or isinstance(value, bool):
+            msg = f"{name} must be a number"
+            raise SecurityError(msg)
+
+        # Check for infinity and NaN values
+        import math
+        if isinstance(value, float) and (math.isinf(value) or math.isnan(value)):
             msg = f"{name} must be a number"
             raise SecurityError(msg)
 
@@ -151,6 +162,18 @@ class InputValidator:
         # Ensure filename isn't empty after sanitization
         if not sanitized:
             sanitized = "untitled"
+
+        # Handle Windows reserved names
+        windows_reserved = [
+            "CON", "PRN", "AUX", "NUL",
+            "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
+            "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9"
+        ]
+        
+        # Check if the base name (without extension) is a reserved name
+        name_part, ext_part = os.path.splitext(sanitized)
+        if name_part.upper() in windows_reserved:
+            sanitized = name_part + "_" + ext_part
 
         # Limit length
         if len(sanitized) > 255:
@@ -323,7 +346,7 @@ def secure_subprocess_call(command: list[str], **kwargs: Any) -> Any:
     LOGGER.info("Executing secure subprocess: %s with %s args", command[0], len(command) - 1)
 
     try:
-        return subprocess.run(command, check=False, **secure_kwargs)
+        return subprocess.run(command, **secure_kwargs)
     except subprocess.TimeoutExpired as e:
         msg = f"Command timed out after {secure_kwargs['timeout']} seconds"
         raise SecurityError(msg) from e

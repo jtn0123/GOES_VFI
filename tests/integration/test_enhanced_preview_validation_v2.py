@@ -101,9 +101,9 @@ class TestEnhancedPreviewValidationV2:
             {"filename": "004_frame.png", "color": (128, 128, 128), "size": (400, 300)},  # Gray
         ],
     )
-    @staticmethod
-    def test_enhanced_preview_validation_scenarios(
-        shared_app: QApplication,  # noqa: ARG004
+    def test_enhanced_preview_validation_scenarios(  # noqa: PLR6301
+        self,
+        shared_app: QApplication,  # noqa: ARG002
         mock_main_window: MagicMock,
         test_image_factory: Callable[..., dict[str, Any]],
         issue_tracker: dict[str, list[str]],

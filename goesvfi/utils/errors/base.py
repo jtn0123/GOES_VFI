@@ -13,16 +13,16 @@ from typing import Any
 class ErrorCategory(Enum):
     """Categories for classifying errors."""
 
-    VALIDATION = auto()
-    PERMISSION = auto()
-    FILE_NOT_FOUND = auto()
-    NETWORK = auto()
-    PROCESSING = auto()
-    CONFIGURATION = auto()
-    SYSTEM = auto()
-    USER_INPUT = auto()
-    EXTERNAL_TOOL = auto()
-    UNKNOWN = auto()
+    VALIDATION = "validation"
+    PERMISSION = "permission"
+    FILE_NOT_FOUND = "file_not_found"
+    NETWORK = "network"
+    PROCESSING = "processing"
+    CONFIGURATION = "configuration"
+    SYSTEM = "system"
+    USER_INPUT = "user_input"
+    EXTERNAL_TOOL = "external_tool"
+    UNKNOWN = "unknown"
 
 
 @dataclass
@@ -61,13 +61,18 @@ class StructuredError(Exception):
         recoverable: bool = False,
         user_message: str | None = None,
         suggestions: list[str] | None = None,
+        _explicit_user_message: bool = False,
     ) -> None:
         self.message = message
         self.category = category
         self.context = context or ErrorContext(operation="unknown", component="unknown")
         self.cause = cause
         self.recoverable = recoverable
-        self.user_message = user_message or message
+        # If user_message was explicitly passed (even as None), use it; otherwise default to message
+        if _explicit_user_message:
+            self.user_message = user_message
+        else:
+            self.user_message = user_message if user_message is not None else message
         self.suggestions = suggestions or []
         self.traceback_str = traceback.format_exc() if cause else None
 
@@ -125,6 +130,7 @@ class StructuredError(Exception):
         message: str,
         url: str | None = None,
         status_code: int | None = None,
+        timeout: int | None = None,
         cause: Exception | None = None,
     ) -> "StructuredError":
         """Create a network-related error."""
@@ -133,6 +139,8 @@ class StructuredError(Exception):
             context.add_user_data("url", url)
         if status_code:
             context.add_user_data("status_code", status_code)
+        if timeout:
+            context.add_user_data("timeout", timeout)
 
         return cls(
             message=message,
@@ -149,6 +157,7 @@ class StructuredError(Exception):
         message: str,
         stage: str | None = None,
         input_data: str | None = None,
+        metadata: dict[str, Any] | None = None,
         cause: Exception | None = None,
     ) -> "StructuredError":
         """Create a processing error."""
@@ -157,6 +166,8 @@ class StructuredError(Exception):
             context.add_user_data("processing_stage", stage)
         if input_data:
             context.add_system_data("input_data", input_data)
+        if metadata:
+            context.add_system_data("metadata", metadata)
 
         return cls(
             message=message,
@@ -196,6 +207,7 @@ class StructuredError(Exception):
         tool_name: str,
         command: str | None = None,
         exit_code: int | None = None,
+        stderr: str | None = None,
         cause: Exception | None = None,
     ) -> "StructuredError":
         """Create an external tool error."""
@@ -205,6 +217,8 @@ class StructuredError(Exception):
             context.add_system_data("command", command)
         if exit_code is not None:
             context.add_system_data("exit_code", exit_code)
+        if stderr:
+            context.add_system_data("stderr", stderr)
 
         return cls(
             message=message,
@@ -212,7 +226,7 @@ class StructuredError(Exception):
             context=context,
             cause=cause,
             recoverable=True,
-            suggestions=[f"Check that {tool_name} is installed and accessible"],
+            suggestions=[f"Check that {tool_name} is installed"],
         )
 
     def add_suggestion(self, suggestion: str) -> None:
@@ -221,20 +235,31 @@ class StructuredError(Exception):
 
     def to_dict(self) -> dict[str, Any]:
         """Convert error to dictionary for logging/serialization."""
+        context_dict = {
+            "operation": self.context.operation,
+            "component": self.context.component,
+            "timestamp": self.context.timestamp.isoformat(),
+            "user_data": self.context.user_data,
+            "system_data": self.context.system_data,
+        }
+        if self.context.trace_id:
+            context_dict["trace_id"] = self.context.trace_id
+        
+        cause_dict = None
+        if self.cause:
+            cause_dict = {
+                "type": type(self.cause).__name__,
+                "message": str(self.cause)
+            }
+        
         return {
             "message": self.message,
             "category": self.category.name,
             "user_message": self.user_message,
             "recoverable": self.recoverable,
             "suggestions": self.suggestions,
-            "context": {
-                "operation": self.context.operation,
-                "component": self.context.component,
-                "timestamp": self.context.timestamp.isoformat(),
-                "user_data": self.context.user_data,
-                "system_data": self.context.system_data,
-            },
-            "cause": str(self.cause) if self.cause else None,
+            "context": context_dict,
+            "cause": cause_dict,
             "traceback": self.traceback_str,
         }
 
@@ -276,7 +301,7 @@ class ErrorBuilder:
         self.context.component = component
         return self
 
-    def with_cause(self, cause: Exception) -> "ErrorBuilder":
+    def with_cause(self, cause: Exception | None) -> "ErrorBuilder":
         """Set underlying cause."""
         self.cause = cause
         return self
@@ -286,7 +311,7 @@ class ErrorBuilder:
         self.recoverable = recoverable
         return self
 
-    def with_user_message(self, user_message: str) -> "ErrorBuilder":
+    def with_user_message(self, user_message: str | None) -> "ErrorBuilder":
         """Set user-friendly message."""
         self.user_message = user_message
         return self
@@ -316,4 +341,5 @@ class ErrorBuilder:
             recoverable=self.recoverable,
             user_message=self.user_message,
             suggestions=self.suggestions,
+            _explicit_user_message=True,  # Builder always explicitly sets user_message
         )

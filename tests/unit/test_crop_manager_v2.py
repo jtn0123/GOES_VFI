@@ -232,13 +232,29 @@ class TestCropManagerV2(unittest.TestCase):  # noqa: PLR0904
         """Test thread safety with concurrent access."""
         results = []
         errors = []
+        results_lock = threading.Lock()
+        errors_lock = threading.Lock()
 
         def save_rect(rect: tuple[int, int, int, int], thread_id: int) -> None:
             try:
-                result = self.crop_manager.save_crop_rect(rect)
-                results.append((thread_id, result, rect))
+                # Create a separate settings file for each thread to avoid conflicts
+                temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=f"_thread_{thread_id}.ini")
+                temp_file.close()
+                
+                thread_settings = QSettings(temp_file.name, QSettings.Format.IniFormat)
+                thread_crop_manager = CropManager(thread_settings)
+                
+                result = thread_crop_manager.save_crop_rect(rect)
+                
+                with results_lock:
+                    results.append((thread_id, result, rect))
+                    
+                # Clean up
+                Path(temp_file.name).unlink(missing_ok=True)
+                
             except Exception as e:  # noqa: BLE001
-                errors.append((thread_id, e))
+                with errors_lock:
+                    errors.append((thread_id, e))
 
         # Create threads
         threads = []
@@ -259,7 +275,7 @@ class TestCropManagerV2(unittest.TestCase):  # noqa: PLR0904
             t.join()
 
         # Should have no errors
-        assert len(errors) == 0
+        assert len(errors) == 0, f"Errors occurred: {errors}"
 
         # All saves should succeed
         assert len(results) == 4

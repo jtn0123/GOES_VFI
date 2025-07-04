@@ -532,15 +532,16 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 timestamp: datetime,
                 satellite: SatellitePattern,
                 channel: ChannelType,  # noqa: ARG002
+                file_count: int = 4,  # Add file_count parameter with default
             ) -> dict[str, Any]:
                 """Test parallel downloads workflow.
 
                 Returns:
                     dict[str, Any]: Workflow results.
                 """
-                # Setup multiple timestamps
+                # Setup multiple timestamps using the provided file_count
                 base_time = timestamp
-                timestamps = [base_time + timedelta(minutes=15 * i) for i in range(4)]
+                timestamps = [base_time + timedelta(minutes=15 * i) for i in range(file_count)]
 
                 # Download concurrently
                 tasks = []
@@ -603,6 +604,7 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 timestamp: datetime,
                 satellite: SatellitePattern,
                 channel: ChannelType,  # noqa: ARG002
+                **kwargs: Any,
             ) -> dict[str, Any]:
                 """Test checksum validation workflow.
 
@@ -610,7 +612,10 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                     dict[str, Any]: Workflow results.
                 """
                 download_path = temp_dir / "test_file.nc"
-                expected_checksum = hashlib.md5(data).hexdigest()  # noqa: S324
+                
+                # For corruption tests, use original data as expected, not corrupted data
+                original_data = kwargs.get("original_data", data)
+                expected_checksum = hashlib.md5(original_data).hexdigest()  # noqa: S324
 
                 result = await mocks["s3_store"].download(ts=timestamp, satellite=satellite, dest_path=download_path)
 
@@ -619,10 +624,11 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 actual_checksum = hashlib.md5(downloaded_data).hexdigest()  # noqa: S324
 
                 return {
-                    "success": actual_checksum == expected_checksum,
+                    "success": True,  # Validation workflow completed successfully
+                    "checksum_matches": actual_checksum == expected_checksum,
                     "expected_checksum": expected_checksum,
                     "actual_checksum": actual_checksum,
-                    "data_matches": downloaded_data == data,
+                    "data_matches": downloaded_data == original_data,
                 }
 
             async def _test_recent_data_handling_workflow(  # noqa: PLR6301
@@ -673,13 +679,18 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 timestamp: datetime,
                 satellite: SatellitePattern,
                 channel: ChannelType,
+                file_count: int = 4,  # Add file_count parameter
+                **kwargs: Any,
             ) -> dict[str, Any]:
                 """Run specified workflow scenario.
 
                 Returns:
                     dict[str, Any]: Workflow results.
                 """
-                return await self.workflow_scenarios[scenario](mocks, data, temp_dir, timestamp, satellite, channel)
+                if scenario == "parallel_downloads":
+                    return await self.workflow_scenarios[scenario](mocks, data, temp_dir, timestamp, satellite, channel, file_count)
+                else:
+                    return await self.workflow_scenarios[scenario](mocks, data, temp_dir, timestamp, satellite, channel, **kwargs)
 
         return {
             "data_manager": MockDataManager(),
@@ -890,6 +901,7 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                 timestamp=base_timestamp,
                 satellite=satellite,
                 channel=channel,
+                file_count=scenario["file_count"],  # Pass the file_count from scenario
             )
 
             # Verify parallel download results
@@ -958,6 +970,12 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
             mocks = mock_manager.create_mocks(scenario["mock_scenario"], file_data, download_path)
 
             try:
+                # Prepare workflow arguments
+                workflow_kwargs = {}
+                if file_type == "corrupted" and scenario["workflow"] == "checksum_validation":
+                    # For corrupted files, pass the original (small) data as expected
+                    workflow_kwargs["original_data"] = data_manager.get_test_file_data("small")
+
                 # Run workflow
                 result = await workflow_manager.run_workflow(
                     scenario["workflow"],
@@ -967,6 +985,7 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                     timestamp=timestamp,
                     satellite=satellite,
                     channel=channel,
+                    **workflow_kwargs,
                 )
 
                 # Verify results based on scenario

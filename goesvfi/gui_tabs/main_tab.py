@@ -1736,11 +1736,12 @@ class MainTab(QWidget):
         self.out_file_edit.setEnabled(not is_processing)
 
         # Find browse buttons and disable them
-        in_browse_button = self.findChild(QPushButton, "browse_button")  # Assuming only one for input for now
-        out_browse_button = self.findChildren(QPushButton, "browse_button")[1]  # Assuming second is output
-        if in_browse_button:
+        browse_buttons = self.findChildren(QPushButton, "browse_button")
+        if len(browse_buttons) > 0:
+            in_browse_button = browse_buttons[0]
             in_browse_button.setEnabled(not is_processing)
-        if out_browse_button:
+        if len(browse_buttons) > 1:
+            out_browse_button = browse_buttons[1]
             out_browse_button.setEnabled(not is_processing)
 
         # Update ViewModel state

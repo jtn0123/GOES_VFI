@@ -8,6 +8,7 @@ model and exposes data and commands to the GUI view layer.
 import os  # Added for basic path validation
 import threading
 
+from PyQt6.QtCore import QObject, pyqtSignal
 from PyQt6.QtWidgets import QFileDialog
 
 from goesvfi.utils import log
@@ -17,7 +18,7 @@ from .sorter import FileSorter  # Import the FileSorter model
 LOGGER = log.get_logger(__name__)
 
 
-class FileSorterViewModel:
+class FileSorterViewModel(QObject):
     """ViewModel for the File Sorter GUI tab.
 
     This class manages the state and presentation logic for the File Sorter feature,
@@ -25,6 +26,11 @@ class FileSorterViewModel:
     It exposes properties representing the current state and provides command methods
     for user actions such as selecting directories and starting/canceling the sorting process.
     """
+
+    # Qt signals
+    source_directory_changed = pyqtSignal(str)
+    destination_directory_changed = pyqtSignal(str)
+    status_message_changed = pyqtSignal(str)
 
     def __init__(self, sorter_model: FileSorter) -> None:
         """Initializes the FileSorterViewModel with default state.
@@ -42,12 +48,14 @@ class FileSorterViewModel:
                     status_message (str): A message describing the current status for display in the UI.
                     _cancel_requested (bool): Internal flag indicating if a cancel operation has been requested.
         """
+        super().__init__()
         self.sorter_model = sorter_model  # Store the FileSorter model instance
-        self.source_directory: str | None = None
-        self.destination_directory: str | None = None
+        self.file_sorter = sorter_model  # Alias for compatibility
+        self._source_directory: str | None = None
+        self._destination_directory: str | None = None
         self.is_sorting: bool = False
         self.progress_percentage: float = 0.0
-        self.status_message: str = "Ready"
+        self._status_message: str = "Ready"
         self._cancel_requested: bool = False  # Flag for cancellation
 
         # New attributes for UI state
@@ -59,6 +67,43 @@ class FileSorterViewModel:
         self._show_completion_message: bool = False
         self._show_error_message: bool = False
         self._show_input_error_message: bool = False
+
+    @property
+    def source_directory(self) -> str | None:
+        """Get the source directory."""
+        return self._source_directory
+
+    @source_directory.setter
+    def source_directory(self, value: str | None) -> None:
+        """Set the source directory."""
+        if self._source_directory != value:
+            self._source_directory = value
+            self.source_directory_changed.emit(value or "")
+
+    @property
+    def destination_directory(self) -> str | None:
+        """Get the destination directory."""
+        return self._destination_directory
+
+    @destination_directory.setter
+    def destination_directory(self, value: str | None) -> None:
+        """Set the destination directory."""
+        if self._destination_directory != value:
+            self._destination_directory = value
+            self.destination_directory_changed.emit(value or "")
+
+    @property
+    def status_message(self) -> str:
+        """Get the status message."""
+        return self._status_message
+
+    @status_message.setter
+    def status_message(self, value: str) -> None:
+        """Set the status message."""
+        old_value = self._status_message
+        self._status_message = value
+        if old_value != value:
+            self.status_message_changed.emit(value)
 
     @property
     def can_start_sorting(self) -> bool:
@@ -153,10 +198,14 @@ class FileSorterViewModel:
             Notifies observers if implemented.
         """
         LOGGER.info("Command: Select Source Directory")
-        directory = QFileDialog.getExistingDirectory(None, "Select Source Directory")
-        if directory:
-            self.source_directory = directory
-            self.status_message = f"Source directory set to: {directory}"
+        try:
+            directory = QFileDialog.getExistingDirectory(None, "Select Source Directory")
+            if directory:  # Only update if a directory was selected (not cancelled)
+                self.source_directory = directory
+                self.status_message = f"Source directory set to: {directory}"
+        except Exception as e:
+            LOGGER.exception("Error selecting source directory: %s", e)
+            # Handle error gracefully without raising
 
     def select_destination_directory(self) -> None:
         """Command to select the destination directory.
@@ -170,10 +219,14 @@ class FileSorterViewModel:
             Notifies observers if implemented.
         """
         LOGGER.info("Command: Select Destination Directory")
-        directory = QFileDialog.getExistingDirectory(None, "Select Destination Directory")
-        if directory:
-            self.destination_directory = directory
-            self.status_message = f"Destination directory set to: {directory}"
+        try:
+            directory = QFileDialog.getExistingDirectory(None, "Select Destination Directory")
+            if directory:  # Only update if a directory was selected (not cancelled)
+                self.destination_directory = directory
+                self.status_message = f"Destination directory set to: {directory}"
+        except Exception as e:
+            LOGGER.exception("Error selecting destination directory: %s", e)
+            # Handle error gracefully without raising
 
     def start_sorting(self) -> None:
         """Command to start the sorting process.

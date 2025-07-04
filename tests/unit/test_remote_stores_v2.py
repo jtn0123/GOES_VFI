@@ -101,13 +101,13 @@ class TestRemoteStoresOptimizedV2:
                     patch("goesvfi.integrity_check.remote.s3_store.get_system_network_info"),
                     patch("goesvfi.integrity_check.remote.s3_store.socket.gethostbyname", return_value="127.0.0.1"),
                 ):
-                    return S3Store(aws_profile=aws_profile, aws_region=aws_region, timeout=timeout)
+                    return S3Store(aws_profile=aws_profile, aws_region=aws_region, timeout=timeout, use_connection_pool=False)
 
             @staticmethod
             def create_mock_session(*, for_cdn: bool = True) -> MagicMock:
                 """Create a mock session for CDN or S3."""
                 if for_cdn:
-                    session_mock = MagicMock(spec=aiohttp.ClientSession)
+                    session_mock = MagicMock()
                     session_mock.closed = False
                     return session_mock
                 # S3 session mock
@@ -125,7 +125,7 @@ class TestRemoteStoresOptimizedV2:
                 response_mock.content = content_mock
 
                 # Create async generator for content chunks
-                def mock_content_generator() -> Iterator[bytes]:
+                async def mock_content_generator() -> Iterator[bytes]:
                     yield b"test data chunk 1"
                     yield b"test data chunk 2"
 
@@ -199,29 +199,27 @@ class TestRemoteStoresOptimizedV2:
 
                     existence_results = []
                     for status_code in self.test_configs["response_codes"]:
+                        # Mock the session property directly on the CDN store instance
+                        response_mock = self.create_mock_response(status=status_code)
+                        context_manager = self.create_context_manager(response_mock)
+
+                        session_mock = self.create_mock_session(for_cdn=True)
+                        session_mock.head = MagicMock(return_value=context_manager)
+                        cdn_store._session = session_mock
+
                         with patch(
-                            "goesvfi.integrity_check.remote.cdn_store.aiohttp.ClientSession"
-                        ) as mock_session_class:
-                            response_mock = self.create_mock_response(status=status_code)
-                            context_manager = self.create_context_manager(response_mock)
+                            "goesvfi.integrity_check.time_index.TimeIndex.to_cdn_url",
+                            return_value="https://example.com/test.jpg",
+                        ):
+                            exists = await cdn_store.check_file_exists(
+                                self.test_configs["timestamps"][0], self.test_configs["satellites"][0]
+                            )
 
-                            session_mock = self.create_mock_session(for_cdn=True)
-                            session_mock.head = MagicMock(return_value=context_manager)
-                            mock_session_class.return_value = session_mock
-
-                            with patch(
-                                "goesvfi.integrity_check.time_index.TimeIndex.to_cdn_url",
-                                return_value="https://example.com/test.jpg",
-                            ):
-                                exists = await cdn_store.check_file_exists(
-                                    self.test_configs["timestamps"][0], self.test_configs["satellites"][0]
-                                )
-
-                                existence_results.append({
-                                    "status_code": status_code,
-                                    "exists": exists,
-                                    "expected": status_code == 200,
-                                })
+                            existence_results.append({
+                                "status_code": status_code,
+                                "exists": exists,
+                                "expected": status_code == 200,
+                            })
 
                     results["existence_tests"] = existence_results
                     results["all_correct"] = all(r["exists"] == r["expected"] for r in existence_results)
@@ -232,24 +230,23 @@ class TestRemoteStoresOptimizedV2:
                     # Test error handling in existence checking
                     cdn_store = self.create_cdn_store()
 
-                    with patch("goesvfi.integrity_check.remote.cdn_store.aiohttp.ClientSession") as mock_session_class:
-                        error = aiohttp.ClientError("Connection failed")
-                        context_manager = self.create_context_manager(error)
+                    error = aiohttp.ClientError("Connection failed")
+                    context_manager = self.create_context_manager(error)
 
-                        session_mock = self.create_mock_session(for_cdn=True)
-                        session_mock.head = MagicMock(return_value=context_manager)
-                        mock_session_class.return_value = session_mock
+                    session_mock = self.create_mock_session(for_cdn=True)
+                    session_mock.head = MagicMock(return_value=context_manager)
+                    cdn_store._session = session_mock
 
-                        with patch(
-                            "goesvfi.integrity_check.time_index.TimeIndex.to_cdn_url",
-                            return_value="https://example.com/test.jpg",
-                        ):
-                            exists = await cdn_store.check_file_exists(
-                                self.test_configs["timestamps"][0], self.test_configs["satellites"][0]
-                            )
+                    with patch(
+                        "goesvfi.integrity_check.time_index.TimeIndex.to_cdn_url",
+                        return_value="https://example.com/test.jpg",
+                    ):
+                        exists = await cdn_store.check_file_exists(
+                            self.test_configs["timestamps"][0], self.test_configs["satellites"][0]
+                        )
 
-                            assert not exists
-                            results["error_handled"] = True
+                        assert not exists
+                        results["error_handled"] = True
 
                 return {"scenario": scenario_name, "results": results}
 
@@ -831,31 +828,29 @@ class TestRemoteStoresOptimizedV2:
         assert result["scenario"] == "wildcard_support"
         assert result["results"]["wildcard_enabled"] is True
 
-    @pytest.mark.parametrize("resolution", ["1000m", "5000m"])
     @pytest.mark.asyncio()
     @staticmethod
-    async def test_cdn_resolution_variations(remote_store_test_components: dict[str, Any], resolution: str) -> None:
+    async def test_cdn_resolution_variations(remote_store_test_components: dict[str, Any]) -> None:
         """Test CDN store with different resolutions."""
         manager = remote_store_test_components["manager"]
 
-        cdn_store = manager.create_cdn_store(resolution=resolution)
-        assert cdn_store.resolution == resolution
+        for resolution in ["1000m", "5000m"]:
+            cdn_store = manager.create_cdn_store(resolution=resolution)
+            assert cdn_store.resolution == resolution
 
-    @pytest.mark.parametrize("satellite", [SatellitePattern.GOES_16, SatellitePattern.GOES_18])
     @pytest.mark.asyncio()
     @staticmethod
-    async def test_satellite_specific_operations(
-        remote_store_test_components: dict[str, Any], satellite: SatellitePattern
-    ) -> None:
+    async def test_satellite_specific_operations(remote_store_test_components: dict[str, Any]) -> None:
         """Test operations with specific satellites."""
         manager = remote_store_test_components["manager"]
 
-        # Test S3 bucket mapping
-        s3_store = manager.create_s3_store()
-        bucket, _key = s3_store._get_bucket_and_key(manager.test_configs["timestamps"][0], satellite)  # noqa: SLF001
+        for satellite in [SatellitePattern.GOES_16, SatellitePattern.GOES_18]:
+            # Test S3 bucket mapping
+            s3_store = manager.create_s3_store()
+            bucket, _key = s3_store._get_bucket_and_key(manager.test_configs["timestamps"][0], satellite)  # noqa: SLF001
 
-        expected_bucket = TimeIndex.S3_BUCKETS[satellite]
-        assert bucket == expected_bucket
+            expected_bucket = TimeIndex.S3_BUCKETS[satellite]
+            assert bucket == expected_bucket
 
     @pytest.mark.asyncio()
     @staticmethod

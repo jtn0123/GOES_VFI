@@ -36,6 +36,8 @@ class ErrorReporter:
         """Report detailed error information."""
         self.output.write(f"Error in {error.context.component} ({error.category.name}):\n")
         self.output.write(f"  Message: {error.message}\n")
+        if error.user_message:
+            self.output.write(f"  User Message: {error.user_message}\n")
         self.output.write(f"  Operation: {error.context.operation}\n")
         self.output.write(f"  Recoverable: {error.recoverable}\n")
 

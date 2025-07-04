@@ -380,12 +380,12 @@ class TestS3ConnectionPoolOptimizedV2:
                         async with pool.acquire() as client1:
                             # Make this client unhealthy for when it's returned
                             client1.list_buckets.side_effect = Exception("Stale")
-                        
+
                         # After release, client1 should be discarded due to health check failure
                         # Pool should be empty now
                         assert len(pool._available_connections) == 0  # noqa: SLF001
                         assert pool._stats["connections_closed"] >= 1  # noqa: SLF001
-                        
+
                         # Next acquire should create a new connection (client2)
                         async with pool.acquire() as client2:
                             assert client2 != client1  # Should be different client
@@ -625,18 +625,18 @@ class TestS3ConnectionPoolOptimizedV2:
         mock_factory = connection_pool_test_components["mock_factory"]
 
         pool = S3ConnectionPool(max_connections=max_connections, region="us-east-1")
-        
+
         # Create unique mock clients
         acquire_count = min(max_connections // 2, 5)
         mock_clients = [mock_factory.create_mock_s3_client() for _ in range(acquire_count + 2)]
         client_index = 0
-        
+
         def get_mock_client():
             nonlocal client_index
             client = mock_clients[client_index]
             client_index += 1
             return client
-        
+
         mock_session = MagicMock()
         client_context = MagicMock()
         client_context.__aenter__ = AsyncMock(side_effect=get_mock_client)
@@ -690,17 +690,17 @@ class TestS3ConnectionPoolOptimizedV2:
         mock_factory = connection_pool_test_components["mock_factory"]
 
         pool = S3ConnectionPool(max_connections=5, region="us-east-1")
-        
+
         # Create unique mock clients
         mock_clients = [mock_factory.create_mock_s3_client() for _ in range(3)]
         client_index = 0
-        
+
         def get_mock_client():
             nonlocal client_index
             client = mock_clients[client_index]
             client_index += 1
             return client
-        
+
         mock_session = MagicMock()
         client_context = MagicMock()
         client_context.__aenter__ = AsyncMock(side_effect=get_mock_client)
@@ -713,7 +713,7 @@ class TestS3ConnectionPoolOptimizedV2:
                 pass
             # First client is returned to pool
             assert len(pool._available_connections) == 1  # noqa: SLF001
-            
+
             async with pool.acquire():
                 pass
             # First client was reused, so still only 1 in pool after release

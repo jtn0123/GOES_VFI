@@ -213,9 +213,8 @@ class TestWorkflowsIntegrationV2:
             ([], "reject_empty"),
         ],
     )
-    @staticmethod
     def test_drag_drop_file_operations(
-        mock_main_window: Any, test_images_data: Any, file_types: Any, expected_behavior: Any
+        self, mock_main_window: Any, test_images_data: Any, file_types: Any, expected_behavior: Any
     ) -> None:
         """Test drag and drop file operations with various file types."""
         window = mock_main_window
@@ -401,9 +400,8 @@ class TestWorkflowsIntegrationV2:
             (False, "immediate"),  # Not processing - should switch immediately
         ],
     )
-    @staticmethod
     def test_model_switching_during_operation(
-        mock_main_window: Any, processing_state: Any, model_switch_scenario: Any
+        self, mock_main_window: Any, processing_state: Any, model_switch_scenario: Any
     ) -> None:
         """Test switching models during operation scenarios."""
         window = mock_main_window

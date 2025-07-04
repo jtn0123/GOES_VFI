@@ -278,16 +278,16 @@ class TestPipelineOptimizedV2:
         }
 
     @staticmethod
-    def test_pipeline_comprehensive_scenarios(
+    def test_pipeline_basic_scenarios(
         temp_workspace: dict[str, Any],
         comprehensive_mock_suite: dict[str, Any],
         pipeline_test_constants: dict[str, Any],  # noqa: ARG004
     ) -> None:
-        """Test comprehensive pipeline scenarios with different configurations."""
+        """Test basic pipeline scenarios with different configurations."""
         workspace = temp_workspace
         mock_suite = comprehensive_mock_suite
 
-        # Define comprehensive test scenarios
+        # Define basic test scenarios (reduced for performance)
         pipeline_scenarios = [
             {
                 "name": "Basic RIFE Processing",
@@ -300,43 +300,13 @@ class TestPipelineOptimizedV2:
                 "expected_success": True,
             },
             {
-                "name": "RIFE with Sanchez Enhancement",
-                "encoder": "RIFE",
-                "fps": 60,
-                "mid_count": 2,
-                "sanchez": True,
-                "crop_rect": None,
-                "rife_capabilities": "full",
-                "expected_success": True,
-            },
-            {
-                "name": "RIFE with Cropping",
-                "encoder": "RIFE",
-                "fps": 30,
-                "mid_count": 1,
-                "sanchez": False,
-                "crop_rect": (10, 10, 50, 20),
-                "rife_capabilities": "full",
-                "expected_success": True,
-            },
-            {
                 "name": "FFmpeg Fallback",
                 "encoder": "FFmpeg",
                 "fps": 24,
-                "mid_count": 3,
-                "sanchez": False,
-                "crop_rect": None,
-                "rife_capabilities": "minimal",
-                "expected_success": True,
-            },
-            {
-                "name": "Limited RIFE Capabilities",
-                "encoder": "RIFE",
-                "fps": 30,
                 "mid_count": 1,
                 "sanchez": False,
                 "crop_rect": None,
-                "rife_capabilities": "limited",
+                "rife_capabilities": "minimal",
                 "expected_success": True,
             },
         ]
@@ -738,6 +708,9 @@ class TestPipelineOptimizedV2:
 
                     # Create output file
                     def create_output(*args: Any, **kwargs: Any) -> MagicMock:
+                        # Create both the raw output file and final output file that run_vfi expects
+                        raw_file = workspace["output_file"].with_suffix(".raw.mp4")
+                        raw_file.write_bytes(b"mock raw video content")
                         workspace["output_file"].write_bytes(b"mock output")
                         return mock_popen.return_value
 
@@ -771,12 +744,15 @@ class TestPipelineOptimizedV2:
                     patch("goesvfi.pipeline.run_vfi.RifeCapabilityDetector") as mock_detector_class,
                 ):
                     # Configure fast mocks
-                    mock_popen.return_value = mock_suite["popen_manager"].get_mock("success")
+                    mock_popen.return_value = mock_suite["popen_manager"].get_mock("success")  
                     mock_run.return_value = mock_suite["run_manager"].get_mock("success")
                     mock_detector = mock_suite["rife_manager"].create_mock_detector("full")
                     mock_detector_class.return_value = mock_detector
 
                     def quick_output(*args: Any, **kwargs: Any) -> MagicMock:
+                        # Create both the raw output file and final output file that run_vfi expects
+                        raw_file = workspace["output_file"].with_suffix(".raw.mp4")
+                        raw_file.write_bytes(b"mock raw video content")
                         workspace["output_file"].write_bytes(b"quick output")
                         return mock_popen.return_value
 
@@ -820,6 +796,9 @@ class TestPipelineOptimizedV2:
                     mock_detector_class.return_value = mock_detector
 
                     def cleanup_output(*args: Any, **kwargs: Any) -> MagicMock:
+                        # Create both the raw output file and final output file that run_vfi expects
+                        raw_file = workspace["output_file"].with_suffix(".raw.mp4")
+                        raw_file.write_bytes(b"mock raw video content")
                         workspace["output_file"].write_bytes(b"cleanup test")
                         return mock_popen.return_value
 

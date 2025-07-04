@@ -189,7 +189,7 @@ class TestStateManager:
             mock_main_window.main_tab._update_crop_buttons_state.assert_called_once()
         else:
             mock_main_window.request_previews_update.emit.assert_not_called()
-            # When rect doesn't change, _update_crop_buttons_state is not called  
+            # When rect doesn't change, _update_crop_buttons_state is not called
             if crop_scenario == "existing_rect":
                 mock_main_window.main_tab._update_crop_buttons_state.assert_not_called()
 
