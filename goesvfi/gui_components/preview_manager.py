@@ -86,6 +86,23 @@ class PreviewManager(QObject):
                 apply_sanchez=False,  # Can be made configurable
             )
 
+    @staticmethod
+    def _convert_to_numpy_safely(image_data: Any) -> np.ndarray:
+        """Convert image data to numpy array with memory optimization.
+
+        Args:
+            image_data: Image data to convert, can be PIL Image or numpy array
+
+        Returns:
+            Numpy array representation of the image data
+        """
+        if isinstance(image_data, Image.Image):
+            # Use memory-efficient conversion
+            array = np.asarray(image_data)  # No copy unless necessary
+            return array.copy() if not array.flags.writeable else array
+        # Assume it's already a numpy array
+        return image_data if isinstance(image_data, np.ndarray) else np.array(image_data)
+
     def _emit_preview_signal(self) -> None:
         """Emit preview update signal if data is available."""
         if all([self.first_frame_data, self.middle_frame_data, self.last_frame_data]):
@@ -100,40 +117,52 @@ class PreviewManager(QObject):
                 middle_array = self.middle_frame_data.image_data
                 last_array = self.last_frame_data.image_data
 
-                # Convert PIL Images to numpy arrays if needed
-                if isinstance(first_array, Image.Image):
-                    first_array = np.array(first_array)
-                if isinstance(middle_array, Image.Image):
-                    middle_array = np.array(middle_array)
-                if isinstance(last_array, Image.Image):
-                    last_array = np.array(last_array)
+                # Convert PIL Images to numpy arrays with memory optimization
+                first_array = PreviewManager._convert_to_numpy_safely(first_array)
+                middle_array = PreviewManager._convert_to_numpy_safely(middle_array)
+                last_array = PreviewManager._convert_to_numpy_safely(last_array)
 
-                # Convert to QPixmaps
-                first_pixmap = self.numpy_to_qpixmap(first_array)
-                middle_pixmap = self.numpy_to_qpixmap(middle_array)
-                last_pixmap = self.numpy_to_qpixmap(last_array)
+                # Convert to QPixmaps and immediately clean up arrays
+                pixmaps = [
+                    self.numpy_to_qpixmap(first_array),
+                    self.numpy_to_qpixmap(middle_array),
+                    self.numpy_to_qpixmap(last_array),
+                ]
 
-                self.preview_updated.emit(first_pixmap, middle_pixmap, last_pixmap)
+                # Clear large arrays from memory
+                del first_array, middle_array, last_array
+
+                self.preview_updated.emit(*pixmaps)
             except Exception as e:
                 LOGGER.exception("Error converting preview data to pixmaps")
                 self.preview_error.emit(f"Error creating preview: {e}")
 
     def request_preview_update(
-        self, input_dir: Path | None = None, crop_rect: tuple[int, int, int, int] | None = None
+        self,
+        input_dir: Path | None = None,
+        crop_rect: tuple[int, int, int, int] | None = None,
+        *,
+        immediate: bool = False,
     ) -> None:
         """Request a preview update through UpdateManager.
 
         Args:
             input_dir: Input directory (if None, uses current)
             crop_rect: Crop rectangle (if None, uses current)
+            immediate: If True, skip batching for immediate update
         """
         if input_dir:
             self.current_input_dir = input_dir
         if crop_rect is not None:
             self.current_crop_rect = crop_rect
 
-        # Request batched update instead of immediate
-        request_update("preview_load")
+        if immediate:
+            # Immediate update for user-triggered changes
+            self._load_preview_internal()
+            self._emit_preview_signal()
+        else:
+            # Request batched update for automatic changes
+            request_update("preview_load")
 
     def load_preview_images(  # noqa: C901
         self,
@@ -549,7 +578,7 @@ class PreviewManager(QObject):
             target_size: Maximum size for the scaled pixmap
 
         Returns:
-            Scaled pixmap
+            Scaled pixmap that fits within the target size
         """
         if pixmap.isNull():
             return pixmap

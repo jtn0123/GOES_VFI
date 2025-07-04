@@ -316,9 +316,11 @@ class TestImageCropperV2:  # noqa: PLR0904
 
         # Verify crops are independent (not views)
         for i, crop in enumerate(crops):
+            # Store original value before modification
+            original_value = large_image[i * 100, i * 100].copy()
             crop.image_data[0, 0] = [255, 255, 255]
             # Original should not be modified
-            assert not np.array_equal(large_image[i * 100, i * 100], [255, 255, 255])
+            assert np.array_equal(large_image[i * 100, i * 100], original_value)
 
     def test_error_handling(self, cropper: ImageCropper) -> None:  # noqa: PLR6301
         """Test comprehensive error handling."""

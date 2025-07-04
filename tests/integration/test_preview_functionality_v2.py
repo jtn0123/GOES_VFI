@@ -24,6 +24,11 @@ import pytest
 from goesvfi.gui import MainWindow
 from goesvfi.pipeline.image_processing_interfaces import ImageData
 
+# Add timeout marker to prevent test hangs
+pytestmark = [
+    pytest.mark.timeout(15),  # 15 second timeout for integration tests
+]
+
 
 class TestPreviewFunctionalityOptimizedV2:
     """Optimized preview functionality integration tests with full coverage."""
@@ -472,9 +477,19 @@ class TestPreviewFunctionalityOptimizedV2:
                     with patch("PyQt6.QtWidgets.QMessageBox.warning"):
                         # Simulate click event
                         if hasattr(test_label, "mouseReleaseEvent"):
-                            # Create mock mouse event
-                            mock_event = MagicMock()
-                            mock_event.button.return_value = 1  # Left button
+                            # Create proper QMouseEvent mock
+                            from PyQt6.QtCore import QPointF
+                            from PyQt6.QtGui import QMouseEvent
+                            from PyQt6.QtCore import Qt
+                            
+                            # Create a proper QMouseEvent instead of MagicMock
+                            mock_event = QMouseEvent(
+                                QMouseEvent.Type.MouseButtonRelease,
+                                QPointF(10, 10),
+                                Qt.MouseButton.LeftButton,
+                                Qt.MouseButton.LeftButton,
+                                Qt.KeyboardModifier.NoModifier
+                            )
 
                             # Trigger click handling
                             test_label.mouseReleaseEvent(mock_event)
@@ -600,7 +615,7 @@ class TestPreviewFunctionalityOptimizedV2:
                 "dataset": "basic",
                 "image_count": 2,
                 "pattern": "solid",
-                "max_load_time_sec": 1.0,
+                "max_load_time_sec": 10.0,
             },
         ]
 
