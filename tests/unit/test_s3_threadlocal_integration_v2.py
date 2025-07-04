@@ -36,7 +36,7 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
 
     @pytest.fixture(scope="class")
     @staticmethod
-    def threadlocal_integration_test_components() -> dict[str, Any]:  # noqa: PLR6301, C901
+    def threadlocal_integration_test_components() -> dict[str, Any]:  # noqa: C901
         """Create shared components for ThreadLocalCacheDB integration testing.
 
         Returns:
@@ -138,8 +138,10 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                 s3_store.__aenter__ = AsyncMock(return_value=s3_store)
                 s3_store.__aexit__ = AsyncMock(return_value=None)
                 s3_store.exists = AsyncMock(return_value=True)
+
                 async def s3_download_wrapper(*args, **kwargs):
                     return await self._mock_s3_download(*args, cache_db=cache_db, **kwargs)
+
                 s3_store.download = AsyncMock(side_effect=s3_download_wrapper)
 
                 # Mock CDN store
@@ -147,8 +149,10 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                 cdn_store.__aenter__ = AsyncMock(return_value=cdn_store)
                 cdn_store.__aexit__ = AsyncMock(return_value=None)
                 cdn_store.exists = AsyncMock(return_value=True)
+
                 async def cdn_download_wrapper(*args, **kwargs):
                     return await self._mock_cdn_download(*args, cache_db=cache_db, **kwargs)
+
                 cdn_store.download = AsyncMock(side_effect=cdn_download_wrapper)
 
                 return {"s3_store": s3_store, "cdn_store": cdn_store}
@@ -382,10 +386,12 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
 
                     # Mock fetch_missing_files
                     with patch.object(ReconcileManager, "fetch_missing_files") as mock_fetch:
+
                         async def mock_fetch_coroutine(*args, **kwargs):
                             return await self._mock_fetch_missing_files(
                                 *args, stores=stores, _cache_db=cache_db, **kwargs
                             )
+
                         mock_fetch.side_effect = mock_fetch_coroutine
 
                         # Run concurrent downloads
@@ -443,10 +449,12 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
                     product_types = ["RadF", "RadC", "RadM"]
 
                     with patch.object(ReconcileManager, "fetch_missing_files") as mock_fetch:
+
                         async def mock_fetch_coroutine(*args, **kwargs):
                             return await self._mock_fetch_missing_files(
                                 *args, stores=stores, _cache_db=cache_db, **kwargs
                             )
+
                         mock_fetch.side_effect = mock_fetch_coroutine
 
                         # Run with different product types
@@ -760,9 +768,7 @@ class TestS3ThreadLocalIntegrationOptimizedV2:
 
                         for i in range(operation_count):
                             ts = base_time + timedelta(minutes=i * 3)
-                            task = cache_db.add_timestamp(
-                                ts, SatellitePattern.GOES_18, f"/test/perf_{i}.nc", True
-                            )
+                            task = cache_db.add_timestamp(ts, SatellitePattern.GOES_18, f"/test/perf_{i}.nc", True)
                             tasks.append(task)
 
                         await asyncio.gather(*tasks)

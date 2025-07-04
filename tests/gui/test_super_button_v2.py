@@ -105,6 +105,7 @@ class TestSuperButtonV2:  # noqa: PLR0904
     @staticmethod
     def test_set_click_callback_scenarios(mock_super_button: Any) -> None:
         """Test setting click callback with various callback types."""
+
         # Test function callback
         def test_callback() -> None:
             pass

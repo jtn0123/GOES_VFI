@@ -240,18 +240,18 @@ class TestCropManagerV2(unittest.TestCase):  # noqa: PLR0904
                 # Create a separate settings file for each thread to avoid conflicts
                 temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=f"_thread_{thread_id}.ini")
                 temp_file.close()
-                
+
                 thread_settings = QSettings(temp_file.name, QSettings.Format.IniFormat)
                 thread_crop_manager = CropManager(thread_settings)
-                
+
                 result = thread_crop_manager.save_crop_rect(rect)
-                
+
                 with results_lock:
                     results.append((thread_id, result, rect))
-                    
+
                 # Clean up
                 Path(temp_file.name).unlink(missing_ok=True)
-                
+
             except Exception as e:  # noqa: BLE001
                 with errors_lock:
                     errors.append((thread_id, e))

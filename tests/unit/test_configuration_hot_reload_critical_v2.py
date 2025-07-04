@@ -395,7 +395,7 @@ class TestConfigurationHotReloadCritical:
 
         # Set environment variables that should override config
         env_overrides = {
-            "GOESVFI_PROCESSING_MAX_WORKERS": "999",
+            "GOESVFI_PROCESSING_MAX_WORKERS": "16",
             "GOESVFI_NETWORK_TIMEOUT": "888",
         }
 
@@ -406,18 +406,18 @@ class TestConfigurationHotReloadCritical:
             try:
                 # Verify environment variables take precedence initially
                 initial_config = config_manager.get_config()
-                assert initial_config.processing.max_workers == 999
+                assert initial_config.processing.max_workers == 16
 
                 # Modify file configuration
                 modified_config = mock_config_data.copy()
-                modified_config["processing"]["max_workers"] = 777
+                modified_config["processing"]["max_workers"] = 8
                 config_file.write_text(json.dumps(modified_config))
 
                 time.sleep(0.5)  # Allow hot-reload
 
                 # Environment variables should still take precedence
                 reloaded_config = config_manager.get_config()
-                assert reloaded_config.processing.max_workers == 999
+                assert reloaded_config.processing.max_workers == 16
 
                 # Values without env overrides should be updated
                 assert reloaded_config.processing.buffer_size == modified_config["processing"]["buffer_size"]

@@ -7,7 +7,6 @@ import tempfile
 import unittest
 from unittest.mock import MagicMock, patch
 
-import numpy as np
 import pytest
 import requests
 
@@ -324,10 +323,10 @@ class TestGOESImageryV2(unittest.TestCase):  # noqa: PLR0904
         # The current implementation doesn't automatically create S3 client
         # It's set to None initially and configured externally
         downloader = GOESImageryDownloader(output_dir=self.test_dir)
-        
+
         # Verify S3 client is initially None
         assert downloader.s3_client is None
-        
+
         # Test that we can set it manually
         mock_s3 = MagicMock()
         downloader.s3_client = mock_s3
@@ -436,11 +435,11 @@ class TestGOESImageryV2(unittest.TestCase):  # noqa: PLR0904
 
         # Test processing large mock data without actual xarray
         processor = GOESImageProcessor(output_dir=self.test_dir)
-        
+
         # Should handle large data without issues (stub implementation)
         test_file = self.test_dir / "large.nc"
         test_file.write_text("mock")
-        
+
         # Process should complete without memory errors
         result = processor.process_raw_data(test_file, channel=ChannelType.CH13)
         assert result is not None

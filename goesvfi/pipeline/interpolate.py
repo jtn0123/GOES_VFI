@@ -209,7 +209,8 @@ def get_backend_performance_info(backend: Any) -> dict[str, Any]:
         Performance statistics dictionary
     """
     if hasattr(backend, "get_performance_stats"):
-        return backend.get_performance_stats()
+        stats = backend.get_performance_stats()
+        return dict(stats) if stats is not None else {}
     return {
         "backend_type": "standard",
         "optimization_available": OPTIMIZED_BACKEND_AVAILABLE,

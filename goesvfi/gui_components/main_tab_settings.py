@@ -25,7 +25,8 @@ class MainTabSettings:
     # Model and Processing Settings
     def get_model_key(self) -> str:
         """Get the last selected RIFE model key."""
-        return self.settings.value("rife/modelKey", "rife-v4.6", type=str)
+        value = self.settings.value("rife/modelKey", "rife-v4.6", type=str)
+        return str(value) if value is not None else "rife-v4.6"
 
     def set_model_key(self, model_key: str) -> None:
         """Set the RIFE model key."""
@@ -33,7 +34,8 @@ class MainTabSettings:
 
     def get_fps(self) -> int:
         """Get processing FPS setting."""
-        return self.settings.value("processing/fps", 60, type=int)
+        value = self.settings.value("processing/fps", 60, type=int)
+        return int(value) if value is not None else 60
 
     def set_fps(self, fps: int) -> None:
         """Set processing FPS setting."""
@@ -41,7 +43,8 @@ class MainTabSettings:
 
     def get_multiplier(self) -> int:
         """Get frame multiplier setting."""
-        return self.settings.value("processing/multiplier", 2, type=int)
+        value = self.settings.value("processing/multiplier", 2, type=int)
+        return int(value) if value is not None else 2
 
     def set_multiplier(self, multiplier: int) -> None:
         """Set frame multiplier setting."""
@@ -49,7 +52,8 @@ class MainTabSettings:
 
     def get_max_workers(self, default_workers: int = 4) -> int:
         """Get max workers setting."""
-        return self.settings.value("processing/maxWorkers", default_workers, type=int)
+        value = self.settings.value("processing/maxWorkers", default_workers, type=int)
+        return int(value) if value is not None else default_workers
 
     def set_max_workers(self, max_workers: int) -> None:
         """Set max workers setting."""
@@ -57,7 +61,8 @@ class MainTabSettings:
 
     def get_encoder(self) -> str:
         """Get encoder setting."""
-        return self.settings.value("processing/encoder", "RIFE", type=str)
+        value = self.settings.value("processing/encoder", "RIFE", type=str)
+        return str(value) if value is not None else "RIFE"
 
     def set_encoder(self, encoder: str) -> None:
         """Set encoder setting."""
@@ -66,7 +71,8 @@ class MainTabSettings:
     # RIFE Settings
     def get_tile_size(self) -> int:
         """Get RIFE tile size setting."""
-        return self.settings.value("rife/tileSize", 256, type=int)
+        value = self.settings.value("rife/tileSize", 256, type=int)
+        return int(value) if value is not None else 256
 
     def set_tile_size(self, tile_size: int) -> None:
         """Set RIFE tile size setting."""
@@ -74,7 +80,8 @@ class MainTabSettings:
 
     def get_tiling_enabled(self) -> bool:
         """Get RIFE tiling enabled setting."""
-        return self.settings.value("rife/tilingEnabled", False, type=bool)
+        value = self.settings.value("rife/tilingEnabled", False, type=bool)
+        return bool(value) if value is not None else False
 
     def set_tiling_enabled(self, enabled: bool) -> None:
         """Set RIFE tiling enabled setting."""
@@ -82,7 +89,8 @@ class MainTabSettings:
 
     def get_uhd_mode(self) -> bool:
         """Get RIFE UHD mode setting."""
-        return self.settings.value("rife/uhdMode", False, type=bool)
+        value = self.settings.value("rife/uhdMode", False, type=bool)
+        return bool(value) if value is not None else False
 
     def set_uhd_mode(self, enabled: bool) -> None:
         """Set RIFE UHD mode setting."""
@@ -90,7 +98,8 @@ class MainTabSettings:
 
     def get_thread_spec(self) -> str:
         """Get RIFE thread specification."""
-        return self.settings.value("rife/threadSpec", "", type=str)
+        value = self.settings.value("rife/threadSpec", "", type=str)
+        return str(value) if value is not None else ""
 
     def set_thread_spec(self, thread_spec: str) -> None:
         """Set RIFE thread specification."""
@@ -98,7 +107,8 @@ class MainTabSettings:
 
     def get_tta_spatial(self) -> bool:
         """Get RIFE TTA spatial setting."""
-        return self.settings.value("rife/ttaSpatial", False, type=bool)
+        value = self.settings.value("rife/ttaSpatial", False, type=bool)
+        return bool(value) if value is not None else False
 
     def set_tta_spatial(self, enabled: bool) -> None:
         """Set RIFE TTA spatial setting."""
@@ -106,7 +116,8 @@ class MainTabSettings:
 
     def get_tta_temporal(self) -> bool:
         """Get RIFE TTA temporal setting."""
-        return self.settings.value("rife/ttaTemporal", False, type=bool)
+        value = self.settings.value("rife/ttaTemporal", False, type=bool)
+        return bool(value) if value is not None else False
 
     def set_tta_temporal(self, enabled: bool) -> None:
         """Set RIFE TTA temporal setting."""
@@ -115,7 +126,8 @@ class MainTabSettings:
     # Sanchez Settings
     def get_sanchez_false_color_enabled(self) -> bool:
         """Get Sanchez false color enabled setting."""
-        return self.settings.value("sanchez/falseColorEnabled", False, type=bool)
+        value = self.settings.value("sanchez/falseColorEnabled", False, type=bool)
+        return bool(value) if value is not None else False
 
     def set_sanchez_false_color_enabled(self, enabled: bool) -> None:
         """Set Sanchez false color enabled setting."""
@@ -123,7 +135,8 @@ class MainTabSettings:
 
     def get_sanchez_resolution_km(self) -> str:
         """Get Sanchez resolution km setting."""
-        return self.settings.value("sanchez/resolutionKm", "4", type=str)
+        value = self.settings.value("sanchez/resolutionKm", "4", type=str)
+        return str(value) if value is not None else "4"
 
     def set_sanchez_resolution_km(self, res_km: str) -> None:
         """Set Sanchez resolution km setting."""
@@ -132,7 +145,8 @@ class MainTabSettings:
     # Path Settings
     def get_input_directory(self) -> str:
         """Get input directory path."""
-        return self.settings.value("paths/inputDirectory", "", type=str)
+        value = self.settings.value("paths/inputDirectory", "", type=str)
+        return str(value) if value is not None else ""
 
     def set_input_directory(self, path: str) -> None:
         """Set input directory path with redundancy."""
@@ -141,7 +155,8 @@ class MainTabSettings:
 
     def get_output_file(self) -> str:
         """Get output file path."""
-        return self.settings.value("paths/outputFile", "", type=str)
+        value = self.settings.value("paths/outputFile", "", type=str)
+        return str(value) if value is not None else ""
 
     def set_output_file(self, path: str) -> None:
         """Set output file path."""
@@ -150,7 +165,8 @@ class MainTabSettings:
     # Preview Settings
     def get_crop_rectangle(self) -> str:
         """Get crop rectangle string."""
-        return self.settings.value("preview/cropRectangle", "", type=str)
+        value = self.settings.value("preview/cropRectangle", "", type=str)
+        return str(value) if value is not None else ""
 
     def set_crop_rectangle(self, rect_str: str) -> None:
         """Set crop rectangle string with redundancy."""

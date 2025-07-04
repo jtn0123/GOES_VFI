@@ -204,7 +204,7 @@ class TestIntegrityTabDataFlowV2:
             # Verify error handling
             assert "error" in flow_result
             assert error_name.split("_")[0] in flow_result["error"].lower()
-            
+
             # Reset for next iteration
             mock_date_selector.get_date_range.side_effect = None
 
@@ -254,9 +254,7 @@ class TestIntegrityTabDataFlowV2:
         # Execute concurrent operations
         tasks = []
         for scenario in scenarios:
-            task = self._execute_data_flow_pipeline(
-                mock_composite_store, mock_date_selector, scenario
-            )
+            task = self._execute_data_flow_pipeline(mock_composite_store, mock_date_selector, scenario)
             tasks.append(task)
 
         # Wait for all operations to complete

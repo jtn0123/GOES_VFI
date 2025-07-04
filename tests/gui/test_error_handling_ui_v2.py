@@ -602,11 +602,11 @@ class TestErrorHandlingUIOptimizedV2:
             max_wait_time = 200  # 0.2 seconds max
             wait_interval = 10
             total_waited = 0
-            
+
             while total_waited < max_wait_time:
                 qtbot.wait(wait_interval)
                 total_waited += wait_interval
-                
+
                 # Break if we have status updates indicating completion
                 if status_updates and ("Success!" in status_updates[-1] or "Failed" in status_updates[-1]):
                     break
@@ -626,10 +626,9 @@ class TestErrorHandlingUIOptimizedV2:
                 if scenario.get("expect_circuit_break"):
                     # Circuit breaker behavior depends on implementation
                     assert len(error_messages) > 0 or len(status_updates) > 0
-            elif scenario["name"] == "Immediate Success":
-                if status_updates:
-                    # Should succeed immediately
-                    assert "Success!" in status_updates[-1] or "Attempt 1/3" in status_updates[0]
+            elif scenario["name"] == "Immediate Success" and status_updates:
+                # Should succeed immediately
+                assert "Success!" in status_updates[-1] or "Attempt 1/3" in status_updates[0]
 
     @staticmethod
     def test_resource_management_comprehensive(

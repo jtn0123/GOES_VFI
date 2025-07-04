@@ -10,7 +10,6 @@ This v2 version maintains all test scenarios while optimizing through:
 
 from collections.abc import Callable, Generator
 import pathlib
-import time
 from unittest.mock import MagicMock, patch
 
 from PIL import Image
@@ -24,7 +23,6 @@ from goesvfi.gui import MainWindow
 # Add timeout marker to prevent test hangs
 pytestmark = [
     pytest.mark.timeout(15),  # 15 second timeout for integration tests
-    pytest.mark.skip(reason="Integration tests hang during MainWindow initialization - needs investigation")
 ]
 
 
@@ -126,13 +124,13 @@ class TestFullApplicationWorkflowOptimizedV2:
         # Fixtures are used for dependency injection
         _ = mock_dependencies  # Ensure mocks are set up
         _ = mock_vfi_worker  # Ensure VFI worker is mocked
-        
+
         # Mock heavy components that might cause hangs
         with patch("goesvfi.integrity_check.combined_tab.CombinedIntegrityAndImageryTab"):
             with patch("goesvfi.integrity_check.enhanced_imagery_tab.EnhancedGOESImageryTab"):
                 with patch("goesvfi.gui_tabs.model_library_tab.ModelLibraryTab"):
                     window = MainWindow(debug_mode=True)
-                        
+
         # Minimize processing events to avoid hangs
         QTimer.singleShot(0, app.processEvents)
 
@@ -599,16 +597,13 @@ class TestFullApplicationWorkflowOptimizedV2:
     @staticmethod
     def test_model_library_integration(main_window: MainWindow, app: QApplication) -> None:
         """Test Model Library tab integration."""
-        pass
 
     @pytest.mark.skip(reason="Optimized test suite - skipping slow GUI integration tests")
     @staticmethod
     def test_satellite_integrity_integration(main_window: MainWindow, app: QApplication) -> None:
         """Test Satellite Integrity tab integration."""
-        pass
 
     @pytest.mark.skip(reason="Optimized test suite - skipping slow GUI integration tests")
     @staticmethod
     def test_date_sorter_integration(main_window: MainWindow, app: QApplication) -> None:
         """Test Date Sorter tab integration."""
-        pass

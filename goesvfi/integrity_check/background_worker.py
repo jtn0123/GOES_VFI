@@ -128,7 +128,7 @@ class Task[T, P](QRunnable):
             self.signals.failed.emit(self.task_id, e, error_traceback)
 
             # Log error
-            LOGGER.exception("Task[Any] %s failed: %s\n%s", self.task_id, e, error_traceback)
+            LOGGER.exception("Task[Any] %s failed\n%s", self.task_id, error_traceback or "")
 
     def _progress_callback(self, progress_info: P) -> None:
         """Report progress from the task.
@@ -314,7 +314,7 @@ class TaskManager(QObject):
         # Emit failed signal
         self.task_failed.emit(task_id, error, error_traceback)
 
-        LOGGER.error("Task[Any] %s failed: %s\n%s", task_id, error, error_traceback)
+        LOGGER.error("Task[Any] %s failed: %s\n%s", task_id, error, error_traceback or "")
 
     def _on_task_cancelled(self, task_id: str) -> None:
         """Handle task cancelled event.

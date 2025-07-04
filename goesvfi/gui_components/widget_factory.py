@@ -108,24 +108,45 @@ class WidgetFactory:
 
     @staticmethod
     def create_button(
-        text: str = "", style: str = "secondary", parent: QWidget | None = None, **kwargs: Any
+        text: str = "",
+        style: str = "secondary",
+        parent: QWidget | None = None,
+        tooltip: str = "",
+        accessibility_name: str = "",
+        **kwargs: Any,
     ) -> QPushButton:
-        """Create a styled button.
+        """Create a styled button with accessibility features.
 
         Args:
             text: Button text
             style: Style type (primary, secondary, start, cancel, tab, date_picker)
             parent: Parent widget
+            tooltip: Tooltip text for accessibility
+            accessibility_name: Accessible name for screen readers
             **kwargs: Additional QPushButton properties
 
         Returns:
-            Styled QPushButton instance
+            Styled QPushButton instance with accessibility features
         """
         button = QPushButton(text, parent)
 
         # Apply style class
         style_class = WidgetFactory.BUTTON_STYLES.get(style, "DialogButton")
         button.setProperty("class", style_class)
+
+        # Add accessibility features
+        if tooltip:
+            button.setToolTip(tooltip)
+            button.setStatusTip(tooltip)
+
+        if accessibility_name:
+            button.setAccessibleName(accessibility_name)
+        elif text:
+            button.setAccessibleName(text)
+
+        # Add keyboard accelerator if not present and text is available
+        if "&" not in text and text:
+            button.setText(f"&{text}")
 
         # Apply any additional properties
         for key, value in kwargs.items():
@@ -135,23 +156,41 @@ class WidgetFactory:
         return button
 
     @staticmethod
-    def create_label(text: str = "", style: str = "standard", parent: QWidget | None = None, **kwargs: Any) -> QLabel:
-        """Create a styled label.
+    def create_label(
+        text: str = "",
+        style: str = "standard",
+        parent: QWidget | None = None,
+        tooltip: str = "",
+        accessibility_name: str = "",
+        **kwargs: Any,
+    ) -> QLabel:
+        """Create a styled label with accessibility features.
 
         Args:
             text: Label text
             style: Style type (standard, header, status, etc.)
             parent: Parent widget
+            tooltip: Tooltip text for accessibility
+            accessibility_name: Accessible name for screen readers
             **kwargs: Additional QLabel properties
 
         Returns:
-            Styled QLabel instance
+            Styled QLabel instance with accessibility features
         """
         label = QLabel(text, parent)
 
         # Apply style class
         style_class = WidgetFactory.LABEL_STYLES.get(style, "StandardLabel")
         label.setProperty("class", style_class)
+
+        # Add accessibility features
+        if tooltip:
+            label.setToolTip(tooltip)
+
+        if accessibility_name:
+            label.setAccessibleName(accessibility_name)
+        elif text:
+            label.setAccessibleName(text)
 
         # Apply any additional properties
         for key, value in kwargs.items():

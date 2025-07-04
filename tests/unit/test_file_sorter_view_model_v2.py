@@ -126,7 +126,7 @@ class TestFileSorterViewModelV2(unittest.TestCase):
             with self.subTest(scenario=scenario["name"]):
                 # Reset view model state before each scenario
                 self.view_model.source_directory = None
-                
+
                 # Create directory if it doesn't exist and is not empty/None
                 if scenario["directory"] and scenario["directory"] != "":
                     Path(scenario["directory"]).mkdir(parents=True, exist_ok=True)
@@ -203,7 +203,7 @@ class TestFileSorterViewModelV2(unittest.TestCase):
             with self.subTest(scenario=scenario["name"]):
                 # Reset view model state before each scenario
                 self.view_model.destination_directory = None
-                
+
                 # Create directory if it doesn't exist and is not empty/None
                 if scenario["directory"] and scenario["directory"] != "":
                     Path(scenario["directory"]).mkdir(parents=True, exist_ok=True)

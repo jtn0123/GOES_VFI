@@ -26,8 +26,9 @@ def cleanup_group_box(group_box) -> None:
             # Remove all items from layout
             while layout.count():
                 item = layout.takeAt(0)
-                if item.widget():
-                    item.widget().setParent(None)
+                widget = item.widget()
+                if widget:
+                    widget.deleteLater()
 
 
 def cleanup_layout(layout) -> None:
@@ -36,8 +37,9 @@ def cleanup_layout(layout) -> None:
         # Remove all items from layout
         while layout.count():
             item = layout.takeAt(0)
-            if item.widget():
-                item.widget().setParent(None)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
         # Reset layout properties
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -139,14 +141,7 @@ def initialize_common_pools() -> None:
     # Group box pool
     register_widget_pool("group_boxes", QGroupBox, create_group_box, max_size=12, cleanup_func=cleanup_group_box)
 
-    # Layout pools (these are less commonly pooled but useful for complex dynamic UIs)
-    register_widget_pool(
-        "horizontal_layouts", QHBoxLayout, create_horizontal_layout, max_size=8, cleanup_func=cleanup_layout
-    )
-
-    register_widget_pool(
-        "vertical_layouts", QVBoxLayout, create_vertical_layout, max_size=8, cleanup_func=cleanup_layout
-    )
+    # Note: Layouts are not widgets and cannot be pooled with the widget pool system
 
     LOGGER.info("Initialized common widget pools")
 
@@ -182,49 +177,70 @@ def get_status_label() -> QLabel:
     """Get a status label from the pool."""
     from .widget_pool import acquire_widget
 
-    return acquire_widget("status_labels")
+    widget = acquire_widget("status_labels")
+    if not isinstance(widget, QLabel):
+        raise TypeError(f"Expected QLabel, got {type(widget)}")
+    return widget
 
 
 def get_info_label() -> QLabel:
     """Get an info label from the pool."""
     from .widget_pool import acquire_widget
 
-    return acquire_widget("info_labels")
+    widget = acquire_widget("info_labels")
+    if not isinstance(widget, QLabel):
+        raise TypeError(f"Expected QLabel, got {type(widget)}")
+    return widget
 
 
 def get_preview_label() -> QLabel:
     """Get a preview label from the pool."""
     from .widget_pool import acquire_widget
 
-    return acquire_widget("preview_labels")
+    widget = acquire_widget("preview_labels")
+    if not isinstance(widget, QLabel):
+        raise TypeError(f"Expected QLabel, got {type(widget)}")
+    return widget
 
 
 def get_action_button() -> QPushButton:
     """Get an action button from the pool."""
     from .widget_pool import acquire_widget
 
-    return acquire_widget("action_buttons")
+    widget = acquire_widget("action_buttons")
+    if not isinstance(widget, QPushButton):
+        raise TypeError(f"Expected QPushButton, got {type(widget)}")
+    return widget
 
 
 def get_secondary_button() -> QPushButton:
     """Get a secondary button from the pool."""
     from .widget_pool import acquire_widget
 
-    return acquire_widget("secondary_buttons")
+    widget = acquire_widget("secondary_buttons")
+    if not isinstance(widget, QPushButton):
+        raise TypeError(f"Expected QPushButton, got {type(widget)}")
+    return widget
 
 
 def get_progress_bar() -> QProgressBar:
     """Get a progress bar from the pool."""
     from .widget_pool import acquire_widget
 
-    return acquire_widget("progress_bars")
+    widget = acquire_widget("progress_bars")
+    if not isinstance(widget, QProgressBar):
+        raise TypeError(f"Expected QProgressBar, got {type(widget)}")
+    return widget
 
 
 def get_group_box() -> QGroupBox:
     """Get a group box from the pool."""
     from .widget_pool import acquire_widget
 
-    return acquire_widget("group_boxes")
+    widget = acquire_widget("group_boxes")
+    if not isinstance(widget, QGroupBox):
+        raise TypeError(f"Expected QGroupBox, got {type(widget)}")
+    return widget
 
 
 def return_status_label(label: QLabel) -> None:

@@ -9,12 +9,11 @@ This v2 version maintains all test scenarios while optimizing through:
 """
 
 from collections.abc import Iterator
-import os
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
-from PyQt6.QtCore import QEventLoop, QObject, QTimer, pyqtSlot
+from PyQt6.QtCore import QObject, pyqtSlot
 from PyQt6.QtWidgets import QApplication
 import pytest
 
@@ -335,10 +334,11 @@ class TestVfiWorkerOptimizedV2:
         for i in range(5):
             img_file = input_dir / f"frame_{i:04d}.png"
             # Create a simple valid PNG image
-            from PIL import Image
             import numpy as np
+            from PIL import Image
+
             img_array = np.zeros((100, 100, 3), dtype=np.uint8)
-            img_array[i*10:(i+1)*10, i*10:(i+1)*10] = [255, 255, 255]  # Small white square
+            img_array[i * 10 : (i + 1) * 10, i * 10 : (i + 1) * 10] = [255, 255, 255]  # Small white square
             img = Image.fromarray(img_array)
             img.save(img_file)
             test_images.append(img_file)
@@ -487,7 +487,7 @@ class TestVfiWorkerOptimizedV2:
 
             # Test worker can be created with this configuration
             worker = VfiWorker(**worker_args)
-            
+
             # Verify worker has expected configuration
             config = config_manager.get_config(config_type)
             assert worker.encoder == config["encoder"], f"Encoder mismatch for {config_type}"
@@ -509,13 +509,13 @@ class TestVfiWorkerOptimizedV2:
         # Test valid initialization
         worker = VfiWorker(**worker_args)
         assert worker is not None, "Worker creation failed for valid arguments"
-        
+
         # Test that worker has expected attributes
         assert hasattr(worker, "in_dir"), "Worker missing in_dir attribute"
         assert hasattr(worker, "out_file_path"), "Worker missing out_file_path attribute"
         assert hasattr(worker, "fps"), "Worker missing fps attribute"
         assert hasattr(worker, "mid_count"), "Worker missing mid_count attribute"
-        
+
         # Test parameter ranges are reasonable
         assert worker.fps > 0, "FPS should be positive"
         assert worker.mid_count >= 1, "Mid count should be at least 1"
@@ -530,21 +530,21 @@ class TestVfiWorkerOptimizedV2:
 
         # Test different performance configurations
         config_types = ["basic", "low_resource", "high_performance"]
-        
+
         for config_type in config_types:
             worker_args = config_manager.create_worker_args(
                 workspace["input_dir"], workspace["output_file"], config_type
             )
-            
+
             # Test worker creation doesn't consume excessive resources immediately
             worker = VfiWorker(**worker_args)
-            
+
             # Verify configuration was applied correctly
             config = config_manager.get_config(config_type)
             assert worker.max_workers == config["max_workers"], f"Max workers mismatch for {config_type}"
-            
+
             # Test basic resource expectations
             if config_type == "low_resource":
-                assert worker.max_workers <= 4, f"Low resource config should limit workers to 4 or fewer"
+                assert worker.max_workers <= 4, "Low resource config should limit workers to 4 or fewer"
             elif config_type == "high_performance":
-                assert worker.max_workers >= 4, f"High performance config should allow 4 or more workers"
+                assert worker.max_workers >= 4, "High performance config should allow 4 or more workers"

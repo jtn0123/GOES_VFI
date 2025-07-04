@@ -1086,12 +1086,16 @@ class TestDiscovery:
 
     PROBLEMATIC_TESTS = [
         # Files that cause timeouts when run in discovery mode
-        "tests/gui/test_gui_button_validation_v2.py",
-        "tests/gui/test_gui_component_validation_v2.py",
-        "tests/gui/test_main_window_v2.py",
         "tests/unit/test_enhanced_gui_tab_v2.py",
-        "tests/unit/test_enhanced_integrity_check_tab_v2.py",
+        "tests/unit/test_enhanced_integrity_check_tab_v2.py", 
         "tests/unit/test_preview_scaling_fixes_v2.py",
+    ]
+    
+    # Tests that have some failures but don't timeout - can be run individually
+    FLAKY_TESTS = [
+        "tests/gui/test_gui_button_validation_v2.py",  # 3 failures, 7 passed, 4 skipped
+        "tests/gui/test_gui_component_validation_v2.py",  # 3 failures, 5 passed, 4 skipped
+        "tests/gui/test_main_window_v2.py",  # Individual tests pass but some may fail
     ]
 
     def find_test_files(self, directory: str = "tests") -> list[str]:
@@ -1121,6 +1125,7 @@ class TestDiscovery:
             return files, 0
 
         original_count = len(files)
+        # Only filter out tests that actually timeout/hang, not just flaky tests
         filtered = [f for f in files if f not in self.PROBLEMATIC_TESTS]
         skipped_count = original_count - len(filtered)
 
@@ -1317,7 +1322,7 @@ def parse_arguments() -> RunnerConfig:
     parser.add_argument("--tolerant", action="store_true", help="Always return success (0) even if tests fail")
     parser.add_argument("--dump-logs", action="store_true", help="Dump output logs for failed tests to files")
     parser.add_argument(
-        "--include-problematic", action="store_true", help="Include known problematic tests that may timeout"
+        "--include-problematic", action="store_true", help="Include known problematic tests that timeout/hang"
     )
     parser.add_argument("--debug-mode", action="store_true", help="Run tests with extra debug options")
     parser.add_argument("--quiet", "-q", action="store_true", help="Minimal output (only summary)")

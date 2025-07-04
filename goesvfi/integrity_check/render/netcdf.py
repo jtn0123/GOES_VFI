@@ -112,7 +112,7 @@ def _get_colormap(colormap_name: str) -> Any:
     if colormap_name == "gray":
         # Custom grayscale with enhanced contrast
         return LinearSegmentedColormap.from_list("enhanced_gray", [(0, 0, 0), (1, 1, 1)], N=256)
-    
+
     try:
         # Get the colormap - we just need a Colormap,
         # not specifically LinearSegmentedColormap
@@ -121,7 +121,7 @@ def _get_colormap(colormap_name: str) -> Any:
         # If colormap doesn't exist, fall back to viridis
         cmap = plt.get_cmap("viridis")
         colormap_name = "viridis"
-    
+
     # Create a new LinearSegmentedColormap with the data from _cmap
     # This ensures type safety while maintaining the colormap
     return LinearSegmentedColormap.from_list(colormap_name, cmap(np.linspace(0, 1, 256)), N=256)

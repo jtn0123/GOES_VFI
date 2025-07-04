@@ -42,8 +42,11 @@ class ImageCropper(ImageProcessor):
             msg = f"Invalid crop area: {crop_area} for image dimensions {width}x{height}"
             raise ValueError(msg)
 
-        # Perform crop - make a copy to ensure independence from original
-        cropped_array = image_array[top:bottom, left:right].copy()
+        # Use view for preview operations, copy only for processing pipeline
+        cropped_array = image_array[top:bottom, left:right]
+        if "processing_steps" in image_data.metadata:
+            # Make copy for pipeline processing to avoid data corruption
+            cropped_array = cropped_array.copy()
 
         # Create new ImageData object
         new_metadata: dict[str, Any] = image_data.metadata.copy()
@@ -100,56 +103,56 @@ class ImageCropper(ImageProcessor):
             msg = f"Failed to load image: {e}"
             raise ValueError(msg) from e
 
-    def process(self, image_data: ImageData | dict[str, Any], **kwargs: Any) -> ImageData | dict[str, Any]:
-        """Process image data based on provided parameters.
-
-        This method can be called in two ways:
-        1. With a params dict directly: process(params)
-        2. With ImageData and kwargs: process(image_data, **kwargs)
+    def process(self, image_data: ImageData, **kwargs: Any) -> ImageData:
+        """Process image data by applying crop operation.
 
         Args:
-            image_data: Either ImageData or params dict with:
-                - input_path: Path to input numpy file
-                - output_path: Path to save output numpy file
-                - crop_rect: Tuple of (left, top, right, bottom)
-            **kwargs: Additional parameters (not used in pipeline mode)
+            image_data: ImageData object containing image to crop
+            **kwargs: Additional parameters including 'crop_rect'
 
         Returns:
-            ImageData or dict: Result dictionary with success status when params provided.
+            ImageData: Cropped image data
         """
-        # Check if this is being called with params dict
-        if isinstance(image_data, dict):
-            params = image_data
+        crop_rect = kwargs.get("crop_rect")
+        if crop_rect is None:
+            raise ValueError("crop_rect parameter is required")
 
-            result = {"success": False, "error": None}
+        return self.crop(image_data, crop_rect)
 
-            # Validate parameters
-            required_keys = {"input_path", "output_path", "crop_rect"}
-            if not all(key in params for key in required_keys):
-                result["error"] = f"Missing required parameters. Need: {required_keys}"
-                return result
+    def process_with_params(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Process image using parameter dictionary (legacy interface).
 
-            try:
-                # Load input image
-                loaded_data = self.load(params["input_path"])
+        Args:
+            params: Dictionary with input_path, output_path, crop_rect
 
-                # Crop the image
-                cropped_data = self.crop(loaded_data, params["crop_rect"])
+        Returns:
+            Dict with success status and error info
+        """
+        result = {"success": False, "error": None}
 
-                # Save the cropped image
-                self.save(cropped_data, params["output_path"])
-
-                result["success"] = True
-                result["output_path"] = params["output_path"]
-
-            except Exception as e:
-                result["error"] = str(e)
-
+        # Validate parameters
+        required_keys = {"input_path", "output_path", "crop_rect"}
+        if not all(key in params for key in required_keys):
+            result["error"] = f"Missing required parameters. Need: {required_keys}"
             return result
 
-        # Original interface - not implemented
-        msg = "ImageCropper.process() with ImageData not implemented"
-        raise NotImplementedError(msg)
+        try:
+            # Load input image
+            loaded_data = self.load(params["input_path"])
+
+            # Crop the image
+            cropped_data = self.crop(loaded_data, params["crop_rect"])
+
+            # Save the cropped image
+            self.save(cropped_data, params["output_path"])
+
+            result["success"] = True
+            result["output_path"] = params["output_path"]
+
+        except Exception as e:
+            result["error"] = str(e)
+
+        return result
 
     def save(self, image_data: ImageData, destination_path: str) -> None:
         """Save image data to a numpy file.

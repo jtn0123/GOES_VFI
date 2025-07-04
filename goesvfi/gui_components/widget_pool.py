@@ -5,7 +5,7 @@ and improve performance for frequently created/destroyed widgets.
 """
 
 from collections.abc import Callable
-from typing import TypeVar
+from typing import TypeVar, Generic
 
 from PyQt6.QtWidgets import QWidget
 
@@ -16,7 +16,7 @@ LOGGER = log.get_logger(__name__)
 T = TypeVar("T", bound=QWidget)
 
 
-class WidgetPool:
+class WidgetPool(Generic[T]):
     """Manages a pool of reusable widgets to reduce allocation overhead."""
 
     def __init__(
@@ -122,7 +122,7 @@ class WidgetPoolManager:
 
     def __init__(self) -> None:
         """Initialize the widget pool manager."""
-        self.pools: dict[str, WidgetPool] = {}
+        self.pools: dict[str, WidgetPool[QWidget]] = {}
 
     def register_pool(
         self,
@@ -144,7 +144,9 @@ class WidgetPoolManager:
         if name in self.pools:
             LOGGER.warning(f"Pool '{name}' already registered, replacing")
 
-        self.pools[name] = WidgetPool(widget_type, factory, max_size, cleanup_func)
+        # Type ignore due to complex generic constraints between T and QWidget
+        pool: WidgetPool[QWidget] = WidgetPool(widget_type, factory, max_size, cleanup_func)  # type: ignore[arg-type]
+        self.pools[name] = pool
         LOGGER.info(f"Registered widget pool '{name}' for {widget_type.__name__}")
 
     def acquire(self, pool_name: str) -> QWidget | None:
@@ -160,7 +162,8 @@ class WidgetPoolManager:
             LOGGER.error(f"Pool '{pool_name}' not found")
             return None
 
-        return self.pools[pool_name].acquire()
+        widget = self.pools[pool_name].acquire()
+        return widget
 
     def release(self, pool_name: str, widget: QWidget) -> None:
         """Release a widget back to the specified pool.
@@ -249,10 +252,11 @@ def release_widget(pool_name: str, widget: QWidget) -> None:
 def cleanup_label(label) -> None:
     """Clean up a QLabel for reuse."""
     from PyQt6.QtWidgets import QLabel
+    from PyQt6.QtGui import QPixmap
 
     if isinstance(label, QLabel):
         label.clear()
-        label.setPixmap(None)
+        label.setPixmap(QPixmap())  # Use empty QPixmap instead of None
         label.setText("")
         label.setToolTip("")
         label.setProperty("class", "")
@@ -261,10 +265,11 @@ def cleanup_label(label) -> None:
 def cleanup_button(button) -> None:
     """Clean up a QPushButton for reuse."""
     from PyQt6.QtWidgets import QPushButton
+    from PyQt6.QtGui import QIcon
 
     if isinstance(button, QPushButton):
         button.setText("")
-        button.setIcon(None)
+        button.setIcon(QIcon())  # Use empty QIcon instead of None
         button.setToolTip("")
         button.setEnabled(True)
         button.setProperty("class", "")

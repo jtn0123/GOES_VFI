@@ -85,8 +85,11 @@ class ErrorHandlerChain:
         if isinstance(error, Exception) and not isinstance(error, StructuredError):
             # Convert regular exception to StructuredError
             from .classifier import default_classifier
+
             structured_error = default_classifier.create_structured_error(error)
         else:
             structured_error = error
 
-        return any(handler.can_handle(structured_error) and handler.handle(structured_error) for handler in self.handlers)
+        return any(
+            handler.can_handle(structured_error) and handler.handle(structured_error) for handler in self.handlers
+        )

@@ -612,7 +612,7 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                     dict[str, Any]: Workflow results.
                 """
                 download_path = temp_dir / "test_file.nc"
-                
+
                 # For corruption tests, use original data as expected, not corrupted data
                 original_data = kwargs.get("original_data", data)
                 expected_checksum = hashlib.md5(original_data).hexdigest()  # noqa: S324
@@ -688,9 +688,12 @@ class TestEndToEndSatelliteDownloadOptimizedV2:
                     dict[str, Any]: Workflow results.
                 """
                 if scenario == "parallel_downloads":
-                    return await self.workflow_scenarios[scenario](mocks, data, temp_dir, timestamp, satellite, channel, file_count)
-                else:
-                    return await self.workflow_scenarios[scenario](mocks, data, temp_dir, timestamp, satellite, channel, **kwargs)
+                    return await self.workflow_scenarios[scenario](
+                        mocks, data, temp_dir, timestamp, satellite, channel, file_count
+                    )
+                return await self.workflow_scenarios[scenario](
+                    mocks, data, temp_dir, timestamp, satellite, channel, **kwargs
+                )
 
         return {
             "data_manager": MockDataManager(),

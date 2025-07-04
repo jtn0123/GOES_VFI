@@ -25,9 +25,9 @@ from goesvfi.integrity_check.enhanced_view_model import (
     EnhancedMissingTimestamp,
     FetchSource,
 )
-from goesvfi.integrity_check.thread_cache_db import ThreadLocalCacheDB
 from goesvfi.integrity_check.remote.cdn_store import CDNStore
 from goesvfi.integrity_check.remote.s3_store import S3Store
+from goesvfi.integrity_check.thread_cache_db import ThreadLocalCacheDB
 from goesvfi.integrity_check.time_index import SatellitePattern, TimeIndex
 from goesvfi.integrity_check.view_model import ScanStatus
 
@@ -185,12 +185,12 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
             with self.subTest(satellite=satellite):
                 # Capture signal emissions
                 satellite_emissions = []
-                self.view_model.satellite_changed.connect(lambda s: satellite_emissions.append(s))
+                self.view_model.satellite_changed.connect(satellite_emissions.append)
 
                 # Set satellite
                 self.view_model.satellite = satellite
                 assert self.view_model.satellite == satellite
-                
+
                 # Check if signal was emitted (only if value changed)
                 if satellite != SatellitePattern.GOES_18:  # GOES_18 is default
                     assert len(satellite_emissions) == 1
@@ -214,12 +214,12 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
             with self.subTest(fetch_source=source):
                 # Capture signal emissions
                 source_emissions = []
-                self.view_model.fetch_source_changed.connect(lambda s: source_emissions.append(s))
+                self.view_model.fetch_source_changed.connect(source_emissions.append)
 
                 # Set fetch_source
                 self.view_model.fetch_source = source
                 assert self.view_model.fetch_source == source
-                
+
                 # Check if signal was emitted (only if value changed)
                 if source != FetchSource.AUTO:  # AUTO is default
                     assert len(source_emissions) == 1
@@ -348,7 +348,10 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
             with self.subTest(current=current, total=total):
                 # Capture signal emissions
                 status_updates = []
-                handler = lambda msg: status_updates.append(msg)
+
+                def handler(msg):
+                    return status_updates.append(msg)
+
                 self.view_model.status_updated.connect(handler)
 
                 try:
@@ -413,7 +416,10 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
             with self.subTest(scenario=scenario["name"]):
                 # Mock signals (use a list to capture signal emissions)
                 scan_completed_calls = []
-                handler = lambda success, msg: scan_completed_calls.append((success, msg))
+
+                def handler(success, msg):
+                    return scan_completed_calls.append((success, msg))
+
                 self.view_model.scan_completed.connect(handler)
 
                 try:
@@ -572,7 +578,7 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
                 assert self.view_model.status == ScanStatus.COMPLETED
 
                 # Verify status message
-                if scenario['expected_failed'] > 0:
+                if scenario["expected_failed"] > 0:
                     expected_message = f"Downloads complete: {scenario['expected_success']} successful, {scenario['expected_failed']} failed"
                 else:
                     expected_message = f"Downloads complete: {scenario['expected_success']} successful"
@@ -658,7 +664,7 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
                     self.view_model._active_tasks = []  # noqa: SLF001
                 else:
                     self.view_model._active_tasks.clear()  # noqa: SLF001
-                
+
                 mock_scan_task = MagicMock()
 
                 with patch(
@@ -671,7 +677,7 @@ class TestEnhancedIntegrityCheckViewModelV2(PyQtAsyncTestCase):
                     self.view_model.interval_minutes = scenario["interval_minutes"]
                     self.view_model.force_rescan = scenario["force_rescan"]
                     self.view_model.auto_download = scenario["auto_download"]
-                    
+
                     # Ensure base directory exists for scan to start
                     self.view_model.base_directory = self.test_dir
 

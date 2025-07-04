@@ -121,7 +121,7 @@ class TestUnifiedDateRangeSelectorV2(PyQtAsyncTestCase):
             ("today", "today_start"),
             ("last_week", "week_ago_start"),
         ]
-        
+
         for preset, expected_start_key in test_cases:
             with self.subTest(preset=preset, expected_start_key=expected_start_key):
                 initial_signal_count = len(self.emitted_ranges)
@@ -256,7 +256,7 @@ class TestCompactDateRangeSelectorV2(PyQtAsyncTestCase):
             ("Today", 0),
             ("Yesterday", 0),
         ]
-        
+
         for preset_text, expected_hour in test_cases:
             with self.subTest(preset_text=preset_text, expected_hour=expected_hour):
                 initial_count = len(self.emitted_ranges)

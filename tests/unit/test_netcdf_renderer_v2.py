@@ -304,7 +304,7 @@ class TestNetCDFRendererV2(unittest.TestCase):
                 nc_path = self.base_dir / f"test_{i}.nc"
                 nc_path.write_text("mock content")
                 output_path = self.base_dir / f"output_{i}.png"
-                
+
                 # Create a fresh mock dataset for each file
                 mock_ds = self.create_mock_dataset()
 

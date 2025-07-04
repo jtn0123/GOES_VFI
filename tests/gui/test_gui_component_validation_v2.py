@@ -85,7 +85,11 @@ class TestGUIComponentValidationOptimizedV2:
             # Verify status bar shows progress
             status_message = window.status_bar.currentMessage()
             # Status message might show percentage or current frame count
-            assert expected_text in status_message or str(current) in status_message or f"{int(current/total*100)}%" in status_message
+            assert (
+                expected_text in status_message
+                or str(current) in status_message
+                or f"{int(current / total * 100)}%" in status_message
+            )
 
         # Test edge cases
         edge_cases = [
@@ -120,7 +124,7 @@ class TestGUIComponentValidationOptimizedV2:
             # Create middle pixmap for 3-arg method
             test_pixmap_middle = QPixmap(100, 100)
             test_pixmap_middle.fill(Qt.GlobalColor.gray)
-            
+
             # Test preview loading with all 3 pixmaps
             window._on_preview_images_loaded(test_pixmap1, test_pixmap_middle, test_pixmap2)  # noqa: SLF001
 
@@ -165,15 +169,15 @@ class TestGUIComponentValidationOptimizedV2:
     def test_spinbox_controls_comprehensive_validation(qtbot: Any, main_window: Any) -> None:
         """Test comprehensive spinbox validation and limits."""
         import os
-        
+
         window = main_window
         cpu_count = os.cpu_count() or 1
 
         # Define spinbox test cases
         # max_workers range is dynamic based on CPU count
         max_workers_valid = [1, min(4, cpu_count), min(8, cpu_count), cpu_count]
-        max_workers_valid = list(set(v for v in max_workers_valid if v <= cpu_count))  # Remove duplicates and invalid
-        
+        max_workers_valid = list({v for v in max_workers_valid if v <= cpu_count})  # Remove duplicates and invalid
+
         spinbox_test_cases = [
             ("fps_spinbox", 1, 120, [1, 30, 60, 120], [0, -1, 999]),
             ("mid_count_spinbox", 2, 16, [2, 5, 10, 16], [0, 1, 50]),  # Range is 2-16
@@ -509,7 +513,7 @@ class TestGUIComponentValidationOptimizedV2:
         # Ensure main tab is active
         window.tab_widget.setCurrentIndex(0)
         qtbot.wait(10)
-        
+
         test_widgets = [
             window.main_tab.start_button,
             window.main_tab.crop_button,
@@ -524,7 +528,7 @@ class TestGUIComponentValidationOptimizedV2:
             assert widget.styleSheet() is not None  # Has some styling
 
     @staticmethod
-    def test_layout_and_positioning(qtbot: Any, main_window: Any) -> None:  # noqa: ARG004
+    def test_layout_and_positioning(qtbot: Any, main_window: Any) -> None:
         """Test widget layout and positioning."""
         window = main_window
 
@@ -559,7 +563,7 @@ class TestGUIComponentValidationOptimizedV2:
 
         # Each tab should be accessible
         for i in range(tab_widget.count()):
-            tab_text = tab_widget.tabText(i)
+            tab_widget.tabText(i)
             # Some tabs might have empty text due to lazy loading or test mocks
             # Just verify the tab exists and is accessible
             assert tab_widget.widget(i) is not None, f"Tab {i} has no widget"

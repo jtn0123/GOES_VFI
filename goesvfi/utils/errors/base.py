@@ -5,7 +5,7 @@ Provides structured error handling that reduces complexity in error-heavy functi
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum, auto
+from enum import Enum
 import traceback
 from typing import Any
 
@@ -244,14 +244,11 @@ class StructuredError(Exception):
         }
         if self.context.trace_id:
             context_dict["trace_id"] = self.context.trace_id
-        
+
         cause_dict = None
         if self.cause:
-            cause_dict = {
-                "type": type(self.cause).__name__,
-                "message": str(self.cause)
-            }
-        
+            cause_dict = {"type": type(self.cause).__name__, "message": str(self.cause)}
+
         return {
             "message": self.message,
             "category": self.category.name,
@@ -265,7 +262,7 @@ class StructuredError(Exception):
 
     def get_user_friendly_message(self) -> str:
         """Get a user-friendly error message with suggestions."""
-        message = self.user_message
+        message = self.user_message or self.message
 
         if self.suggestions:
             suggestions_text = "\n".join(f"• {suggestion}" for suggestion in self.suggestions)

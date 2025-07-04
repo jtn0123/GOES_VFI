@@ -890,9 +890,7 @@ class TestRawEncoderOptimizedV2:
                     dict[str, Any]: Analysis results.
                 """
                 # Handle both "frames_count" and "frames_processed" field names for compatibility
-                total_frames = sum(
-                    r.get("frames_count", 0) + r.get("frames_processed", 0) for r in results.values()
-                )
+                total_frames = sum(r.get("frames_count", 0) + r.get("frames_processed", 0) for r in results.values())
                 total_fromarray_calls = sum(r.get("fromarray_calls", 0) for r in results.values())
                 total_save_calls = sum(r.get("save_calls", 0) for r in results.values())
 

@@ -83,7 +83,7 @@ class DirectoryScanner:
         """Extract timestamp from a single file or its parent directory."""
         try:
             # First try to extract from filename
-            timestamp = extractor.extract_timestamp(file_path.name, pattern)
+            timestamp: datetime | None = extractor.extract_timestamp(file_path.name, pattern)
             if not timestamp:
                 # If that fails, try parent directory name
                 parent_dir = file_path.parent.name

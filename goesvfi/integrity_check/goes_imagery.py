@@ -65,7 +65,8 @@ class ProductType(Enum):
             ProductType.CMIPF: "ABI-L2-CMIPF",
         }
         if product_type not in prefix_map:
-            raise KeyError(f"Unknown product type: {product_type}")
+            msg = f"Unknown product type: {product_type}"
+            raise KeyError(msg)
         return prefix_map[product_type]
 
     @staticmethod
@@ -89,7 +90,8 @@ class ProductType(Enum):
             ProductType.CMIPF: "CMIP_FD",
         }
         if product_type not in path_map:
-            raise KeyError(f"Unknown product type: {product_type}")
+            msg = f"Unknown product type: {product_type}"
+            raise KeyError(msg)
         return path_map[product_type]
 
 
@@ -371,7 +373,7 @@ class GOESImageryManager:
         if mode == ImageryMode.IMAGE_PRODUCT:
             # Download pre-colorized image
             result = self.downloader.download_precolorized_image(
-                channel=channel, product_type=product_type, date=date, size=size
+                channel=channel, product_type=product_type, _date=date, size=size
             )
             return result.file_path if result else None
 
@@ -482,11 +484,8 @@ class GOESImageryDownloader:
         product_path = ProductType.to_web_path(product_type)
 
         # Handle composite channels that don't have simple numbers
-        if channel.is_composite:
-            channel_str = channel.name.lower()
-        else:
-            channel_str = str(channel.number)
-        
+        channel_str = channel.name.lower() if channel.is_composite else str(channel.number)
+
         url = f"{base_url}/{satellite}/ABI/{product_path}/latest/{channel_str}_{size}.jpg"
 
         try:

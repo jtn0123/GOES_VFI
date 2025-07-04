@@ -264,7 +264,7 @@ class TestPreviewManagerV2(unittest.TestCase):  # noqa: PLR0904
         # Test different Sanchez resolutions
         resolution_scenarios = [
             (500, 2),  # Maps to 2 km (tuple always defaults to 2 km)
-            (1000, 2),  # Maps to 2 km (tuple always defaults to 2 km)  
+            (1000, 2),  # Maps to 2 km (tuple always defaults to 2 km)
             (2000, 2),  # Maps to 2 km (tuple always defaults to 2 km)
             (400, 2),  # Maps to 2 km (tuple always defaults to 2 km)
             (None, 2),  # Default

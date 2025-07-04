@@ -443,7 +443,7 @@ class TestGOESImageryTabOptimizedV2:
                 # Ensure size combo is properly set for image product mode
                 if selection_panel.size_combo.currentData() is None:
                     selection_panel.size_combo.setCurrentIndex(1)  # Select "1200"
-                
+
                 # Force validation update after all setup
                 selection_panel.updateUIState()
 

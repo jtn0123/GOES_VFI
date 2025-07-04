@@ -230,7 +230,9 @@ class TestUIDatensityFunctionalityV2:
             (4, "2"),  # Very Spacious
         ],
     )
-    def test_density_mapping_correctness(self, mock_settings_tab: Any, combo_index: int, expected_config_value: str) -> None:
+    def test_density_mapping_correctness(
+        self, mock_settings_tab: Any, combo_index: int, expected_config_value: str
+    ) -> None:
         """Test that the density mapping between UI and config is correct."""
 
         # Mock the mapping behavior

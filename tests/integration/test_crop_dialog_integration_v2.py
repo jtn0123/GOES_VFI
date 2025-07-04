@@ -141,7 +141,7 @@ class TestCropDialogIntegrationV2:
     )
     def test_coordinate_conversion_scenarios(
         self,
-        shared_app: QApplication,  # noqa: ARG004
+        shared_app: QApplication,
         standard_test_image: QImage,
         rect_params: tuple[int, int, int, int],
     ) -> None:
@@ -175,7 +175,8 @@ class TestCropDialogIntegrationV2:
         small_dialog = CropSelectionDialog(small_test_image)
         assert small_dialog.scale_factor > 0
         # Scale factor should be reasonable for any size image
-        assert small_dialog.scale_factor > 0.1 and small_dialog.scale_factor < 50.0
+        assert small_dialog.scale_factor > 0.1
+        assert small_dialog.scale_factor < 50.0
 
     @staticmethod
     def test_crop_dialog_edge_case_rectangles(shared_app: QApplication, standard_test_image: QImage) -> None:  # noqa: ARG004
@@ -210,7 +211,7 @@ class TestCropDialogIntegrationV2:
     )
     def test_crop_dialog_image_size_variations(
         self,
-        shared_app: QApplication,  # noqa: ARG004
+        shared_app: QApplication,
         test_image_factory: Callable[..., QImage],
         image_properties: dict[str, Any],
     ) -> None:

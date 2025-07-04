@@ -121,12 +121,12 @@ class TestNetCDFRenderV2:  # noqa: PLR0904
             temps = _convert_radiance_to_temperature(radiance, mock_ds, DEFAULT_MIN_TEMP_K, DEFAULT_MAX_TEMP_K)
 
             # Handle masked arrays properly
-            if hasattr(temps, 'filled'):
+            if hasattr(temps, "filled"):
                 # For masked arrays, get the filled data
                 temps_data = np.ma.filled(temps, fill_value=0.0)
             else:
                 temps_data = temps
-            
+
             assert isinstance(temps_data, np.ndarray)
             assert temps_data.shape == radiance.shape
             assert np.all(temps_data >= 0.0)
@@ -148,21 +148,15 @@ class TestNetCDFRenderV2:  # noqa: PLR0904
         temps = _convert_radiance_to_temperature(radiance, mock_ds, 100.0, 400.0)
 
         # Handle masked arrays properly
-        if hasattr(temps, 'filled'):
-            temps_data = np.ma.filled(temps, fill_value=0.0)
-        else:
-            temps_data = temps
-            
+        temps_data = np.ma.filled(temps, fill_value=0.0) if hasattr(temps, "filled") else temps
+
         assert np.all(temps_data >= 0.0)
         assert np.all(temps_data <= 1.0)
 
         # Test with custom temperature range
         temps = _convert_radiance_to_temperature(radiance, mock_ds, 200.0, 300.0)
-        if hasattr(temps, 'filled'):
-            temps_data = np.ma.filled(temps, fill_value=0.0)
-        else:
-            temps_data = temps
-            
+        temps_data = np.ma.filled(temps, fill_value=0.0) if hasattr(temps, "filled") else temps
+
         assert np.all(temps_data >= 0.0)
         assert np.all(temps_data <= 1.0)
 
@@ -181,9 +175,9 @@ class TestNetCDFRenderV2:  # noqa: PLR0904
         temps = _convert_radiance_to_temperature(radiance, mock_ds, DEFAULT_MIN_TEMP_K, DEFAULT_MAX_TEMP_K)
 
         # Handle masked arrays properly - NaN handling may vary
-        if hasattr(temps, 'filled'):
+        if hasattr(temps, "filled"):
             # For masked arrays, check the mask instead
-            assert hasattr(temps, 'mask')
+            assert hasattr(temps, "mask")
         else:
             # For regular arrays, NaN should be preserved
             assert np.isnan(temps[1])
@@ -283,7 +277,9 @@ class TestNetCDFRenderV2:  # noqa: PLR0904
 
     @patch("xarray.open_dataset")
     @patch("pathlib.Path.exists", return_value=True)
-    def test_render_png_with_scaled_data(self, mock_exists: Any, mock_open_dataset: Any, temp_dir: Any, mock_dataset: Any) -> None:  # noqa: ARG002
+    def test_render_png_with_scaled_data(
+        self, mock_exists: Any, mock_open_dataset: Any, temp_dir: Any, mock_dataset: Any
+    ) -> None:  # noqa: ARG002
         """Test rendering with scaled radiance data."""
         # Add scale factor and offset
         mock_dataset.variables[RADIANCE_VAR].attrs = {"scale_factor": 0.01, "add_offset": 50.0}
@@ -338,7 +334,9 @@ class TestNetCDFRenderV2:  # noqa: PLR0904
 
     @patch("xarray.open_dataset")
     @patch("pathlib.Path.exists", return_value=True)
-    def test_render_png_wrong_band(self, mock_exists: Any, mock_open_dataset: Any, temp_dir: Any, mock_dataset: Any) -> None:  # noqa: ARG002
+    def test_render_png_wrong_band(
+        self, mock_exists: Any, mock_open_dataset: Any, temp_dir: Any, mock_dataset: Any
+    ) -> None:  # noqa: ARG002
         """Test rendering with wrong band ID."""
         mock_dataset.variables[BAND_ID_VAR].values = 1  # Wrong band
 
@@ -364,7 +362,7 @@ class TestNetCDFRenderV2:  # noqa: PLR0904
         with patch("xarray.open_dataset") as mock_open, patch("goesvfi.integrity_check.render.netcdf._create_figure"):
             mock_open.return_value.__enter__.return_value = mock_dataset
 
-            # Create test files  
+            # Create test files
             nc_files = []
             for i in range(5):
                 nc_path = temp_dir / f"test_{i}.nc"
@@ -416,13 +414,10 @@ class TestNetCDFRenderV2:  # noqa: PLR0904
 
         # Without constants, conversion should use direct temperature conversion
         result = _convert_radiance_to_temperature(radiance, mock_dataset, DEFAULT_MIN_TEMP_K, DEFAULT_MAX_TEMP_K)
-        
+
         # Handle masked arrays properly
-        if hasattr(result, 'filled'):
-            result_data = np.ma.filled(result, fill_value=0.0)
-        else:
-            result_data = result
-            
+        result_data = np.ma.filled(result, fill_value=0.0) if hasattr(result, "filled") else result
+
         assert isinstance(result_data, np.ndarray)
         assert result_data.shape == radiance.shape
 
@@ -450,18 +445,17 @@ class TestNetCDFRenderV2:  # noqa: PLR0904
             temps = _convert_radiance_to_temperature(radiance, mock_ds, DEFAULT_MIN_TEMP_K, DEFAULT_MAX_TEMP_K)
 
             # Handle masked arrays properly
-            if hasattr(temps, 'filled'):
-                temps_data = np.ma.filled(temps, fill_value=0.0)
-            else:
-                temps_data = temps
-                
+            temps_data = np.ma.filled(temps, fill_value=0.0) if hasattr(temps, "filled") else temps
+
             assert isinstance(temps_data, np.ndarray)
             assert not np.any(np.isnan(temps_data))
 
     @patch("matplotlib.pyplot.savefig")
     @patch("xarray.open_dataset")
     @patch("pathlib.Path.exists", return_value=True)
-    def test_figure_creation_options(self, mock_exists: Any, mock_open_dataset: Any, mock_savefig: Any, temp_dir: Any, mock_dataset: Any) -> None:  # noqa: ARG002
+    def test_figure_creation_options(
+        self, mock_exists: Any, mock_open_dataset: Any, mock_savefig: Any, temp_dir: Any, mock_dataset: Any
+    ) -> None:  # noqa: ARG002
         """Test figure creation with various options."""
         mock_open_dataset.return_value.__enter__.return_value = mock_dataset
 
@@ -487,22 +481,16 @@ class TestNetCDFRenderV2:  # noqa: PLR0904
         temps = _convert_radiance_to_temperature(empty_radiance, mock_ds, DEFAULT_MIN_TEMP_K, DEFAULT_MAX_TEMP_K)
 
         # Handle masked arrays properly
-        if hasattr(temps, 'filled'):
-            temps_data = np.ma.filled(temps, fill_value=0.0)
-        else:
-            temps_data = temps
-        
+        temps_data = np.ma.filled(temps, fill_value=0.0) if hasattr(temps, "filled") else temps
+
         assert temps_data.shape == (0,)
 
         # Test with single pixel
         single_pixel = np.array([150.0])
         temps = _convert_radiance_to_temperature(single_pixel, mock_ds, DEFAULT_MIN_TEMP_K, DEFAULT_MAX_TEMP_K)
 
-        if hasattr(temps, 'filled'):
-            temps_data = np.ma.filled(temps, fill_value=0.0)
-        else:
-            temps_data = temps
-            
+        temps_data = np.ma.filled(temps, fill_value=0.0) if hasattr(temps, "filled") else temps
+
         assert temps_data.shape == (1,)
         assert 0 <= temps_data[0] <= 1
 

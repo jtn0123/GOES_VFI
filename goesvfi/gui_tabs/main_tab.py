@@ -1869,6 +1869,8 @@ class MainTab(QWidget):
         Returns:
             Tuple of (directory, base_name)
         """
+        if self.out_file_path is None:
+            raise ValueError("Output file path is not set")
         base_dir = self.out_file_path.parent
         filename = self.out_file_path.stem
 
@@ -2578,7 +2580,7 @@ class MainTab(QWidget):
         LOGGER.debug("Output file path: %s", self.out_file_path)
 
         # Validate input directory
-        if not self._validate_input_directory(current_in_dir):
+        if not self._validate_input_directory_exists(current_in_dir):
             return None
 
         # Validate output file
@@ -2593,7 +2595,7 @@ class MainTab(QWidget):
         encoder, rife_model_key = encoder_validation
         return current_in_dir, current_crop_rect_mw, encoder, rife_model_key
 
-    def _validate_input_directory(self, current_in_dir: Path | None) -> bool:
+    def _validate_input_directory_exists(self, current_in_dir: Path | None) -> bool:
         """Validate input directory exists and is accessible."""
         try:
             validate_path_exists(
@@ -3032,13 +3034,6 @@ class MainTab(QWidget):
         except Exception:
             LOGGER.exception("Error saving settings")
             # Continue without failing - don't crash the app if settings saving fails
-
-    def _log_settings_debug_info(self) -> None:
-        """Log debug information about settings storage."""
-        org_name = self.settings.organizationName()
-        app_name = self.settings.applicationName()
-        filename = self.settings.fileName()
-        LOGGER.debug("QSettings save details: org=%s, app=%s, file=%s", org_name, app_name, filename)
 
     def _save_path_settings(self, main_window: QObject) -> None:
         """Save file and directory path settings."""

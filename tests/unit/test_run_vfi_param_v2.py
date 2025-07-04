@@ -383,7 +383,7 @@ class TestRunVfiParamOptimizedV2:
             assert result["paths_returned"], "Skip scenario should return paths"
             assert result["raw_output_exists"], "Skip scenario should create raw output"
 
-        elif scenario_name in {"rife_fail"}:
+        elif scenario_name == "rife_fail":
             assert result["exception_raised"], f"{scenario_name} should raise an exception"
             assert result["exception_type"] in {"RuntimeError", "ProcessingError", "RIFEError", "FFmpegError"}, (
                 f"{scenario_name} should raise appropriate exception type"

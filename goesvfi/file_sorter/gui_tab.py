@@ -111,7 +111,12 @@ class FileSorterTab(QWidget):
         self.source_line_edit = QLineEdit()
 
         source_browse_button = QPushButton(self.tr("Browse..."))
-        source_browse_button.setFixedWidth(120)
+        # Use size policy instead of fixed width for better responsive design
+        source_browse_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
+        # Use font metrics for minimum width instead of hardcoded value
+        font_metrics = source_browse_button.fontMetrics()
+        min_width = font_metrics.horizontalAdvance("Browse...") + 40  # Text width + padding
+        source_browse_button.setMinimumWidth(min_width)
 
         source_layout.addWidget(source_label, 0, 0)
         source_layout.addWidget(self.source_line_edit, 0, 1)
@@ -171,7 +176,10 @@ class FileSorterTab(QWidget):
         actions_layout.setSpacing(8)
 
         self.sort_button = QPushButton(self.tr("Sort Files"))
-        self.sort_button.setFixedHeight(40)
+        # Use font metrics for height calculation instead of hardcoded value
+        font_metrics = self.sort_button.fontMetrics()
+        button_height = font_metrics.height() * 2 + 16  # 2 lines of text + padding
+        self.sort_button.setMinimumHeight(button_height)
         self.sort_button.setProperty("class", "StartButton")
         actions_layout.addWidget(self.sort_button)
         actions_group.setLayout(actions_layout)
@@ -194,7 +202,10 @@ class FileSorterTab(QWidget):
 
         self.status_text = QTextEdit()
         self.status_text.setReadOnly(True)
-        self.status_text.setMaximumHeight(150)
+        # Use font metrics for height calculation instead of hardcoded value
+        font_metrics = self.status_text.fontMetrics()
+        text_height = font_metrics.height() * 8 + 20  # 8 lines of text + padding
+        self.status_text.setMaximumHeight(text_height)
         self.status_text.setProperty("class", "DatePickerMonospace")
         status_layout.addWidget(self.status_text)
 

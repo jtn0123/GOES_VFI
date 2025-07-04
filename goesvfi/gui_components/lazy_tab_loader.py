@@ -98,6 +98,9 @@ class LazyTabLoader:
 
         LOGGER.info(f"Lazy loading tab at index {index}")
 
+        # Save current selection state before any modifications
+        was_current = self.tab_widget.currentIndex() == index
+
         try:
             # Create the actual tab widget
             tab_widget = self.tab_factories[index]()
@@ -105,52 +108,134 @@ class LazyTabLoader:
             # Store the loaded widget
             self.loaded_tabs[index] = tab_widget
 
-            # Get current tab properties
+            # Get current tab properties before modification
             tab_text = self.tab_widget.tabText(index)
             tab_icon = self.tab_widget.tabIcon(index)
             tab_tooltip = self.tab_widget.tabToolTip(index)
+            tab_enabled = self.tab_widget.isTabEnabled(index)
 
-            # Replace placeholder with actual widget
-            self.tab_widget.removeTab(index)
-            self.tab_widget.insertTab(index, tab_widget, tab_text)
+            # Safe tab replacement without affecting other tabs
+            old_widget = self.tab_widget.widget(index)
 
-            if not tab_icon.isNull():
-                self.tab_widget.setTabIcon(index, tab_icon)
-            if tab_tooltip:
-                self.tab_widget.setTabToolTip(index, tab_tooltip)
+            # Block signals during replacement to prevent unwanted tab changes
+            self.tab_widget.blockSignals(True)
+            try:
+                # Replace the widget directly instead of remove/insert
+                self.tab_widget.removeTab(index)
+                self.tab_widget.insertTab(index, tab_widget, tab_text)
 
-            # Make sure the tab stays selected
-            self.tab_widget.setCurrentIndex(index)
+                # Restore all tab properties
+                if not tab_icon.isNull():
+                    self.tab_widget.setTabIcon(index, tab_icon)
+                if tab_tooltip:
+                    self.tab_widget.setTabToolTip(index, tab_tooltip)
+                self.tab_widget.setTabEnabled(index, tab_enabled)
+
+                # Clean up old placeholder widget
+                if old_widget and old_widget in self.placeholder_widgets.values():
+                    old_widget.deleteLater()
+
+            finally:
+                # Always unblock signals
+                self.tab_widget.blockSignals(False)
+
+            # Restore selection only if this tab was previously selected
+            if was_current:
+                self.tab_widget.setCurrentIndex(index)
 
             LOGGER.info(f"Successfully loaded tab at index {index}")
 
-        except Exception:
-            LOGGER.exception(f"Error loading tab at index {index}")
+        except Exception as e:
+            LOGGER.exception(f"Error loading tab at index {index}: {e}")
 
-            # Show error in placeholder
-            if index in self.placeholder_widgets:
+            # Safe error handling - create error widget
+            try:
+                from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
+
+                error_container = QWidget()
+                error_layout = QVBoxLayout(error_container)
+
+                error_label = QLabel(f"Error loading tab: {str(e)[:100]}")
+                error_label.setProperty("class", "ErrorLabel")
+                error_label.setWordWrap(True)
+
+                retry_label = QLabel("Try switching to another tab and back to retry")
+                retry_label.setProperty("class", "InfoLabel")
+
+                error_layout.addWidget(error_label)
+                error_layout.addWidget(retry_label)
+
+                # Safe replacement with error widget
+                self.tab_widget.blockSignals(True)
+                try:
+                    tab_text = self.tab_widget.tabText(index) if index < self.tab_widget.count() else "Error"
+                    if index < self.tab_widget.count():
+                        self.tab_widget.removeTab(index)
+                    self.tab_widget.insertTab(index, error_container, tab_text)
+                    self.tab_widget.setTabEnabled(index, True)  # Keep tab accessible for retry
+                finally:
+                    self.tab_widget.blockSignals(False)
+
+                # Don't auto-select error tabs
+                if was_current and index > 0:
+                    self.tab_widget.setCurrentIndex(0)  # Switch to first tab instead
+
+            except Exception:
+                LOGGER.exception(f"Failed to create error widget for tab {index}")
+
+    def retry_tab_loading(self, index: int) -> None:
+        """Retry loading a failed tab.
+
+        Args:
+            index: Tab index to retry loading
+        """
+        if index in self.loaded_tabs:
+            # Clear the loaded tab to force reload
+            old_widget = self.loaded_tabs[index]
+            del self.loaded_tabs[index]
+            if old_widget:
+                old_widget.deleteLater()
+            LOGGER.info(f"Cleared failed tab {index} for retry")
+
+        # Attempt to reload
+        self._load_tab(index)
+
+    def is_tab_loaded(self, index: int) -> bool:
+        """Check if a tab is fully loaded.
+
+        Args:
+            index: Tab index to check
+
+        Returns:
+            True if tab is loaded, False if it's a placeholder or error
+        """
+        return index in self.loaded_tabs
+
+    def get_tab_loading_state(self, index: int) -> str:
+        """Get the loading state of a tab.
+
+        Args:
+            index: Tab index to check
+
+        Returns:
+            'loaded', 'placeholder', 'error', or 'unknown'
+        """
+        if index in self.loaded_tabs:
+            return "loaded"
+        if index in self.placeholder_widgets:
+            # Check if it's an error widget
+            widget = self.tab_widget.widget(index)
+            if widget and hasattr(widget, "findChild"):
                 from PyQt6.QtWidgets import QLabel
 
-                error_widget = QLabel("Error loading tab")
-                error_widget.setProperty("class", "ErrorLabel")
-
-                tab_text = self.tab_widget.tabText(index)
-                self.tab_widget.removeTab(index)
-                self.tab_widget.insertTab(index, error_widget, tab_text)
+                error_label = widget.findChild(QLabel)
+                if error_label and "Error loading tab" in error_label.text():
+                    return "error"
+            return "placeholder"
+        return "unknown"
 
     def load_all_tabs(self) -> None:
         """Force load all registered tabs (useful for testing)."""
         for index in self.tab_factories:
             if index not in self.loaded_tabs:
                 self._load_tab(index)
-
-    def is_tab_loaded(self, index: int) -> bool:
-        """Check if a tab has been loaded.
-
-        Args:
-            index: Tab index
-
-        Returns:
-            True if the tab is loaded, False otherwise
-        """
-        return index in self.loaded_tabs

@@ -256,7 +256,7 @@ class VFIFFmpegBuilder:
         Returns:
             Dictionary with command information
         """
-        info = {
+        info: dict[str, Any] = {
             "executable": command[0] if command else None,
             "input_type": None,
             "output_path": None,

@@ -135,7 +135,7 @@ class TestAllGUIElementsV2:
     @pytest.mark.parametrize("element_type", ["buttons", "checkboxes", "combos"])
     def test_gui_element_basic_functionality(
         self,
-        shared_app: QApplication,  # noqa: ARG004
+        shared_app: QApplication,
         mock_main_window: MainWindow,
         mock_ui_elements: dict[str, list[Any]],
         element_type: str,
@@ -291,7 +291,7 @@ class TestAllGUIElementsV2:
     )
     def test_tab_specific_elements(
         self,
-        shared_app: QApplication,  # noqa: ARG004
+        shared_app: QApplication,
         mock_main_window: MainWindow,
         mock_ui_elements: dict[str, list[Any]],
         tab_name: str,

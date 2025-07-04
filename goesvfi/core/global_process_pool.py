@@ -30,6 +30,7 @@ class GlobalProcessPool(ConfigurableManager):
 
     _instance: "GlobalProcessPool | None" = None
     _lock = threading.Lock()
+    _initialized: bool
 
     def __new__(cls) -> "GlobalProcessPool":
         """Ensure singleton instance."""
@@ -60,7 +61,8 @@ class GlobalProcessPool(ConfigurableManager):
 
         self._executor: ProcessPoolExecutor | None = None
         self._active_futures: set[Future] = set()
-        self._usage_stats = {
+        self._max_workers: int = 0
+        self._usage_stats: dict[str, int | float] = {
             "total_tasks": 0,
             "completed_tasks": 0,
             "failed_tasks": 0,
@@ -87,6 +89,7 @@ class GlobalProcessPool(ConfigurableManager):
                 initargs=self.get_config("initargs"),
             )
 
+            self._max_workers = max_workers
             self._usage_stats["current_workers"] = max_workers
             self.log_info("Created process pool with %d workers", max_workers)
 
@@ -206,9 +209,9 @@ class GlobalProcessPool(ConfigurableManager):
     def _check_scaling(self) -> None:
         """Check if pool needs scaling (placeholder for future enhancement)."""
         # Calculate usage
-        if self._executor and self._executor._max_workers:
+        if self._executor and self._max_workers:
             active_count = len(self._active_futures)
-            max_workers = self._executor._max_workers
+            max_workers = self._max_workers
             usage_ratio = active_count / max_workers
 
             if usage_ratio > self.get_config("scale_threshold"):
@@ -224,7 +227,7 @@ class GlobalProcessPool(ConfigurableManager):
         stats = self._usage_stats.copy()
         stats["active_tasks"] = len(self._active_futures)
         stats["success_rate"] = (
-            (stats["completed_tasks"] / stats["total_tasks"] * 100) if stats["total_tasks"] > 0 else 0
+            (stats["completed_tasks"] / stats["total_tasks"] * 100) if stats["total_tasks"] > 0 else 0.0
         )
         return stats
 

@@ -245,7 +245,7 @@ class TestImageCropperV2:  # noqa: PLR0904
         }
 
         # Process
-        result = cropper.process(params)
+        result = cropper.process_with_params(params)
 
         # Verify result
         assert result["success"] is True
@@ -276,7 +276,7 @@ class TestImageCropperV2:  # noqa: PLR0904
                 "output_path": str(Path(temp_dir) / op["output"]),
                 "crop_rect": op["rect"],
             }
-            result = cropper.process(params)
+            result = cropper.process_with_params(params)
             assert result["success"] is True
 
     def test_crop_performance(self, sample_images: dict[str, Any], cropper: ImageCropper) -> None:  # noqa: PLR6301
@@ -305,7 +305,7 @@ class TestImageCropperV2:  # noqa: PLR0904
         """Test memory efficiency with large crops."""
         # Create a very large image
         large_image = np.zeros((5000, 5000, 3), dtype=np.uint8)
-        image_data = ImageData(image_data=large_image, metadata={"width": 5000, "height": 5000})
+        image_data = ImageData(image_data=large_image, metadata={"width": 5000, "height": 5000, "processing_steps": []})
 
         # Crop multiple regions
         crops = []
@@ -445,7 +445,7 @@ class TestImageCropperV2:  # noqa: PLR0904
         ]
 
         for params in invalid_params:
-            result = cropper.process(params)
+            result = cropper.process_with_params(params)
             assert result["success"] is False
             assert "error" in result
 
@@ -455,7 +455,7 @@ class TestImageCropperV2:  # noqa: PLR0904
             "output_path": str(Path(temp_dir) / "out.npy"),
             "crop_rect": (50, 50, 40, 40),  # Invalid: x2 < x1
         }
-        result = cropper.process(params)
+        result = cropper.process_with_params(params)
         assert result["success"] is False
 
     def test_integration_with_image_data_class(self, sample_images: dict[str, Any], cropper: ImageCropper) -> None:  # noqa: PLR6301

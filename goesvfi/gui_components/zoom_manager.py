@@ -2,7 +2,7 @@
 
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QImage, QPixmap
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QWidget
 
 from goesvfi.utils import log
 from goesvfi.utils.gui_helpers import ClickableLabel, ZoomDialog
@@ -13,7 +13,7 @@ LOGGER = log.get_logger(__name__)
 class ZoomManager:
     """Manages zoom dialog functionality for preview images."""
 
-    def show_zoom(self, label: ClickableLabel, parent: object | None = None) -> None:
+    def show_zoom(self, label: ClickableLabel, parent: QWidget | None = None) -> None:
         """Show a zoomed view of the processed image associated with the clicked label.
 
         Args:

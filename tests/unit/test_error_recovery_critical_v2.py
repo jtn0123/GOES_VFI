@@ -146,13 +146,24 @@ class TestErrorRecoveryCritical:
     @staticmethod
     def test_strategy_implementation_complex_scenarios(error_tracker: Any) -> None:
         """Test recovery strategy implementation with complex failure scenarios."""
+        # Split this complex test into smaller helper functions
+        TestErrorRecoveryCritical._test_network_recovery_strategy(error_tracker)
+        TestErrorRecoveryCritical._test_file_recovery_strategy(error_tracker)
+        TestErrorRecoveryCritical._test_process_recovery_strategy(error_tracker)
+        TestErrorRecoveryCritical._test_recovery_verification(error_tracker)
+
+    @staticmethod
+    def _test_network_recovery_strategy(error_tracker: Any) -> tuple[Any, list[tuple[str, str, str | None]]]:
+        """Test network recovery strategy implementation."""
 
         # Create custom recovery strategies for testing
         class NetworkRecoveryStrategy:
-            def can_recover(self, error: StructuredError) -> bool:
+            @staticmethod
+            def can_recover(error: StructuredError) -> bool:
                 return error.category == ErrorCategory.NETWORK
 
-            def attempt_recovery(self, error: StructuredError) -> tuple[bool, str]:
+            @staticmethod
+            def attempt_recovery(error: StructuredError) -> tuple[bool, str]:
                 error_tracker.track_strategy_execution("network", str(error), "attempted")
 
                 # Simulate network diagnostics and recovery
@@ -165,11 +176,22 @@ class TestErrorRecoveryCritical:
                 error_tracker.track_recovery("network_general", success=False, attempt_count=1)
                 return False, "Network error could not be resolved"
 
+        return NetworkRecoveryStrategy(), [
+            (ErrorCategory.NETWORK, "Connection timeout to NOAA servers", "network_timeout"),
+            (ErrorCategory.NETWORK, "DNS resolution failed for amazonaws.com", "network_dns"),
+        ]
+
+    @staticmethod
+    def _test_file_recovery_strategy(error_tracker: Any) -> tuple[Any, list[tuple[str, str, str | None]]]:
+        """Test file recovery strategy implementation."""
+
         class FileRecoveryStrategy:
-            def can_recover(self, error: StructuredError) -> bool:
+            @staticmethod
+            def can_recover(error: StructuredError) -> bool:
                 return error.category in {ErrorCategory.FILE_NOT_FOUND, ErrorCategory.PERMISSION}
 
-            def attempt_recovery(self, error: StructuredError) -> tuple[bool, str]:
+            @staticmethod
+            def attempt_recovery(error: StructuredError) -> tuple[bool, str]:
                 error_tracker.track_strategy_execution("file", str(error), "attempted")
 
                 if error.category == ErrorCategory.FILE_NOT_FOUND:
@@ -183,11 +205,22 @@ class TestErrorRecoveryCritical:
                 error_tracker.track_recovery("file_general", success=False, attempt_count=1)
                 return False, "File error could not be resolved"
 
+        return FileRecoveryStrategy(), [
+            (ErrorCategory.FILE_NOT_FOUND, "Configuration file missing", "file_recreation"),
+            (ErrorCategory.PERMISSION, "Cannot write to output directory", "permission_fix"),
+        ]
+
+    @staticmethod
+    def _test_process_recovery_strategy(error_tracker: Any) -> tuple[Any, list[tuple[str, str, str | None]]]:
+        """Test process recovery strategy implementation."""
+
         class ProcessRecoveryStrategy:
-            def can_recover(self, error: StructuredError) -> bool:
+            @staticmethod
+            def can_recover(error: StructuredError) -> bool:
                 return error.category == ErrorCategory.EXTERNAL_TOOL
 
-            def attempt_recovery(self, error: StructuredError) -> tuple[bool, str]:
+            @staticmethod
+            def attempt_recovery(error: StructuredError) -> tuple[bool, str]:
                 error_tracker.track_strategy_execution("process", str(error), "attempted")
 
                 if "ffmpeg" in str(error).lower():
@@ -199,17 +232,26 @@ class TestErrorRecoveryCritical:
                 error_tracker.track_recovery("process_general", success=False, attempt_count=1)
                 return False, "External tool error could not be resolved"
 
+        return ProcessRecoveryStrategy(), [
+            (ErrorCategory.EXTERNAL_TOOL, "FFmpeg encoding failed with exit code 1", "ffmpeg_recovery"),
+            (ErrorCategory.EXTERNAL_TOOL, "RIFE model could not be loaded", "rife_recovery"),
+        ]
+
+    @staticmethod
+    def _test_recovery_verification(error_tracker: Any) -> None:
+        """Test recovery verification and coordination."""
+        network_strategy, network_scenarios = TestErrorRecoveryCritical._test_network_recovery_strategy(error_tracker)
+        file_strategy, file_scenarios = TestErrorRecoveryCritical._test_file_recovery_strategy(error_tracker)
+        process_strategy, process_scenarios = TestErrorRecoveryCritical._test_process_recovery_strategy(error_tracker)
+
         # Create a simple recovery manager for testing
-        strategies: list[Any] = [NetworkRecoveryStrategy(), FileRecoveryStrategy(), ProcessRecoveryStrategy()]
+        strategies: list[Any] = [network_strategy, file_strategy, process_strategy]
 
         # Test complex error scenarios
         test_scenarios = [
-            (ErrorCategory.NETWORK, "Connection timeout to NOAA servers", "network_timeout"),
-            (ErrorCategory.NETWORK, "DNS resolution failed for amazonaws.com", "network_dns"),
-            (ErrorCategory.FILE_NOT_FOUND, "Configuration file missing", "file_recreation"),
-            (ErrorCategory.PERMISSION, "Cannot write to output directory", "permission_fix"),
-            (ErrorCategory.EXTERNAL_TOOL, "FFmpeg encoding failed with exit code 1", "ffmpeg_recovery"),
-            (ErrorCategory.EXTERNAL_TOOL, "RIFE model could not be loaded", "rife_recovery"),
+            *network_scenarios,
+            *file_scenarios,
+            *process_scenarios,
             (ErrorCategory.PROCESSING, "Unknown processing error", None),  # Should not be recoverable
         ]
 
@@ -271,12 +313,13 @@ class TestErrorRecoveryCritical:
         call_count = 0
         max_delay_seen = 0.0
 
-        def track_retry_attempt(attempt, exception) -> None:
+        def track_retry_attempt(attempt: int, exception: Exception) -> None:
             # Calculate the expected delay for this attempt (not passed by decorator)
             expected_delay = 0.1 * (2.0 ** (attempt - 1))
             nonlocal max_delay_seen
             max_delay_seen = max(max_delay_seen, expected_delay)
             error_tracker.track_retry("test_function", attempt, expected_delay, success=False)
+            _ = exception  # Use the exception parameter
 
         # Test with exponential backoff
         @with_retry(
@@ -320,9 +363,10 @@ class TestErrorRecoveryCritical:
         error_tracker.reset()
         call_count = 0
 
-        def track_retry_attempt_2(attempt, exception) -> None:
+        def track_retry_attempt_2(attempt: int, exception: Exception) -> None:
             expected_delay = 0.05 * (2.0 ** (attempt - 1))
             error_tracker.track_retry("test_function", attempt, expected_delay, success=False)
+            _ = exception  # Use the exception parameter
 
         @with_retry(
             max_attempts=3, delay=0.05, backoff_factor=2.0, exceptions=(ValueError,), on_retry=track_retry_attempt_2
@@ -443,7 +487,9 @@ class TestErrorRecoveryCritical:
 
                             time.sleep(0.1 * (attempt + 1))  # Brief delay
                         else:
-                            error_tracker.track_recovery("ffmpeg_full_recovery", success=False, attempt_count=max_attempts)
+                            error_tracker.track_recovery(
+                                "ffmpeg_full_recovery", success=False, attempt_count=max_attempts
+                            )
                             raise
                 return None
 
@@ -479,7 +525,9 @@ class TestErrorRecoveryCritical:
 
                             time.sleep(0.1 * (attempt + 1))  # Brief delay
                         else:
-                            error_tracker.track_recovery("rife_full_recovery", success=False, attempt_count=max_attempts)
+                            error_tracker.track_recovery(
+                                "rife_full_recovery", success=False, attempt_count=max_attempts
+                            )
                             raise
                 return None
 
@@ -629,12 +677,12 @@ class TestErrorRecoveryCritical:
                 self.last_failure_time: float | None = None
                 self.state = "CLOSED"  # CLOSED, OPEN, HALF_OPEN
 
-            def call(self, func, *args, **kwargs) -> Any:
+            def call(self, func: Any, *args: Any, **kwargs: Any) -> Any:
                 if self.state == "OPEN":
                     if self.last_failure_time and time.time() - self.last_failure_time < self.recovery_timeout:
                         error_tracker.track_fallback("circuit_breaker", "blocked_call", success=False)
                         msg = "Circuit breaker is OPEN"
-                        raise Exception(msg)
+                        raise RuntimeError(msg)
                     self.state = "HALF_OPEN"
                     error_tracker.track_recovery("circuit_breaker_half_open", success=True, attempt_count=1)
 
@@ -653,7 +701,9 @@ class TestErrorRecoveryCritical:
 
                     if self.failure_count >= self.failure_threshold:
                         self.state = "OPEN"
-                        error_tracker.track_recovery("circuit_breaker_opened", True, self.failure_count)
+                        error_tracker.track_recovery(
+                            "circuit_breaker_opened", success=True, attempt_count=self.failure_count
+                        )
 
                     error_tracker.track_retry("circuit_breaker_call", self.failure_count, 0.0, success=False)
                     raise
@@ -683,7 +733,7 @@ class TestErrorRecoveryCritical:
             try:
                 result = circuit_breaker.call(service.make_request)
                 results.append(result)
-            except Exception as e:
+            except (ConnectionError, RuntimeError) as e:
                 exceptions.append(str(e))
 
             # Small delay to test timing
@@ -704,14 +754,15 @@ class TestErrorRecoveryCritical:
 
         # Test recovery phase - service should now succeed
         recovery_attempts = 0
-        for i in range(3):
-            recovery_attempts += 1
+        for recovery_attempts in range(1, 4):
             try:
                 result = circuit_breaker.call(service.make_request)
                 results.append(result)
-                error_tracker.track_recovery("circuit_breaker_recovery_success", True, recovery_attempts)
+                error_tracker.track_recovery(
+                    "circuit_breaker_recovery_success", success=True, attempt_count=recovery_attempts
+                )
                 break  # Success should close circuit
-            except Exception as e:
+            except (ConnectionError, RuntimeError) as e:
                 exceptions.append(str(e))
 
         # Verify circuit eventually closed and recovered

@@ -46,11 +46,11 @@ class ImageCache:
         # Sample a few pixels to create hash (much faster than hashing entire array)
         if img.size > 1000:
             # For large images, sample strategic pixels
-            samples = img.flat[:: max(1, img.size // 100)]  # Sample ~100 pixels
+            samples = np.asarray(img.flat[:: max(1, img.size // 100)])  # Sample ~100 pixels
         else:
-            samples = img.flat
+            samples = np.asarray(img.flat)
 
-        pixel_hash = hashlib.md5(np.asarray(samples).tobytes()).hexdigest()[:16]
+        pixel_hash = hashlib.md5(samples.tobytes()).hexdigest()[:16]
         return f"{shape_str}_{pixel_hash}"
 
     def get(self, img: NDArray[np.float32]) -> NDArray[np.float32] | None:
@@ -123,6 +123,9 @@ class BatchTempManager:
         """
         if self._current_dir is None or self._file_count >= self.max_files_per_dir:
             self._create_new_temp_dir()
+
+        # Ensure we have a valid directory
+        assert self._current_dir is not None, "Current directory should be set after _create_new_temp_dir()"
 
         # Create unique filenames within the directory
         base_name = f"batch_{self._file_count:04d}"

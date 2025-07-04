@@ -49,8 +49,9 @@ def mock_qt_modules() -> bool:
 @pytest.fixture()
 def mock_time():
     """Mock time operations for faster test execution."""
-    # Import the time module that MockPopen uses  
+    # Import the time module that MockPopen uses
     import tests.utils.mocks
+
     with patch.object(tests.utils.mocks.time, "monotonic") as mock_monotonic:
         yield mock_monotonic
 

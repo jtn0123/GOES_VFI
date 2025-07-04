@@ -195,7 +195,7 @@ class TestS3Band13OptimizedV2:
                     # Test mocked download - fully mock S3 operations
                     test_filename = self.test_filenames["valid_band13"]
                     test_file = self.create_test_file(tmp_path, test_filename)
-                    
+
                     # Mock TimeIndex methods
                     with (
                         patch.object(TimeIndex, "get_s3_bucket") as mock_get_bucket,
@@ -286,7 +286,7 @@ class TestS3Band13OptimizedV2:
 
                     for i, error in enumerate(error_scenarios):
                         mock_s3_store = self.create_mock_s3_store(download_exception=error)
-                        
+
                         with pytest.raises(type(error)):
                             await mock_s3_store.download(
                                 timestamp,

@@ -231,13 +231,12 @@ class TestIntegrityCheckTabOptimizedV2:
             ) -> None:
                 """Test satellite radio button selection."""
                 # Store initial state
-                initial_satellite = view_model.satellite
-                
+
                 # Test GOES-16 selection
                 tab.goes16_radio.setChecked(True)
                 QCoreApplication.processEvents()
                 # Allow some flexibility in case the UI doesn't update immediately
-                if hasattr(view_model, 'satellite'):
+                if hasattr(view_model, "satellite"):
                     try:
                         assert view_model.satellite == SatellitePattern.GOES_16
                         assert tab.goes16_radio.isChecked()
@@ -252,7 +251,7 @@ class TestIntegrityCheckTabOptimizedV2:
                 tab.goes18_radio.setChecked(True)
                 QCoreApplication.processEvents()
                 # Allow some flexibility in case the UI doesn't update immediately
-                if hasattr(view_model, 'satellite'):
+                if hasattr(view_model, "satellite"):
                     try:
                         assert view_model.satellite == SatellitePattern.GOES_18
                         assert tab.goes18_radio.isChecked()
@@ -498,10 +497,11 @@ class TestIntegrityCheckTabOptimizedV2:
         for scenario in integrity_scenarios:
             # Clean the workspace directory before each scenario to avoid file contamination
             import shutil
+
             if workspace["base_dir"].exists():
                 shutil.rmtree(workspace["base_dir"])
             workspace["base_dir"].mkdir(parents=True, exist_ok=True)
-            
+
             # Create test data
             data_manager.create_test_files(workspace["base_dir"], scenario["satellite_data"])
 
@@ -720,10 +720,11 @@ class TestIntegrityCheckTabOptimizedV2:
 
         # Clean the workspace directory to avoid file contamination
         import shutil
+
         if workspace["base_dir"].exists():
             shutil.rmtree(workspace["base_dir"])
         workspace["base_dir"].mkdir(parents=True, exist_ok=True)
-        
+
         # Create test data
         data_manager.create_test_files(workspace["base_dir"], "mixed")
 

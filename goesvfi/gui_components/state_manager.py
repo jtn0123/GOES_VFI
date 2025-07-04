@@ -1,7 +1,7 @@
 """State management functionality for MainWindow."""
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from goesvfi.utils import log
 
@@ -132,7 +132,7 @@ class StateManager:
             # Try to revert atomically
             self._atomic_settings_save(lambda: self.main_window._save_crop_rect(old_rect))
 
-    def _atomic_settings_save(self, save_operation: callable) -> bool:
+    def _atomic_settings_save(self, save_operation: Callable[[], None]) -> bool:
         """Perform atomic settings save operation with verification.
 
         Args:
@@ -202,18 +202,18 @@ class StateManager:
                 if post_state[key] != pre_state.get(key):
                     LOGGER.debug("Settings change verified for %s: %s -> %s", key, pre_state.get(key), post_state[key])
                     changes_detected = True
-                    
+
                     # Additional validation: ensure the new value is not empty when we expect a value
                     if key in ["input_directory", "crop_rectangle"] and not post_state[key]:
                         LOGGER.warning("Settings verification failed: %s is empty after save", key)
                         return False
-            
+
             # If we expected changes but didn't detect any, verification fails
             # This can happen if the save operation silently failed
             if not changes_detected:
                 LOGGER.warning("Settings verification failed: no changes detected after save operation")
                 return False
-                
+
             return True
         except Exception as e:
             LOGGER.exception("Settings verification failed: %s", e)

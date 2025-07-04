@@ -115,7 +115,9 @@ class TestExternalToolError:
             ("tool", "Failed", "Multi\nline\nerror", "Error executing tool: Failed"),
         ],
     )
-    def test_external_tool_error_creation(self, tool_name: str, message: str, stderr: str | None, expected_str: str) -> None:
+    def test_external_tool_error_creation(
+        self, tool_name: str, message: str, stderr: str | None, expected_str: str
+    ) -> None:
         """Test creating external tool errors with various parameters."""
         error = ExternalToolError(tool_name, message, stderr=stderr)
 

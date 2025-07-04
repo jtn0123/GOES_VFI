@@ -41,7 +41,7 @@ class CropManager:
                 LOGGER.error("Invalid rect format: %s", rect)
                 return False
         except Exception:
-            LOGGER.error("Error validating rect format: %s", rect)
+            LOGGER.exception("Error validating rect format: %s", rect)
             return False
 
         try:
@@ -154,8 +154,23 @@ class CropManager:
                         self.current_crop_rect = old_rect
                     return False
 
+            # Trigger preview update when crop changes
+            self._trigger_preview_update()
             return True
         return True
+
+    def _trigger_preview_update(self) -> None:
+        """Trigger a preview update when crop changes."""
+        try:
+            # Import here to avoid circular imports
+            from goesvfi.gui_components.update_manager import request_update
+
+            request_update("preview_load")
+            LOGGER.debug("Triggered preview update due to crop change")
+        except ImportError:
+            LOGGER.warning("Could not import update_manager to trigger preview update")
+        except Exception:
+            LOGGER.exception("Error triggering preview update")
 
     def get_crop_rect(self) -> tuple[int, int, int, int] | None:
         """Get the current crop rectangle.

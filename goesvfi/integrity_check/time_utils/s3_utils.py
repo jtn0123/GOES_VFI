@@ -350,7 +350,7 @@ class S3KeyGenerator:
 
         # For other products, find the nearest intervals
         input_minute = ts.minute
-        nearest_minutes: list[int] = []
+        nearest_datetimes: list[datetime] = []
 
         # Find the standard intervals before and after the input
         prev_minute = None
@@ -369,18 +369,18 @@ class S3KeyGenerator:
             # Use the last interval of previous hour and first of current hour
             prev_hour = (ts - timedelta(hours=1)).replace(minute=standard_minutes[-1])
             next_minute = standard_minutes[0] if next_minute is None else next_minute
-            nearest_minutes.extend((prev_hour, ts.replace(minute=next_minute)))
+            nearest_datetimes.extend((prev_hour, ts.replace(minute=next_minute)))
         elif next_minute is None:
             # Input is after the last standard interval of the hour
             # Use the last interval of current hour and first of next hour
             next_hour = (ts + timedelta(hours=1)).replace(minute=standard_minutes[0])
-            nearest_minutes.extend((ts.replace(minute=prev_minute), next_hour))
+            nearest_datetimes.extend((ts.replace(minute=prev_minute), next_hour))
         else:
             # Input is between two standard intervals of the same hour
-            nearest_minutes.extend((ts.replace(minute=prev_minute), ts.replace(minute=next_minute)))
+            nearest_datetimes.extend((ts.replace(minute=prev_minute), ts.replace(minute=next_minute)))
 
         # Reset seconds and microseconds
-        return [dt.replace(second=0, microsecond=0) for dt in nearest_minutes]
+        return [dt.replace(second=0, microsecond=0) for dt in nearest_datetimes]
 
 
 def filter_s3_keys_by_band(keys: list[str], target_band: int) -> list[str]:

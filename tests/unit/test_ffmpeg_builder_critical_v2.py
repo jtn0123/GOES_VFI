@@ -571,10 +571,9 @@ class TestFFmpegCommandBuilderCriticalV2:
             except Exception as e:  # noqa: BLE001
                 if scenario["name"] != "Invalid Parameters Handling":
                     pytest.fail(f"Unexpected error in {scenario['name']}: {e}")
-                else:
-                    # For error scenarios, still add the results if we have them
-                    if 'scenario_results' in locals():
-                        all_results[scenario["name"]] = scenario_results
+                # For error scenarios, still add the results if we have them
+                elif "scenario_results" in locals():
+                    all_results[scenario["name"]] = scenario_results
 
         # Overall validation
         assert len(all_results) == len(critical_scenarios), "Not all critical scenarios completed"

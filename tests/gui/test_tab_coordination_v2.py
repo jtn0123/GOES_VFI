@@ -198,7 +198,7 @@ class TestTabCoordinationV2:
     )
     def test_model_library_delete_operations(
         self,
-        mock_model_library_tab: Any,  # noqa: ARG004
+        mock_model_library_tab: Any,
         user_choice: Any,
         expected_deleted: Any,
     ) -> None:
@@ -347,7 +347,7 @@ class TestTabCoordinationV2:
             ("unrepairable", False),
         ],
     )
-    def test_integrity_check_repair_actions(self, shared_app: Any, file_type: Any, repair_success: Any) -> None:  # noqa: ARG004, C901
+    def test_integrity_check_repair_actions(self, shared_app: Any, file_type: Any, repair_success: Any) -> None:  # noqa: C901
         """Test integrity check repair actions with different scenarios."""
 
         # Mock repair manager
@@ -428,7 +428,9 @@ class TestTabCoordinationV2:
             ("invalid_setting", "any_value", True),  # Unknown settings pass through
         ],
     )
-    def test_advanced_settings_validation(self, shared_app: Any, setting_name: Any, value: Any, expected_valid: Any) -> None:  # noqa: ARG004, C901
+    def test_advanced_settings_validation(
+        self, shared_app: Any, setting_name: Any, value: Any, expected_valid: Any
+    ) -> None:  # noqa: C901
         """Test advanced settings validation with various scenarios."""
 
         # Mock settings validator
@@ -633,7 +635,7 @@ class TestTabCoordinationV2:
             ("any", "F1", True),  # Global shortcut
         ],
     )
-    def test_tab_specific_shortcuts(self, shared_app: Any, active_tab: Any, shortcut: Any, should_trigger: Any) -> None:  # noqa: ARG004
+    def test_tab_specific_shortcuts(self, shared_app: Any, active_tab: Any, shortcut: Any, should_trigger: Any) -> None:
         """Test tab-specific keyboard shortcuts."""
 
         # Mock shortcut manager

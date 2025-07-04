@@ -381,8 +381,7 @@ class TestPipelineOptimizedV2:
                         if scenario["sanchez"]:
                             # Check if colourise was called (either in main process or subprocess)
                             assert mock_colourise.called or mock_colourise_processor.called, (
-                                f"colourise was not called for {scenario['name']}, "
-                                f"main_count={mock_colourise.call_count}, processor_count={mock_colourise_processor.call_count}"
+                                f"colourise was not called for {scenario['name']}, main_count={mock_colourise.call_count}, processor_count={mock_colourise_processor.call_count}"
                             )
 
                         # Verify output file exists (mocked)
@@ -744,7 +743,7 @@ class TestPipelineOptimizedV2:
                     patch("goesvfi.pipeline.run_vfi.RifeCapabilityDetector") as mock_detector_class,
                 ):
                     # Configure fast mocks
-                    mock_popen.return_value = mock_suite["popen_manager"].get_mock("success")  
+                    mock_popen.return_value = mock_suite["popen_manager"].get_mock("success")
                     mock_run.return_value = mock_suite["run_manager"].get_mock("success")
                     mock_detector = mock_suite["rife_manager"].create_mock_detector("full")
                     mock_detector_class.return_value = mock_detector

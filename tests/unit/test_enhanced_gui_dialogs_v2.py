@@ -185,7 +185,7 @@ class TestEnhancedGUIDialogsV2(unittest.TestCase):
                     assert dialog.get_aws_region() == region
 
                 dialog.deleteLater()
-        
+
         # Clean up test parent
         test_parent.deleteLater()
 

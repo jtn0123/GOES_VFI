@@ -1,7 +1,6 @@
 """Tests for StateManager functionality - Optimized v2."""
 
 from pathlib import Path
-from typing import Any
 from unittest.mock import Mock, patch
 
 import pytest
@@ -13,7 +12,7 @@ from goesvfi.gui_components.state_manager import StateManager
 @pytest.fixture(scope="session")
 def path_scenarios() -> dict[str, Path | None]:
     """Pre-defined path scenarios for testing.
-    
+
     Returns:
         Dictionary mapping scenario names to Path objects or None.
     """
@@ -27,7 +26,7 @@ def path_scenarios() -> dict[str, Path | None]:
 @pytest.fixture(scope="session")
 def crop_rect_scenarios() -> dict[str, tuple[int, int, int, int] | None]:
     """Pre-defined crop rectangle scenarios for testing.
-    
+
     Returns:
         Dictionary mapping scenario names to crop rectangles or None.
     """
@@ -41,7 +40,7 @@ def crop_rect_scenarios() -> dict[str, tuple[int, int, int, int] | None]:
 @pytest.fixture()
 def mock_main_window() -> Mock:
     """Create a comprehensive mock main window for testing.
-    
+
     Returns:
         Mock object configured as a main window for testing.
     """
@@ -75,10 +74,10 @@ def mock_main_window() -> Mock:
 @pytest.fixture()
 def state_manager(mock_main_window: Mock) -> StateManager:
     """Create StateManager instance for testing.
-    
+
     Args:
         mock_main_window: Mock main window object.
-        
+
     Returns:
         StateManager instance for testing.
     """
@@ -174,7 +173,11 @@ class TestStateManager:
 
     @pytest.mark.parametrize("save_success", [True, False])
     def test_set_input_directory_save_handling(
-        self, state_manager: StateManager, mock_main_window: Mock, path_scenarios: dict[str, Path | None], save_success: bool
+        self,
+        state_manager: StateManager,
+        mock_main_window: Mock,
+        path_scenarios: dict[str, Path | None],
+        save_success: bool,
     ) -> None:
         """Test input directory save success/failure handling."""
         path = path_scenarios["new_path"]
@@ -273,7 +276,11 @@ class TestStateManager:
 
     @pytest.mark.parametrize("save_success", [True, False])
     def test_set_crop_rect_save_handling(
-        self, state_manager: StateManager, mock_main_window: Mock, crop_rect_scenarios: dict[str, tuple[int, int, int, int] | None], save_success: bool
+        self,
+        state_manager: StateManager,
+        mock_main_window: Mock,
+        crop_rect_scenarios: dict[str, tuple[int, int, int, int] | None],
+        save_success: bool,
     ) -> None:
         """Test crop rect save success/failure handling."""
         rect = crop_rect_scenarios["new_rect"]
@@ -314,7 +321,11 @@ class TestStateManager:
         ],
     )
     def test_missing_ui_components_handling(
-        self, state_manager: StateManager, mock_main_window: Mock, path_scenarios: dict[str, Path | None], missing_components: list[str]
+        self,
+        state_manager: StateManager,
+        mock_main_window: Mock,
+        path_scenarios: dict[str, Path | None],
+        missing_components: list[str],
     ) -> None:
         """Test handling when UI components are missing."""
         # Remove specified components
@@ -356,7 +367,12 @@ class TestStateManager:
         ],
     )
     def test_save_all_settings_with_fallback(
-        self, state_manager: StateManager, mock_main_window: Mock, path_scenarios: dict[str, Path | None], settings_save_success: bool, verification_success: bool
+        self,
+        state_manager: StateManager,
+        mock_main_window: Mock,
+        path_scenarios: dict[str, Path | None],
+        settings_save_success: bool,
+        verification_success: bool,
     ) -> None:
         """Test settings save with fallback handling."""
         old_path = path_scenarios["existing_path"]
@@ -470,7 +486,13 @@ class TestStateManager:
         state_manager._save_all_settings_with_fallback(None)
         state_manager._save_all_settings_with_crop_fallback(None)
 
-    def test_integration_workflow(self, state_manager: StateManager, mock_main_window: Mock, path_scenarios: dict[str, Path | None], crop_rect_scenarios: dict[str, tuple[int, int, int, int] | None]) -> None:
+    def test_integration_workflow(
+        self,
+        state_manager: StateManager,
+        mock_main_window: Mock,
+        path_scenarios: dict[str, Path | None],
+        crop_rect_scenarios: dict[str, tuple[int, int, int, int] | None],
+    ) -> None:
         """Test complete workflow of setting input directory and crop rectangle."""
         input_path = path_scenarios["new_path"]
         crop_rect = crop_rect_scenarios["new_rect"]
@@ -523,7 +545,12 @@ class TestStateManager:
         ],
     )
     def test_operation_sequence_robustness(
-        self, state_manager: StateManager, mock_main_window: Mock, path_scenarios: dict[str, Path | None], crop_rect_scenarios: dict[str, tuple[int, int, int, int] | None], operation_sequence: list[str]
+        self,
+        state_manager: StateManager,
+        mock_main_window: Mock,
+        path_scenarios: dict[str, Path | None],
+        crop_rect_scenarios: dict[str, tuple[int, int, int, int] | None],
+        operation_sequence: list[str],
     ) -> None:
         """Test robustness with different operation sequences."""
         for operation in operation_sequence:

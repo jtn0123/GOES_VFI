@@ -10,6 +10,7 @@ from datetime import datetime
 import json
 import os
 from pathlib import Path
+import tempfile
 import threading
 import time
 from typing import Any, TypeVar
@@ -22,13 +23,76 @@ except ImportError:
     PYDANTIC_AVAILABLE = False
     BaseModel = object
 
-    def Field(default=None, description="", **kwargs):
+    def Field(default: Any = None, description: str = "", **kwargs: Any) -> Any:
+        """Fallback Field function when pydantic is not available.
+
+        Args:
+            default: Default value
+            description: Field description (ignored)
+            **kwargs: Additional arguments (ignored)
+
+        Returns:
+            The default value
+        """
         return default
 
 
 import contextlib
 
-from goesvfi.core.base_manager import ConfigurableManager
+try:
+    from goesvfi.core.base_manager import ConfigurableManager
+
+    MANAGER_BASE_AVAILABLE = True
+except ImportError:
+    # Fallback for environments without PyQt6
+    MANAGER_BASE_AVAILABLE = False
+
+    class ConfigurableManager:
+        """Fallback ConfigurableManager for environments without PyQt6."""
+
+        def __init__(self, name: str, **kwargs):
+            self.name = name
+
+        def handle_error(self, error: Exception, context: str = "") -> None:
+            """Handle an error with logging."""
+            error_msg = str(error)
+            if context:
+                error_msg = f"{context}: {error_msg}"
+            LOGGER.error("%s error: %s", self.name, error_msg)
+
+        def log_debug(self, msg: str, *args: Any) -> None:
+            """Log a debug message."""
+            if args:
+                formatted_msg = msg % args
+                LOGGER.debug("[%s] %s", self.name, formatted_msg)
+            else:
+                LOGGER.debug("[%s] %s", self.name, msg)
+
+        def log_info(self, msg: str, *args: Any) -> None:
+            """Log an info message."""
+            if args:
+                formatted_msg = msg % args
+                LOGGER.info("[%s] %s", self.name, formatted_msg)
+            else:
+                LOGGER.info("[%s] %s", self.name, msg)
+
+        def log_warning(self, msg: str, *args: Any) -> None:
+            """Log a warning message."""
+            if args:
+                formatted_msg = msg % args
+                LOGGER.warning("[%s] %s", self.name, formatted_msg)
+            else:
+                LOGGER.warning("[%s] %s", self.name, msg)
+
+        def log_error(self, msg: str, *args: Any) -> None:
+            """Log an error message."""
+            if args:
+                formatted_msg = msg % args
+                LOGGER.error("[%s] %s", self.name, formatted_msg)
+            else:
+                LOGGER.error("[%s] %s", self.name, msg)
+
+
 from goesvfi.utils import log
 
 LOGGER = log.get_logger(__name__)
@@ -549,8 +613,13 @@ def get_ui_config() -> UIConfig:
     return get_config().ui
 
 
-def update_config(updates: dict[str, Any], save: bool = True) -> None:
-    """Update global configuration."""
+def update_config(updates: dict[str, Any], *, save: bool = True) -> None:
+    """Update global configuration.
+
+    Args:
+        updates: Configuration updates to apply
+        save: Whether to save the configuration after updating
+    """
     get_config_manager().update_config(updates, save)
 
 
@@ -592,8 +661,6 @@ def get_temp_directory() -> Path:
     temp_dir = get_processing_config().temp_directory
     if temp_dir:
         return Path(temp_dir)
-    import tempfile
-
     return Path(tempfile.gettempdir()) / "goesvfi"
 
 

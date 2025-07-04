@@ -188,6 +188,7 @@ class TestLargeDatasetProcessingV2:
         # Simulate memory-intensive operation
         with patch.object(shared_memory_monitor, "get_memory_stats") as mock_stats:
             from goesvfi.utils.memory_manager import MemoryStats
+
             mock_stats.return_value = MemoryStats(total_mb=8192, available_mb=4096, used_mb=4096, percent_used=50.0)
 
             # Simulate data processing
@@ -363,6 +364,7 @@ class TestLargeDatasetProcessingV2:
         if error_scenario == "insufficient_memory":
             # Mock memory shortage
             from goesvfi.utils.memory_manager import MemoryStats
+
             with patch.object(shared_memory_monitor, "get_memory_stats") as mock_stats:
                 # Mock critically low memory
                 mock_stats.return_value = MemoryStats(total_mb=8192, available_mb=100, used_mb=8092, percent_used=98.8)

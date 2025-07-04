@@ -165,7 +165,7 @@ class TestCropHandlerV2:  # noqa: PLR0904
         with patch("goesvfi.gui_components.crop_handler.QMessageBox") as mock_msgbox:
             crop_handler.on_crop_clicked(mock_main_window)
 
-            # Should show warning message  
+            # Should show warning message
             mock_msgbox.warning.assert_called_once()
             call_args = mock_msgbox.warning.call_args[0]
             assert "select an input directory first" in call_args[2]
@@ -247,7 +247,7 @@ class TestCropHandlerV2:  # noqa: PLR0904
         mock_path = Mock(spec=Path)
         mock_path.iterdir.side_effect = FileNotFoundError("No such file or directory")
         mock_main_window.in_dir = mock_path
-        
+
         # Should handle the exception gracefully
         try:
             result = crop_handler.get_sorted_image_files(mock_main_window)
@@ -301,19 +301,19 @@ class TestCropHandlerV2:  # noqa: PLR0904
     )
     def test_prepare_image_various_formats(
         self, crop_handler: Any, mock_main_window: Any, image_format: str, expected_format: Any
-    ) -> None:  # noqa: PLR6301
+    ) -> None:
         """Test preparing images of various formats."""
         with tempfile.TemporaryDirectory() as temp_dir:
             # Create test image
             img_path = Path(temp_dir) / f"test.{image_format.lower()}"
             img = QImage(100, 100, expected_format)
             img.fill(Qt.GlobalColor.green)
-            
+
             # Save with proper format handling
-            if image_format.upper() in ["JPG", "JPEG"]:
+            if image_format.upper() in {"JPG", "JPEG"}:
                 # JPEG doesn't support transparency, use RGB format
                 img = img.convertToFormat(QImage.Format.Format_RGB888)
-            
+
             success = img.save(str(img_path))
             assert success, f"Failed to save {image_format} image"
 
@@ -667,7 +667,7 @@ class TestCropHandlerV2:  # noqa: PLR0904
                 # This is the actual behavior based on the source code
                 if mock_main_window.current_crop_rect != original_rect:
                     # Just verify it was set to the rect values (even if invalid)
-                    x, y, w, h = mock_main_window.current_crop_rect  
+                    x, y, w, h = mock_main_window.current_crop_rect
                     expected = (rect.x(), rect.y(), rect.width(), rect.height())
                     assert (x, y, w, h) == expected
 
@@ -687,7 +687,7 @@ class TestCropHandlerV2:  # noqa: PLR0904
             mock_dialog = Mock()
             mock_dialog.exec.return_value = QDialog.DialogCode.Rejected
             mock_dialog_class.return_value = mock_dialog
-            
+
             crop_handler.on_crop_clicked(mock_main_window)
             crop_handler.on_clear_crop_clicked(mock_main_window)
 

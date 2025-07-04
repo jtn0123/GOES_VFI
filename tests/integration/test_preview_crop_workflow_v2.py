@@ -372,7 +372,8 @@ class TestPreviewCropWorkflowV2:
                 # Simulate an image load failure by directly causing an exception
                 try:
                     # This should always fail and trigger error handling
-                    raise OSError("Simulated image load failure")
+                    msg = "Simulated image load failure"
+                    raise OSError(msg)
                 except OSError:
                     error_result["error_handled"] = True
                     error_result["recovery_attempted"] = True

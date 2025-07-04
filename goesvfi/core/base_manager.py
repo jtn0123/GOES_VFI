@@ -109,7 +109,7 @@ class BaseManager(QObject):
                     resource.close()
                 elif hasattr(resource, "deleteLater"):
                     resource.deleteLater()
-            except Exception as e:
+            except (AttributeError, RuntimeError, OSError) as e:
                 self._logger.warning("Failed to cleanup resource %s: %s", resource, e)
         self._resources.clear()
 
@@ -156,10 +156,11 @@ class BaseManager(QObject):
         try:
             value = self.settings.value(f"{self.name}/{key}", default)
             self._logger.debug("Loaded setting %s/%s: %s", self.name, key, value)
-            return value
-        except Exception:
+        except (AttributeError, ValueError, TypeError):
             self._logger.exception("Failed to load setting %s/%s", self.name, key)
             return default
+        else:
+            return value
 
     def handle_error(self, error: Exception, context: str = "") -> None:
         """Handle an error with logging and signal emission.
@@ -177,19 +178,31 @@ class BaseManager(QObject):
 
     def log_debug(self, msg: str, *args: Any) -> None:
         """Log a debug message with manager context."""
-        self._logger.debug(f"[{self.name}] {msg}", *args)
+        if args:
+            self._logger.debug("[%s] " + msg, self.name, *args)
+        else:
+            self._logger.debug("[%s] %s", self.name, msg)
 
     def log_info(self, msg: str, *args: Any) -> None:
         """Log an info message with manager context."""
-        self._logger.info(f"[{self.name}] {msg}", *args)
+        if args:
+            self._logger.info("[%s] " + msg, self.name, *args)
+        else:
+            self._logger.info("[%s] %s", self.name, msg)
 
     def log_warning(self, msg: str, *args: Any) -> None:
         """Log a warning message with manager context."""
-        self._logger.warning(f"[{self.name}] {msg}", *args)
+        if args:
+            self._logger.warning("[%s] " + msg, self.name, *args)
+        else:
+            self._logger.warning("[%s] %s", self.name, msg)
 
     def log_error(self, msg: str, *args: Any) -> None:
         """Log an error message with manager context."""
-        self._logger.error(f"[{self.name}] {msg}", *args)
+        if args:
+            self._logger.error("[%s] " + msg, self.name, *args)
+        else:
+            self._logger.error("[%s] %s", self.name, msg)
 
 
 class FileBasedManager(BaseManager):
@@ -240,10 +253,11 @@ class FileBasedManager(BaseManager):
 
         try:
             self._base_path.mkdir(parents=True, exist_ok=True)
-            return True
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             self.handle_error(e, "Failed to create base path")
             return False
+        else:
+            return True
 
     def resolve_path(self, relative_path: str | Path) -> Path:
         """Resolve a path relative to the base path.

@@ -271,7 +271,9 @@ class TestEncodeOptimizedV2:
                             f"{bufsize_kb}k",
                         ])
 
-                    expected_cmd = base_cmd + encoder_args + ["-pix_fmt", pix_fmt, "-movflags", "+faststart", str(final)]
+                    expected_cmd = (
+                        base_cmd + encoder_args + ["-pix_fmt", pix_fmt, "-movflags", "+faststart", str(final)]
+                    )
 
                     with patch("goesvfi.pipeline.encode.subprocess.Popen") as mock_popen:
                         mock_popen_factory = create_mock_popen(

@@ -227,7 +227,8 @@ class TestCorruptFileHandling:
         processor = SanchezProcessor(temp_dir=temp_dir)
         corrupt_input = corrupt_file_factory("corrupt_input.png", "corrupted_image")
 
-        with patch("goesvfi.pipeline.sanchez_processor.colourise") as mock_colourise:
+        with patch("goesvfi.pipeline.sanchez_processor.colourise") as mock_colourise, \
+             patch("goesvfi.pipeline.sanchez_processor.SanchezProcessor._is_valid_satellite_image", return_value=True):
             mock_colourise.side_effect = subprocess.CalledProcessError(
                 1, ["sanchez"], stderr=b"Error: Invalid input image"
             )
@@ -238,10 +239,13 @@ class TestCorruptFileHandling:
                 metadata={},
             )
 
-            # SanchezProcessor returns original image on failure
+            # SanchezProcessor returns modified image data with failure metadata on failure
             result = processor.process(image_data=image_data, res_km=2)
 
-            assert result is image_data
+            # Check that the original image data is preserved
+            assert np.array_equal(result.image_data, image_data.image_data)
+            # Check that processing failure is recorded in metadata
+            assert result.metadata.get('processing_failed') is True
             mock_colourise.assert_called_once()
 
     @pytest.mark.asyncio()

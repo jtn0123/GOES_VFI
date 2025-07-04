@@ -632,7 +632,7 @@ class TestHeadlessWorkflowOptimizedV2:
             # Create mock window
             window: MagicMock
             mock_class: MagicMock
-            window, mock_class = gui_factory.create_mock_window(scenario["widget_type"], scenario["config"])
+            window, _mock_class = gui_factory.create_mock_window(scenario["widget_type"], scenario["config"])
 
             try:
                 # Run workflow tests
@@ -737,9 +737,7 @@ class TestHeadlessWorkflowOptimizedV2:
 
                     # Check call arguments - all parameters were passed as keyword arguments
                     call_kwargs: dict[str, Any] = mock_run_vfi.call_args.kwargs
-                    assert call_kwargs["folder"] == test_data["input_dir"], (
-                        f"Wrong input dir for {scenario['name']}"
-                    )
+                    assert call_kwargs["folder"] == test_data["input_dir"], f"Wrong input dir for {scenario['name']}"
                     assert call_kwargs["output_mp4_path"] == test_data["output_file"], (
                         f"Wrong output file for {scenario['name']}"
                     )
@@ -902,7 +900,7 @@ class TestHeadlessWorkflowOptimizedV2:
         components: dict[str, Any] = headless_test_components
         workspace: dict[str, Any] = temp_workspace
         gui_factory: Any = components["gui_factory"]
-        data_manager: Any = components["data_manager"]
+        components["data_manager"]
 
         # Edge case scenarios
         edge_cases: list[dict[str, Any]] = [
@@ -953,7 +951,7 @@ class TestHeadlessWorkflowOptimizedV2:
 
     def _setup_empty_directory(self, empty_dir: pathlib.Path) -> None:  # noqa: PLR6301
         """Setup an empty directory for testing.
-        
+
         Args:
             empty_dir: Path to the empty directory to create.
         """
@@ -962,6 +960,7 @@ class TestHeadlessWorkflowOptimizedV2:
         for item in empty_dir.iterdir():
             if item.is_dir():
                 import shutil
+
                 shutil.rmtree(item)
             else:
                 item.unlink()

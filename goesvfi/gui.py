@@ -461,7 +461,7 @@ class MainWindow(QWidget):
         """Handle errors during VFI processing."""
         self.processing_callbacks.on_processing_error(self, error_msg)
 
-    def _set_processing_state(self, is_processing: bool) -> None:
+    def _set_processing_state(self, *, is_processing: bool) -> None:
         """Update UI elements to reflect processing state."""
         self.processing_callbacks.set_processing_state(self, is_processing)
 

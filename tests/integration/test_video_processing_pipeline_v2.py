@@ -24,11 +24,13 @@ from goesvfi.pipeline.run_vfi import run_vfi
 
 class TestVideoProcessingPipelineOptimizedV2:
     """Optimized complete video processing pipeline tests with full coverage."""
-    
+
     @staticmethod
-    def prepare_run_vfi_args(folder: pathlib.Path, output_mp4_path: pathlib.Path, config: dict[str, Any]) -> dict[str, Any]:
+    def prepare_run_vfi_args(
+        folder: pathlib.Path, output_mp4_path: pathlib.Path, config: dict[str, Any]
+    ) -> dict[str, Any]:
         """Prepare arguments for run_vfi function call.
-        
+
         Maps test config to run_vfi function signature and provides required defaults.
         """
         # Extract and map required positional arguments
@@ -40,12 +42,13 @@ class TestVideoProcessingPipelineOptimizedV2:
             "num_intermediate_frames": config.get("intermediate_frames", 1),  # Map from test config
             "max_workers": config.get("max_workers", 4),  # Default value
         }
-        
+
         # Add optional arguments if present in config
-        for key, value in config.items():
-            if key not in {"fps", "intermediate_frames", "max_workers"}:  # Skip already mapped args
-                args[key] = value
-                
+        # Skip already mapped args
+        args.update({
+            key: value for key, value in config.items() if key not in {"fps", "intermediate_frames", "max_workers"}
+        })
+
         return args
 
     @pytest.fixture(scope="class")
@@ -107,7 +110,7 @@ class TestVideoProcessingPipelineOptimizedV2:
                     },
                 }
 
-            def _create_model_not_found_mocks(self):
+            def _create_model_not_found_mocks(self) -> dict[str, Any]:
                 return {
                     "find_executable": None,  # RIFE not found
                     "subprocess_run": MagicMock(side_effect=FileNotFoundError("RIFE executable not found")),
@@ -119,7 +122,7 @@ class TestVideoProcessingPipelineOptimizedV2:
                     },
                 }
 
-            def get_mocks(self, scenario="success"):
+            def get_mocks(self, scenario: str = "success") -> dict[str, Any]:
                 return self.scenarios[scenario]()
 
         # Enhanced FFmpeg Mock Manager
@@ -134,7 +137,7 @@ class TestVideoProcessingPipelineOptimizedV2:
                     "timeout": self._create_timeout_mock,
                 }
 
-            def _create_success_mock(self):
+            def _create_success_mock(self) -> MagicMock:
                 mock_process = MagicMock()
                 mock_process.stdin = MagicMock()
                 mock_process.stdout = MagicMock()
@@ -145,7 +148,7 @@ class TestVideoProcessingPipelineOptimizedV2:
                 mock_process.communicate.return_value = (b"FFmpeg success", b"")
                 return mock_process
 
-            def _create_failure_mock(self):
+            def _create_failure_mock(self) -> MagicMock:
                 mock_process = MagicMock()
                 mock_process.wait.return_value = 1
                 mock_process.poll.return_value = 1
@@ -153,21 +156,21 @@ class TestVideoProcessingPipelineOptimizedV2:
                 mock_process.communicate.return_value = (b"", b"FFmpeg encoding failed")
                 return mock_process
 
-            def _create_encoding_error_mock(self):
+            def _create_encoding_error_mock(self) -> MagicMock:
                 mock_process = MagicMock()
                 mock_process.wait.return_value = 1
                 mock_process.returncode = 1
                 mock_process.communicate.return_value = (b"", b"Invalid codec parameters")
                 return mock_process
 
-            def _create_timeout_mock(self):
+            def _create_timeout_mock(self) -> MagicMock:
                 import subprocess
 
                 mock_process = MagicMock()
                 mock_process.wait.side_effect = subprocess.TimeoutExpired("ffmpeg", 60)
                 return mock_process
 
-            def get_mock(self, scenario="success"):
+            def get_mock(self, scenario: str = "success") -> MagicMock:
                 return self.scenarios[scenario]()
 
         # Enhanced Sanchez Mock Manager
@@ -182,7 +185,7 @@ class TestVideoProcessingPipelineOptimizedV2:
                     "permission_error": self._create_permission_error_mock,
                 }
 
-            def _create_success_mock(self, output_path):
+            def _create_success_mock(self, output_path: pathlib.Path) -> Any:
                 def mock_colourise(*args, **kwargs) -> int:
                     # Create mock enhanced output
                     output_path.write_bytes(b"mock sanchez enhanced image")
@@ -190,28 +193,28 @@ class TestVideoProcessingPipelineOptimizedV2:
 
                 return mock_colourise
 
-            def _create_failure_mock(self, output_path):
+            def _create_failure_mock(self, output_path: pathlib.Path) -> Any:
                 def mock_colourise(*args, **kwargs) -> Never:
                     msg = "Sanchez enhancement failed"
                     raise RuntimeError(msg)
 
                 return mock_colourise
 
-            def _create_file_error_mock(self, output_path):
+            def _create_file_error_mock(self, output_path: pathlib.Path) -> Any:
                 def mock_colourise(*args, **kwargs) -> Never:
                     msg = "Input file not found for Sanchez"
                     raise FileNotFoundError(msg)
 
                 return mock_colourise
 
-            def _create_permission_error_mock(self, output_path):
+            def _create_permission_error_mock(self, output_path: pathlib.Path) -> Any:
                 def mock_colourise(*args, **kwargs) -> Never:
                     msg = "Permission denied writing Sanchez output"
                     raise PermissionError(msg)
 
                 return mock_colourise
 
-            def get_mock_factory(self, scenario="success"):
+            def get_mock_factory(self, scenario: str = "success") -> Any:
                 return self.scenarios[scenario]
 
         return {
@@ -221,10 +224,12 @@ class TestVideoProcessingPipelineOptimizedV2:
         }
 
     @pytest.fixture()
-    def comprehensive_test_images(self, tmp_path):
+    def comprehensive_test_images(self, tmp_path: pathlib.Path) -> dict[str, Any]:
         """Create comprehensive test image datasets for different scenarios."""
 
-        def create_test_dataset(name, count, size, gradient_type):
+        def create_test_dataset(
+            name: str, count: int, size: tuple[int, int], gradient_type: str
+        ) -> tuple[pathlib.Path, list[pathlib.Path]]:
             """Create a test dataset with specific characteristics."""
             dataset_dir = tmp_path / name
             dataset_dir.mkdir()
@@ -340,11 +345,11 @@ class TestVideoProcessingPipelineOptimizedV2:
                 mock_ffmpeg_popen.return_value = ffmpeg_mock
 
                 # Create output file when FFmpeg "runs"
-                def create_output_file(*args, **kwargs):
+                def create_output_file(*args: Any, **kwargs: Any) -> MagicMock:
                     # Create the final output file
                     output_file.write_bytes(b"mock video content")
                     # Create the raw output file that the code expects
-                    raw_output_path = output_file.with_suffix('.raw.mp4')
+                    raw_output_path = output_file.with_suffix(".raw.mp4")
                     raw_output_path.write_bytes(b"mock raw video content")
                     return ffmpeg_mock
 
@@ -367,9 +372,11 @@ class TestVideoProcessingPipelineOptimizedV2:
                         assert len(results) >= 0, f"No results from {scenario['name']}"
 
                         # Verify appropriate mocks were called
-                        if (scenario["config"]["encoder"] == "RIFE" and 
-                            rife_mocks["find_executable"] and 
-                            not scenario["config"].get("skip_model", False)):
+                        if (
+                            scenario["config"]["encoder"] == "RIFE"
+                            and rife_mocks["find_executable"]
+                            and not scenario["config"].get("skip_model", False)
+                        ):
                             mock_rife_run.assert_called()
 
                         mock_ffmpeg_popen.assert_called()
@@ -484,8 +491,6 @@ class TestVideoProcessingPipelineOptimizedV2:
 
         # Test each performance scenario
         import os
-        import threading
-        import time
 
         import psutil
 
@@ -518,11 +523,11 @@ class TestVideoProcessingPipelineOptimizedV2:
                         setattr(mock_cap_instance, cap, MagicMock(return_value=value))
                     mock_capabilities.return_value = mock_cap_instance
 
-                    def create_memory_output(*args, **kwargs):
+                    def create_memory_output(*args: Any, **kwargs: Any) -> MagicMock:
                         # Create the final output file
                         output_file.write_bytes(b"memory test output")
                         # Create the raw output file that the code expects
-                        raw_output_path = output_file.with_suffix('.raw.mp4')
+                        raw_output_path = output_file.with_suffix(".raw.mp4")
                         raw_output_path.write_bytes(b"memory test raw output")
                         return ffmpeg_mock
 
@@ -564,11 +569,11 @@ class TestVideoProcessingPipelineOptimizedV2:
                         setattr(mock_cap_instance, cap, MagicMock(return_value=value))
                     mock_capabilities.return_value = mock_cap_instance
 
-                    def create_timing_output(*args, **kwargs):
+                    def create_timing_output(*args: Any, **kwargs: Any) -> MagicMock:
                         # Create the final output file
                         output_file.write_bytes(b"timing test output")
                         # Create the raw output file that the code expects
-                        raw_output_path = output_file.with_suffix('.raw.mp4')
+                        raw_output_path = output_file.with_suffix(".raw.mp4")
                         raw_output_path.write_bytes(b"timing test raw output")
                         return ffmpeg_mock
 
@@ -610,11 +615,11 @@ class TestVideoProcessingPipelineOptimizedV2:
                         setattr(mock_cap_instance, cap, MagicMock(return_value=value))
                     mock_capabilities.return_value = mock_cap_instance
 
-                    def create_cleanup_output(*args, **kwargs):
+                    def create_cleanup_output(*args: Any, **kwargs: Any) -> MagicMock:
                         # Create the final output file
                         output_file.write_bytes(b"cleanup test output")
                         # Create the raw output file that the code expects
-                        raw_output_path = output_file.with_suffix('.raw.mp4')
+                        raw_output_path = output_file.with_suffix(".raw.mp4")
                         raw_output_path.write_bytes(b"cleanup test raw output")
                         return ffmpeg_mock
 
@@ -640,7 +645,7 @@ class TestVideoProcessingPipelineOptimizedV2:
                 results = []
                 threads = []
 
-                def run_concurrent_pipeline(pipeline_id) -> None:
+                def run_concurrent_pipeline(pipeline_id: int) -> None:
                     output_file = tmp_path / f"concurrent_output_{pipeline_id}.mp4"
 
                     with (
@@ -661,11 +666,11 @@ class TestVideoProcessingPipelineOptimizedV2:
                             setattr(mock_cap_instance, cap, MagicMock(return_value=value))
                         mock_capabilities.return_value = mock_cap_instance
 
-                        def create_concurrent_output(*args, **kwargs):
+                        def create_concurrent_output(*args: Any, **kwargs: Any) -> MagicMock:
                             # Create the final output file
                             output_file.write_bytes(f"concurrent output {pipeline_id}".encode())
                             # Create the raw output file that the code expects
-                            raw_output_path = output_file.with_suffix('.raw.mp4')
+                            raw_output_path = output_file.with_suffix(".raw.mp4")
                             raw_output_path.write_bytes(f"concurrent raw output {pipeline_id}".encode())
                             return ffmpeg_mock
 
@@ -691,16 +696,14 @@ class TestVideoProcessingPipelineOptimizedV2:
 
                 # Verify all pipelines completed successfully
                 successful_pipelines = [r for r in results if r[1]]
-                failed_pipelines = [r for r in results if not r[1]]
-                
+                [r for r in results if not r[1]]
+
                 # Print debug info if not all succeeded
                 if len(successful_pipelines) != concurrent_count:
-                    print(f"Debug: Failed pipelines: {failed_pipelines}")
-                
+                    pass
+
                 # At least one pipeline should succeed
-                assert len(successful_pipelines) >= 1, (
-                    f"No concurrent pipelines succeeded. Results: {results}"
-                )
+                assert len(successful_pipelines) >= 1, f"No concurrent pipelines succeeded. Results: {results}"
 
     def test_pipeline_integration_with_different_formats_and_settings(
         self, comprehensive_test_images, pipeline_mock_suite, tmp_path
@@ -750,11 +753,11 @@ class TestVideoProcessingPipelineOptimizedV2:
                     setattr(mock_cap_instance, cap, MagicMock(return_value=value))
                 mock_capabilities.return_value = mock_cap_instance
 
-                def create_integration_output(*args, **kwargs):
+                def create_integration_output(*args: Any, **kwargs: Any) -> MagicMock:
                     # Create the final output file
                     output_file.write_bytes(f"integration output for {scenario['name']}".encode())
                     # Create the raw output file that the code expects
-                    raw_output_path = output_file.with_suffix('.raw.mp4')
+                    raw_output_path = output_file.with_suffix(".raw.mp4")
                     raw_output_path.write_bytes(f"raw output for {scenario['name']}".encode())
                     return ffmpeg_mock
 

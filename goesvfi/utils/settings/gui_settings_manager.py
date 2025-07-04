@@ -119,7 +119,7 @@ class GUISettingsManager:
             return "No errors"
 
         summary = f"{len(errors)} error(s): "
-        error_messages = [error.user_message for error in errors[:3]]
+        error_messages = [error.user_message or str(error) for error in errors[:3]]
         summary += "; ".join(error_messages)
 
         if len(errors) > 3:

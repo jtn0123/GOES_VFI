@@ -629,12 +629,12 @@ class TestOptimizedResultsTabV2(PyQtAsyncTestCase):
             malformed_items.append(item)
 
         # Test should expect error with malformed items (timestamp = None)
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             self.tab.set_items(malformed_items, len(malformed_items))
             QApplication.processEvents()
 
         # Test with None items should also raise TypeError
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             self.tab.set_items(None, 0)
             QApplication.processEvents()
 

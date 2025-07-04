@@ -222,8 +222,8 @@ class IconManager:
         if not app:
             return QIcon()
 
-        # QApplication.instance() returns QCoreApplication, cast to QApplication
-        qapp = cast("QApplication", app) if isinstance(app, QApplication) else None
+        # QApplication.instance() returns QCoreApplication, check if it's QApplication
+        qapp = app if isinstance(app, QApplication) else None
         if not qapp:
             return QIcon()
 

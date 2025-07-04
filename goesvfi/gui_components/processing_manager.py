@@ -88,7 +88,7 @@ class ProcessingManager(QObject):
             return False
 
     def stop_processing(self) -> None:
-        """Stop the current processing operation."""
+        """Stop the current processing operation gracefully."""
         if not self.is_processing:
             LOGGER.debug("No processing to stop")
             return
@@ -96,15 +96,31 @@ class ProcessingManager(QObject):
         LOGGER.info("Stopping processing...")
 
         if self.worker:
-            # VfiWorker doesn't have a cancel method, so we'll just stop the thread
-            LOGGER.debug("Requesting worker to stop")
+            # Request graceful interruption first
+            LOGGER.debug("Requesting worker interruption")
+            if hasattr(self.worker, "requestInterruption"):
+                self.worker.requestInterruption()
+            elif hasattr(self.worker, "stop"):
+                self.worker.stop()
 
         if self.worker_thread and self.worker_thread.isRunning():
-            # Give the thread time to finish gracefully
-            if not self.worker_thread.wait(5000):  # 5 second timeout
-                LOGGER.warning("Thread did not finish gracefully, terminating...")
-                self.worker_thread.terminate()
-                self.worker_thread.wait()
+            # Request thread interruption
+            self.worker_thread.requestInterruption()
+
+            # Give the thread time to finish gracefully with progressive timeouts
+            if not self.worker_thread.wait(2000):  # First try 2 seconds
+                LOGGER.warning("Thread did not stop within 2 seconds, trying longer timeout...")
+                if not self.worker_thread.wait(8000):  # Then try 8 more seconds (10 total)
+                    LOGGER.error("Thread did not finish gracefully after 10 seconds")
+                    # Only terminate as absolute last resort
+                    LOGGER.critical("Force terminating worker thread - this may cause data corruption")
+                    self.worker_thread.terminate()
+                    if not self.worker_thread.wait(2000):
+                        LOGGER.critical("Thread termination failed - potential resource leak")
+                else:
+                    LOGGER.info("Thread stopped gracefully after extended timeout")
+            else:
+                LOGGER.info("Thread stopped gracefully")
 
         self._cleanup_thread()
 
@@ -141,16 +157,47 @@ class ProcessingManager(QObject):
         self.processing_state_changed.emit(False)
 
     def _cleanup_thread(self) -> None:
-        """Clean up the worker thread and worker."""
+        """Clean up the worker thread and worker safely."""
+        # Disconnect signals first to prevent any late emissions
         if self.worker:
+            try:
+                self.worker.progress.disconnect()
+                self.worker.finished.disconnect()
+                self.worker.error.disconnect()
+            except (TypeError, RuntimeError):
+                pass  # Signals already disconnected or object deleted
+
+            # Schedule for deletion in next event loop iteration
             self.worker.deleteLater()
             self.worker = None
 
         if self.worker_thread:
+            # Ensure thread is fully stopped before cleanup
+            if self.worker_thread.isRunning():
+                LOGGER.warning("Thread still running during cleanup")
+
+            # Schedule for deletion in next event loop iteration
             self.worker_thread.deleteLater()
             self.worker_thread = None
 
-        LOGGER.debug("Worker thread cleaned up")
+        # Reset processing state
+        self.is_processing = False
+        self.processing_state_changed.emit(False)
+
+        LOGGER.debug("Worker thread cleaned up safely")
+
+    def cleanup_all_resources(self) -> None:
+        """Clean up all processing manager resources."""
+        LOGGER.info("Cleaning up all processing manager resources")
+
+        # Stop any running processing
+        if self.is_processing:
+            self.stop_processing()
+
+        # Final cleanup
+        self._cleanup_thread()
+
+        LOGGER.info("Processing manager cleanup completed")
 
     def get_processing_state(self) -> bool:
         """Get the current processing state.

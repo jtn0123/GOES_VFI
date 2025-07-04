@@ -392,7 +392,7 @@ class EnhancedIntegrityCheckViewModel(IntegrityCheckViewModel):
         if self._status == ScanStatus.DOWNLOADING:
             LOGGER.warning("Download already in progress")
             return
-            
+
         if self._status == ScanStatus.SCANNING:
             LOGGER.warning("Cannot start download while scanning is in progress")
             return

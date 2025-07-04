@@ -329,12 +329,12 @@ class TestAccessibilityOptimizedV2:
         button_scenarios = [
             (
                 window.main_tab.in_dir_button,
-                "Input Directory",
+                "Browse...",
                 "Browse and select directory containing input images for processing",
             ),
             (
                 window.main_tab.out_file_button,
-                "Output File",
+                "Browse...",
                 "Choose location and filename for output video file",
             ),
             (
@@ -459,7 +459,7 @@ class TestAccessibilityOptimizedV2:
 
     @staticmethod
     def test_keyboard_navigation_comprehensive(
-        qtbot: Any,  # noqa: ARG004
+        qtbot: Any,
         main_window: Any,
         accessibility_testing_suite: dict[str, Any],
     ) -> None:

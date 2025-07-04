@@ -1,8 +1,8 @@
 """Fast, optimized tests for settings persistence - Optimized v2."""
 
-import time
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Union
+import time
+from typing import Any
 from unittest.mock import MagicMock
 
 from PyQt6.QtCore import QSettings
@@ -13,7 +13,7 @@ from goesvfi.gui_components.settings_persistence import SettingsPersistence
 
 # Shared fixtures and test data
 @pytest.fixture(scope="session")
-def path_test_scenarios() -> Dict[str, List[Path]]:
+def path_test_scenarios() -> dict[str, list[Path]]:
     """Pre-defined path scenarios for testing.
 
     Returns:
@@ -31,7 +31,7 @@ def path_test_scenarios() -> Dict[str, List[Path]]:
 
 
 @pytest.fixture(scope="session")
-def crop_rect_scenarios() -> Dict[str, List[Union[Tuple[int, ...], None]]]:
+def crop_rect_scenarios() -> dict[str, list[tuple[int, ...] | None]]:
     """Pre-defined crop rectangle scenarios for testing.
 
     Returns:
@@ -70,7 +70,7 @@ def mock_settings() -> MagicMock:
     def mock_set_value(key: str, value: Any) -> None:
         settings._storage[key] = value  # noqa: SLF001
 
-    def mock_all_keys() -> List[str]:
+    def mock_all_keys() -> list[str]:
         return list(settings._storage.keys())  # noqa: SLF001
 
     settings.value.side_effect = mock_value
@@ -116,7 +116,7 @@ class TestSettingsPersistence:
         self,
         settings_persistence: "SettingsPersistence",
         mock_settings: MagicMock,
-        path_test_scenarios: Dict[str, List[Path]],
+        path_test_scenarios: dict[str, list[Path]],
         path_scenario: str,
     ) -> None:
         """Test saving valid input directories."""
@@ -134,11 +134,11 @@ class TestSettingsPersistence:
         self,
         settings_persistence: "SettingsPersistence",
         mock_settings: MagicMock,
-        path_test_scenarios: Dict[str, List[Path]],
+        path_test_scenarios: dict[str, list[Path]],
         path_scenario: str,
     ) -> None:
         """Test saving invalid input directories."""
-        test_paths = path_test_scenarios[path_scenario]
+        path_test_scenarios[path_scenario]
 
         # Test None specifically since we can't put it in the fixture due to type constraints
         result = settings_persistence.save_input_directory(None)  # type: ignore
@@ -149,7 +149,7 @@ class TestSettingsPersistence:
         self,
         settings_persistence: "SettingsPersistence",
         mock_settings: MagicMock,
-        crop_rect_scenarios: Dict[str, List[Union[Tuple[int, ...], None]]],
+        crop_rect_scenarios: dict[str, list[tuple[int, ...] | None]],
         rect_scenario: str,
     ) -> None:
         """Test saving valid crop rectangles."""
@@ -169,7 +169,7 @@ class TestSettingsPersistence:
         self,
         settings_persistence: "SettingsPersistence",
         mock_settings: MagicMock,
-        crop_rect_scenarios: Dict[str, List[Union[Tuple[int, ...], None]]],
+        crop_rect_scenarios: dict[str, list[tuple[int, ...] | None]],
         rect_scenario: str,
     ) -> None:
         """Test saving invalid crop rectangles."""
@@ -195,7 +195,7 @@ class TestSettingsPersistence:
         ],
     )
     def test_path_string_conversion(
-        self, settings_persistence: "SettingsPersistence", mock_settings: MagicMock, path_type: Tuple[Path, str]
+        self, settings_persistence: "SettingsPersistence", mock_settings: MagicMock, path_type: tuple[Path, str]
     ) -> None:
         """Test that paths are properly converted to strings for storage."""
         test_path, _path_description = path_type
@@ -234,7 +234,7 @@ class TestSettingsPersistence:
         self,
         settings_persistence: "SettingsPersistence",
         mock_settings: MagicMock,
-        operation_sequence: List[Tuple[str, Any]],
+        operation_sequence: list[tuple[str, Any]],
     ) -> None:
         """Test sequences of save operations."""
         for operation, value in operation_sequence:
@@ -303,7 +303,7 @@ class TestSettingsPersistence:
         ],
     )
     def test_input_validation_comprehensive(
-        self, settings_persistence: "SettingsPersistence", validation_scenarios: Tuple[Any, str, bool]
+        self, settings_persistence: "SettingsPersistence", validation_scenarios: tuple[Any, str, bool]
     ) -> None:
         """Test comprehensive input validation."""
         input_value, operation_type, expected_result = validation_scenarios

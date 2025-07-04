@@ -151,7 +151,7 @@ class TestProcessingHandlerOptimizedV2:
 
                     # Verify processing state was set
                     assert main_window.is_processing is True
-                    main_window._set_processing_state.assert_called_with(True)  # noqa: SLF001, FBT003
+                    main_window._set_processing_state.assert_called_with(is_processing=True)  # noqa: SLF001
 
                     # Verify worker creation and setup
                     mock_worker_factory.create_worker.assert_called_once_with(args, debug_mode)
@@ -221,7 +221,7 @@ class TestProcessingHandlerOptimizedV2:
 
                     # Should reset processing state
                     assert main_window.is_processing is False
-                    main_window._set_processing_state.assert_called_with(False)  # noqa: SLF001, FBT003
+                    main_window._set_processing_state.assert_called_with(is_processing=False)  # noqa: SLF001
 
                     # Should show error dialog
                     mock_qmessage_box.critical.assert_called_once()
@@ -321,7 +321,7 @@ class TestProcessingHandlerOptimizedV2:
                     assert main_window.is_processing is False
 
                     # UI state should be properly reset
-                    main_window._set_processing_state.assert_called_with(False)  # noqa: SLF001, FBT003
+                    main_window._set_processing_state.assert_called_with(is_processing=False)  # noqa: SLF001
                     main_window.main_tab._reset_start_button.assert_called_once()  # noqa: SLF001
 
                 return {"scenario": scenario_name, "state_consistent": True}
@@ -388,7 +388,7 @@ class TestProcessingHandlerOptimizedV2:
                     # Should setup all state correctly
                     assert main_window.is_processing is True
                     assert main_window.vfi_worker is new_worker
-                    main_window._set_processing_state.assert_called_with(True)  # noqa: SLF001, FBT003
+                    main_window._set_processing_state.assert_called_with(is_processing=True)  # noqa: SLF001
                     main_window.main_view_model.processing_vm.start_processing.assert_called_once()
 
                 return {"scenario": scenario_name, "integration_complete": True, "worker_replaced": True}
@@ -484,7 +484,7 @@ class TestProcessingHandlerOptimizedV2:
 
                                 # Should reset processing state
                                 assert main_window.is_processing is False
-                                main_window._set_processing_state.assert_called_with(False)  # noqa: SLF001, FBT003
+                                main_window._set_processing_state.assert_called_with(is_processing=False)  # noqa: SLF001
 
                                 # Should show error dialog
                                 mock_qmessage_box.critical.assert_called_once()

@@ -88,7 +88,7 @@ class TestLogOptimizedV2:
         """Test level setting with different debug configurations."""
         log.set_level(debug_mode=debug_mode)
 
-        assert log._LEVEL == expected_level  # noqa: SLF001
+        assert expected_level == log._LEVEL  # noqa: SLF001
 
         if log._handler:  # noqa: SLF001
             assert log._handler.level == expected_level  # noqa: SLF001
@@ -259,7 +259,7 @@ class TestLogOptimizedV2:
         for i in range(10):
             log.set_level(debug_mode=(i % 2 == 0))
             expected_level = logging.DEBUG if i % 2 == 0 else logging.INFO
-            assert log._LEVEL == expected_level  # noqa: SLF001
+            assert expected_level == log._LEVEL  # noqa: SLF001
 
         # Test logger creation after rapid level changes
         rapid_logger = log.get_logger("rapid_change_logger")

@@ -138,7 +138,7 @@ class TestS3ConnectionPool:
 
         mock_session = MagicMock()
         client_context = MagicMock()
-        
+
         # Return different clients on each call
         client_context.__aenter__ = AsyncMock(side_effect=[mock_client1, mock_client2, mock_client3])
         mock_session.client.return_value = client_context
@@ -155,7 +155,7 @@ class TestS3ConnectionPool:
                     # Try to acquire third (should still work but log warning)
                     async with pool.acquire() as client3:
                         assert client3 is not None
-        
+
         # Cleanup
         await pool.close_all()
 

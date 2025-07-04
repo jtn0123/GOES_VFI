@@ -93,14 +93,13 @@ class TestRealS3PatternsOptimizedV2:
                     # For wildcard patterns, we can't extract the minute as it's replaced with '*'
                     # This means the test should use exact matching to verify minute selection
                     return -1
-                else:
-                    # For exact patterns like s2023166123000, extract minute (positions 10-11)
-                    # Format: s + YYYY + DDD + HH + MM + SS
-                    #         0   1234   567   89   10   12
-                    pattern = re.compile(r"s\d{4}\d{3}\d{2}(\d{2})\d{2}")
-                    match = pattern.search(key)
-                    if match:
-                        return int(match.group(1))
+                # For exact patterns like s2023166123000, extract minute (positions 10-11)
+                # Format: s + YYYY + DDD + HH + MM + SS
+                #         0   1234   567   89   10   12
+                pattern = re.compile(r"s\d{4}\d{3}\d{2}(\d{2})\d{2}")
+                match = pattern.search(key)
+                if match:
+                    return int(match.group(1))
                 return -1
 
             def validate_key_structure(
@@ -208,7 +207,9 @@ class TestRealS3PatternsOptimizedV2:
                     ]
 
                     for product_type, test_ts, expected_minute in test_cases:
-                        key = to_s3_key(test_ts, SatellitePattern.GOES_16, product_type=product_type, band=13, exact_match=True)
+                        key = to_s3_key(
+                            test_ts, SatellitePattern.GOES_16, product_type=product_type, band=13, exact_match=True
+                        )
 
                         minute_extracted = self.extract_minute_from_key(key)
 
@@ -396,7 +397,9 @@ class TestRealS3PatternsOptimizedV2:
 
                     for product_type, input_minute, expected_minute in test_cases:
                         test_ts = datetime(2023, 6, 15, 12, input_minute, 0)
-                        key = to_s3_key(test_ts, SatellitePattern.GOES_18, product_type=product_type, band=13, exact_match=True)
+                        key = to_s3_key(
+                            test_ts, SatellitePattern.GOES_18, product_type=product_type, band=13, exact_match=True
+                        )
 
                         actual_minute = self.extract_minute_from_key(key)
 
@@ -662,7 +665,9 @@ class TestRealS3PatternsOptimizedV2:
 
         # Test each product type's minute selection
         for product_type in ["RadF", "RadC", "RadM"]:
-            key = to_s3_key(test_timestamp, SatellitePattern.GOES_18, product_type=product_type, band=13, exact_match=True)
+            key = to_s3_key(
+                test_timestamp, SatellitePattern.GOES_18, product_type=product_type, band=13, exact_match=True
+            )
 
             minute = manager.extract_minute_from_key(key)
 

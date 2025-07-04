@@ -209,8 +209,33 @@ class ClickableLabel(QLabel):
         """Initialize the ClickableLabel."""
         super().__init__(parent)
         self.file_path: str | None = None
-        self.processed_image = None
+        self._processed_image: QImage | None = None
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    @property
+    def processed_image(self) -> QImage | None:
+        """Get the processed image."""
+        return self._processed_image
+
+    @processed_image.setter
+    def processed_image(self, image: QImage | None) -> None:
+        """Set the processed image with proper memory management."""
+        # Clear previous image
+        if self._processed_image is not None:
+            del self._processed_image
+        self._processed_image = image
+
+    def cleanup(self) -> None:
+        """Explicit cleanup method for resource management."""
+        if self._processed_image is not None:
+            del self._processed_image
+            self._processed_image = None
+        self.file_path = None
+
+    def closeEvent(self, event: Any) -> None:
+        """Handle close event with cleanup."""
+        self.cleanup()
+        super().closeEvent(event)
 
     def mouseReleaseEvent(self, event: QMouseEvent | None) -> None:
         """Emit clicked signal on mouse release."""

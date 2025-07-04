@@ -37,15 +37,22 @@ class ImageSaver(ImageProcessor):
             if dir_path:  # Only create directory if dirname returns a non-empty path
                 os.makedirs(dir_path, exist_ok=True)
 
-            # Handle float arrays by converting to uint8
-            array_data = image_data.image_data
-            if np.issubdtype(array_data.dtype, np.floating):
-                # Normalize float data to 0-255 range
-                array_data = (array_data * 255).astype(np.uint8)
+            # Handle different image data types
+            raw_data = image_data.image_data
 
-            # Convert NumPy array to Pillow Image and save
-            img = Image.fromarray(array_data)
-            img.save(destination_path)
+            if isinstance(raw_data, Image.Image):
+                # Already a PIL Image, save directly
+                raw_data.save(destination_path)
+            else:
+                # Handle NumPy array
+                array_data = raw_data
+                if np.issubdtype(array_data.dtype, np.floating):
+                    # Normalize float data to 0-255 range
+                    array_data = (array_data * 255).astype(np.uint8)
+
+                # Convert NumPy array to Pillow Image and save
+                img = Image.fromarray(array_data)
+                img.save(destination_path)
         except OSError as e:
             msg = f"Error writing image file {destination_path}: {e}"
             raise OSError(msg) from e

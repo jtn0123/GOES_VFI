@@ -101,7 +101,9 @@ class TestRemoteStoresOptimizedV2:
                     patch("goesvfi.integrity_check.remote.s3_store.get_system_network_info"),
                     patch("goesvfi.integrity_check.remote.s3_store.socket.gethostbyname", return_value="127.0.0.1"),
                 ):
-                    return S3Store(aws_profile=aws_profile, aws_region=aws_region, timeout=timeout, use_connection_pool=False)
+                    return S3Store(
+                        aws_profile=aws_profile, aws_region=aws_region, timeout=timeout, use_connection_pool=False
+                    )
 
             @staticmethod
             def create_mock_session(*, for_cdn: bool = True) -> MagicMock:

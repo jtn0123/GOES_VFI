@@ -500,9 +500,9 @@ class MissingItemsTreeView(QWidget):
         # Add header
         from PyQt6.QtWidgets import QFrame
 
-        header = QLabel("📋 Results Organization")
-        header.setProperty("class", "AppHeader")
-        layout.addWidget(header)
+        header_label = QLabel("📋 Results Organization")
+        header_label.setProperty("class", "AppHeader")
+        layout.addWidget(header_label)
 
         # Create controls for grouping in a frame
         control_frame = QFrame()

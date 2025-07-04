@@ -32,6 +32,8 @@ unittest.mock.patch("goesvfi.integrity_check.enhanced_gui_tab.S3Store", MockS3St
 unittest.mock.patch("goesvfi.integrity_check.enhanced_gui_tab.CDNStore", MockCDNStore).start()
 # Don't patch TimeIndex globally - let individual tests control it
 
+import pytest
+
 from goesvfi.integrity_check.enhanced_gui_tab import (  # noqa: E402
     EnhancedIntegrityCheckTab,
 )
@@ -49,8 +51,6 @@ from tests.utils.pyqt_async_test import (  # noqa: E402
     PyQtAsyncTestCase,
     async_test,
 )
-
-import pytest
 
 # Add timeout marker to prevent test hangs
 pytestmark = pytest.mark.timeout(30)  # 30 second timeout for all tests in this file

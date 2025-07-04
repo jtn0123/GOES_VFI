@@ -11,14 +11,13 @@ Optimizations applied:
 """
 
 from datetime import UTC, datetime, timedelta
-import os
-from pathlib import Path
-
-import pytest
 
 # Import the sorter module directly, bypassing __init__.py to avoid circular import
 import importlib.util
 import os
+from pathlib import Path
+
+import pytest
 
 # Get the path to the sorter module
 sorter_path = os.path.join(

@@ -293,7 +293,7 @@ class ProcessingViewModel(QObject):
         builder.set_encoder(ffmpeg_settings.get("encoder", "Software x264"))
         if "crf" in ffmpeg_settings:
             builder.set_crf(int(ffmpeg_settings["crf"]))
-        elif ffmpeg_settings.get("encoder", "Software x264") in ["Software x264", "Software x265"]:
+        elif ffmpeg_settings.get("encoder", "Software x264") in {"Software x264", "Software x265"}:
             # Set default CRF for software encoders if not specified
             builder.set_crf(23)
         if "pix_fmt" in ffmpeg_settings:
@@ -321,7 +321,7 @@ class ProcessingViewModel(QObject):
             idx = cmd.index(str(output_path))
             cmd.insert(idx, "-filter:v")
             cmd.insert(idx + 1, ",".join(filters))
-        
+
         # Add framerate before output path
         idx = cmd.index(str(output_path))
         cmd.insert(idx, "-framerate")

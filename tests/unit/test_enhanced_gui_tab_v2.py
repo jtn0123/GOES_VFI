@@ -19,6 +19,7 @@ patch("goesvfi.integrity_check.time_index.TimeIndex.find_date_range_in_directory
 
 from PyQt6.QtCore import QDateTime
 from PyQt6.QtWidgets import QApplication
+import pytest
 
 from goesvfi.integrity_check.enhanced_gui_tab import EnhancedIntegrityCheckTab
 from goesvfi.integrity_check.enhanced_view_model import (
@@ -30,7 +31,6 @@ from goesvfi.integrity_check.view_model import ScanStatus
 
 # Import our test utilities
 from tests.utils.pyqt_async_test import PyQtAsyncTestCase
-import pytest
 
 # Add timeout marker to prevent test hangs
 pytestmark = pytest.mark.timeout(30)  # 30 second timeout for all tests in this file

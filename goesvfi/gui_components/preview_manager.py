@@ -467,15 +467,33 @@ class PreviewManager(QObject):
                 # Convert from (x, y, width, height) to (left, top, right, bottom)
                 x, y, width, height = crop_rect
                 left, top, right, bottom = x, y, x + width, y + height
-                # Validate crop coordinates
+
+                # Get image dimensions for validation
+                from typing import cast
+
+                image_array = cast("ndarray[Any, Any]", image_data.image_data)
+                img_height, img_width = image_array.shape[:2]
+
+                # Validate crop dimensions and coordinates
                 if width <= 0 or height <= 0:
                     LOGGER.error("Invalid crop dimensions: width=%d, height=%d", width, height)
                     return None
-                crop_coords = (left, top, right, bottom)
-                LOGGER.debug("Converting crop rect %s to coordinates %s", crop_rect, crop_coords)
-                image_data = self.cropper.crop(image_data, crop_coords)
-                if not image_data:
-                    return None
+
+                # Validate crop coordinates are within image bounds
+                if not (0 <= left < right <= img_width and 0 <= top < bottom <= img_height):
+                    LOGGER.error(
+                        "Crop area %s exceeds image dimensions %dx%d, skipping crop", crop_rect, img_width, img_height
+                    )
+                    # Return the original image data without cropping rather than None
+                    LOGGER.debug("Continuing without crop due to invalid bounds")
+                else:
+                    crop_coords = (left, top, right, bottom)
+                    LOGGER.debug("Converting crop rect %s to coordinates %s", crop_rect, crop_coords)
+                    cropped_data = self.cropper.crop(image_data, crop_coords)
+                    if cropped_data:
+                        image_data = cropped_data
+                    else:
+                        LOGGER.warning("Crop operation failed, using original image")
 
             # Apply Sanchez processing if specified
             if apply_sanchez:

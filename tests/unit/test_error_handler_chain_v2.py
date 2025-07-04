@@ -35,12 +35,12 @@ class MockErrorHandler(ErrorHandler):
 
     def can_handle(self, error: Exception) -> bool:
         # Handle both regular exceptions and StructuredError objects
-        if hasattr(error, 'cause') and error.cause is not None:
+        if hasattr(error, "cause") and error.cause is not None:
             # It's a StructuredError, get the original exception
             original_error = error.cause
         else:
             original_error = error
-            
+
         self.can_handle_calls.append(original_error)
         if self.can_handle_types:
             return type(original_error).__name__ in self.can_handle_types
@@ -56,12 +56,12 @@ class MockErrorHandler(ErrorHandler):
             raise self.raise_on_handle
 
         # Handle both regular exceptions and StructuredError objects
-        if hasattr(error, 'cause') and error.cause is not None:
+        if hasattr(error, "cause") and error.cause is not None:
             # It's a StructuredError, get the original exception
             original_error = error.cause
         else:
             original_error = error
-            
+
         self.handled_errors.append(original_error)
         return True
 

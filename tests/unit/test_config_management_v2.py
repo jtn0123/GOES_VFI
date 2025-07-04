@@ -31,7 +31,11 @@ def config_scenarios() -> dict[str, Any]:
         "valid_minimal": {
             "output_dir": "/test/output",
             "cache_dir": "/test/cache",
-            "pipeline": {"default_tile_size": 2048, "max_workers": 4, "supported_extensions": [".png", ".jpg", ".jpeg"]},
+            "pipeline": {
+                "default_tile_size": 2048,
+                "max_workers": 4,
+                "supported_extensions": [".png", ".jpg", ".jpeg"],
+            },
             "sanchez": {"bin_dir": "/test/sanchez"},
             "logging": {"level": "INFO"},
             "theme": {"name": "dark_blue", "custom_overrides": False, "density_scale": "0", "fallback_enabled": True},

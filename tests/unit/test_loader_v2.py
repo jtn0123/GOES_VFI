@@ -77,16 +77,18 @@ class TestLoaderV2:
         """Test that only supported extensions are returned."""
         # Create only the files for this specific test to avoid conflicts
         test_files = shared_file_data[file_group]
-        
+
         for filename in test_files:
             (tmp_path / filename).write_text("dummy content")
-        
+
         result = loader.discover_frames(tmp_path)
         result_filenames = [p.name for p in result]
 
         for filename in test_files:
             if should_be_included:
-                assert filename in result_filenames, f"Supported file {filename} should be included. Found: {result_filenames}"
+                assert filename in result_filenames, (
+                    f"Supported file {filename} should be included. Found: {result_filenames}"
+                )
             else:
                 assert filename not in result_filenames, f"Unsupported file {filename} should be excluded"
 

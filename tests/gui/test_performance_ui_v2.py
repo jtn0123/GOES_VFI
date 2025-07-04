@@ -572,7 +572,7 @@ class TestPerformanceUIOptimizedV2:
             trend = mem_monitor.trend_analysis["recent_trend"]
             assert trend < 50, f"Concerning memory growth trend: {trend:.2f} MB"
 
-    @pytest.mark.slow
+    @pytest.mark.slow()
     def test_startup_and_initialization_comprehensive(self, qtbot, mocker, shared_monitoring_components) -> None:
         """Test comprehensive startup and initialization performance."""
         monitoring_classes = shared_monitoring_components
@@ -652,7 +652,7 @@ class TestPerformanceUIOptimizedV2:
             window.deleteLater()
             QApplication.processEvents()
 
-    @pytest.mark.slow
+    @pytest.mark.slow()
     def test_animation_and_visual_performance(self, qtbot, main_window, shared_monitoring_components) -> None:
         """Test comprehensive animation and visual performance."""
         monitoring_classes = shared_monitoring_components
@@ -746,7 +746,7 @@ class TestPerformanceUIOptimizedV2:
             overall_perf = perf_monitor.get_performance_score()
             assert overall_perf > 60, f"Animation performance score too low ({overall_perf:.1f}) for: {description}"
 
-    @pytest.mark.slow
+    @pytest.mark.slow()
     def test_thread_pool_comprehensive_management(self, qtbot, main_window, shared_monitoring_components) -> None:
         """Test comprehensive thread pool management and concurrency."""
         monitoring_classes = shared_monitoring_components
@@ -827,7 +827,7 @@ class TestPerformanceUIOptimizedV2:
                     f"Throughput too low ({throughput_stats['tasks_per_second']:.2f} tasks/s) for: {description}"
                 )
 
-    @pytest.mark.slow
+    @pytest.mark.slow()
     def test_lazy_loading_comprehensive_performance(self, qtbot, main_window, shared_monitoring_components) -> None:
         """Test comprehensive lazy loading performance and efficiency."""
 
@@ -920,7 +920,7 @@ class TestPerformanceUIOptimizedV2:
         assert stats["avg_load_time"] < 1.0, f"Average load time too high: {stats['avg_load_time']:.3f}s"
         assert stats["total_memory_used"] < 200, f"Total memory usage too high: {stats['total_memory_used']:.1f} MB"
 
-    @pytest.mark.slow
+    @pytest.mark.slow()
     def test_ui_freeze_comprehensive_prevention(self, qtbot, main_window, shared_monitoring_components) -> None:
         """Test comprehensive UI freeze prevention and responsiveness maintenance."""
 

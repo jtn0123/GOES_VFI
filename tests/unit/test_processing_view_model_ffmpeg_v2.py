@@ -99,9 +99,9 @@ class TestProcessingViewModelFFmpegV2:
         """Test building FFmpeg command with different encoders."""
         output = test_paths["output"]
         settings = {"encoder": encoder}
-        
+
         # Add CRF for encoders that require it
-        if encoder in ["Software x264", "Software x265"]:
+        if encoder in {"Software x264", "Software x265"}:
             settings["crf"] = 23
         # Add bitrate for hardware encoders that require it
         elif "Hardware" in encoder:

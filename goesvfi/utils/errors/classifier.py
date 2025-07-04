@@ -19,6 +19,7 @@ class ErrorClassifier:
     def __init__(self) -> None:
         # Map exception types to categories
         import subprocess
+
         self._type_mappings: dict[type[Exception], ErrorCategory] = {
             FileNotFoundError: ErrorCategory.FILE_NOT_FOUND,
             PermissionError: ErrorCategory.PERMISSION,
@@ -72,7 +73,12 @@ class ErrorClassifier:
 
         # Special handling for OSError with errno (before checking type mappings)
         # This needs to come first because socket.error is OSError in Python 3
-        if isinstance(exception, OSError) and hasattr(exception, "errno") and isinstance(exception.errno, int) and exception.errno != 0:
+        if (
+            isinstance(exception, OSError)
+            and hasattr(exception, "errno")
+            and isinstance(exception.errno, int)
+            and exception.errno != 0
+        ):
             return ErrorClassifier._classify_os_error(exception)
 
         # Check direct type mappings
@@ -180,7 +186,7 @@ class ErrorClassifier:
             return f"Invalid user input: {exception}"
         if category == ErrorCategory.UNKNOWN:
             return f"An unexpected error occurred: {exception}"
-        
+
         return str(exception)
 
     @staticmethod
@@ -275,28 +281,29 @@ class ErrorClassifier:
         if isinstance(exception, OSError) and hasattr(exception, "errno") and exception.errno is not None:
             context.add_system_data("errno", exception.errno)
 
-        # Determine if this should be treated as a network error for context purposes  
+        # Determine if this should be treated as a network error for context purposes
         # Note: socket.error is an alias for OSError in Python 3, so we handle OSError specially
         is_network_error = isinstance(exception, (ConnectionError, TimeoutError)) and not isinstance(exception, OSError)
-        
+
         # Special handling for OSError - only add network context for socket-related errors
         if isinstance(exception, OSError):
             # Check if this looks like a socket/network error (test has "Socket error")
-            if "socket" in str(exception).lower():
-                is_network_error = True
-            # Also include specific network-related OSError subclasses  
-            elif isinstance(exception, (ConnectionError, ConnectionRefusedError, ConnectionResetError, BrokenPipeError, TimeoutError)):
+            if "socket" in str(exception).lower() or isinstance(
+                exception,
+                (ConnectionError, ConnectionRefusedError, ConnectionResetError, BrokenPipeError, TimeoutError),
+            ):
                 is_network_error = True
             # Don't treat generic OSError (with errno=None) as network error
-                
+
         if is_network_error:
             context.add_system_data("network_error_type", type(exception).__name__)
             # Only add errno None if it's not already set
             if "errno" not in context.system_data:
                 context.add_system_data("errno", None)
-        
+
         # Handle subprocess errors
         import subprocess
+
         if isinstance(exception, subprocess.CalledProcessError):
             context.add_system_data("command", exception.cmd)
             context.add_system_data("return_code", exception.returncode)
@@ -309,7 +316,7 @@ class ErrorClassifier:
             context.add_system_data("timeout", exception.timeout)
 
 
-# Default classifier instance  
+# Default classifier instance
 default_classifier = ErrorClassifier()
 
 

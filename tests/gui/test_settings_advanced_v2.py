@@ -10,8 +10,6 @@ This v2 version maintains all test scenarios while optimizing through:
 """
 
 import json
-import operator
-from pathlib import Path
 from unittest.mock import MagicMock
 
 from PyQt6.QtCore import QSettings, QTimer
@@ -99,37 +97,37 @@ class TestSettingsAdvancedOptimizedV2:
     def test_profile_management_basic(self, qtbot, main_window, temp_settings_workspace) -> None:
         """Test basic profile management operations."""
         workspace = temp_settings_workspace
-        
+
         # Simple test data
         test_settings = {"fps": 30, "encoder": "RIFE", "quality": "high"}
         profile_file = workspace["profiles"] / "test_profile.json"
-        
+
         # Test basic profile save
         with open(profile_file, "w", encoding="utf-8") as f:
             json.dump(test_settings, f)
-        
+
         assert profile_file.exists()
-        
+
         # Test basic profile load
         with open(profile_file, encoding="utf-8") as f:
             loaded_settings = json.load(f)
-        
+
         assert loaded_settings["fps"] == 30
         assert loaded_settings["encoder"] == "RIFE"
 
     def test_window_state_basic_persistence(self, qtbot, main_window, mock_settings_components) -> None:
         """Test basic window state persistence."""
         window = main_window
-        mock_settings = mock_settings_components["settings"]
-        
+        mock_settings_components["settings"]
+
         # Test basic window state save/restore
         window.setGeometry(100, 100, 800, 600)
-        
+
         # Test setting position
         window.move(200, 150)
         assert window.x() == 200
         assert window.y() == 150
-        
+
         # Test that geometry can be saved (without asserting it was called)
         geometry_data = window.saveGeometry()
         assert geometry_data is not None
@@ -137,7 +135,7 @@ class TestSettingsAdvancedOptimizedV2:
 
     def test_recent_items_basic_management(self, qtbot, main_window) -> None:
         """Test basic recent items management."""
-        
+
         # Simple recent items manager
         class RecentItemsManager:
             def __init__(self, max_items=10) -> None:
@@ -148,42 +146,42 @@ class TestSettingsAdvancedOptimizedV2:
                 if category in self.categories:
                     item_str = str(item)
                     category_list = self.categories[category]
-                    
+
                     # Remove if already exists
                     if item_str in category_list:
                         category_list.remove(item_str)
-                    
+
                     # Add to front
                     category_list.insert(0, item_str)
-                    
+
                     # Trim to max
-                    self.categories[category] = category_list[:self.max_items]
+                    self.categories[category] = category_list[: self.max_items]
 
             def get_items(self, category):
                 return self.categories.get(category, [])
 
         recent_mgr = RecentItemsManager(max_items=5)
-        
+
         # Test adding items
         recent_mgr.add_item("files", "/path/to/video1.mp4")
         recent_mgr.add_item("files", "/path/to/video2.mp4")
-        
+
         files = recent_mgr.get_items("files")
         assert len(files) == 2
         assert files[0] == "/path/to/video2.mp4"  # Most recent first
 
     def test_settings_migration_basic(self, qtbot, main_window, temp_settings_workspace) -> None:
         """Test basic settings migration."""
-        
+
         # Simple migration test
         old_settings = {"fps": 30, "encoder": "RIFE", "version": "1.0"}
-        
+
         # Basic migration logic
         if old_settings.get("version") == "1.0":
             new_settings = old_settings.copy()
             new_settings["version"] = "2.0"
             new_settings["enhancement_level"] = "medium"
-        
+
         assert new_settings["version"] == "2.0"
         assert new_settings["fps"] == 30
         assert "enhancement_level" in new_settings
@@ -193,29 +191,27 @@ class TestSettingsAdvancedOptimizedV2:
     ) -> None:
         """Test basic settings import and export functionality."""
         workspace = temp_settings_workspace
-        mocks = mock_settings_components
-        
+
         # Test export
         test_settings = {"fps": 60, "encoder": "FFmpeg", "quality": "high"}
         export_file = workspace["exports"] / "test_export.json"
-        
+
         with open(export_file, "w", encoding="utf-8") as f:
             json.dump(test_settings, f)
-        
+
         assert export_file.exists()
-        
+
         # Test import
         with open(export_file, encoding="utf-8") as f:
             imported_settings = json.load(f)
-        
+
         assert imported_settings["fps"] == 60
         assert imported_settings["encoder"] == "FFmpeg"
 
     def test_auto_save_and_preferences_basic(self, qtbot, main_window, mock_settings_components) -> None:
         """Test basic auto-save and preferences functionality."""
         window = main_window
-        mocks = mock_settings_components
-        
+
         # Test auto-save setup
         class AutoSaveManager:
             def __init__(self, window) -> None:
@@ -234,16 +230,16 @@ class TestSettingsAdvancedOptimizedV2:
                 return False
 
         auto_save = AutoSaveManager(window)
-        
+
         # Test change tracking
         auto_save.mark_changed("fps", 30, 60)
         assert auto_save.unsaved_changes
-        
+
         # Test save
         save_success = auto_save.save_settings()
         assert save_success
         assert not auto_save.unsaved_changes
-        
+
         # Test preferences reset
         class PreferencesReset:
             def __init__(self, window) -> None:

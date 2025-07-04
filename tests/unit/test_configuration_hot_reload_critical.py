@@ -11,28 +11,22 @@ This test suite covers high-priority missing areas identified in the testing gap
 """
 
 import json
-import os
+from pathlib import Path
 import threading
 import time
-from pathlib import Path
 from typing import Any
-from unittest.mock import Mock, patch
 
 import pytest
 
 from goesvfi.core.configuration import (
     ConfigurationManager,
-    NetworkConfig,
-    ProcessingConfig,
-    StorageConfig,
-    UIConfig,
 )
 
 
 class TestConfigurationHotReloadCritical:
     """Critical scenario tests for configuration hot-reloading system."""
 
-    @pytest.fixture
+    @pytest.fixture()
     def temp_config_dir(self) -> Any:
         """Create temporary directory for configuration tests."""
         import tempfile
@@ -40,7 +34,7 @@ class TestConfigurationHotReloadCritical:
         with tempfile.TemporaryDirectory() as temp_dir:
             yield Path(temp_dir)
 
-    @pytest.fixture
+    @pytest.fixture()
     def mock_config_data(self) -> dict[str, Any]:
         """Create mock configuration data for testing."""
         return {
@@ -77,35 +71,39 @@ class TestConfigurationHotReloadCritical:
             "profile_performance": False,
         }
 
-    @pytest.fixture
+    @pytest.fixture()
     def race_condition_tracker(self) -> Any:
         """Create tracker for race condition scenarios."""
 
         class RaceConditionTracker:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.file_modifications = []
                 self.configuration_loads = []
                 self.validation_errors = []
                 self.concurrent_operations = []
                 self.lock = threading.Lock()
 
-            def track_file_modification(self, timestamp: float, operation: str):
+            def track_file_modification(self, timestamp: float, operation: str) -> None:
                 with self.lock:
                     self.file_modifications.append((timestamp, operation))
 
-            def track_configuration_load(self, timestamp: float, success: bool, config_data: dict = None):
+            def track_configuration_load(
+                self, timestamp: float, success: bool, config_data: dict | None = None
+            ) -> None:
                 with self.lock:
                     self.configuration_loads.append((timestamp, success, config_data))
 
-            def track_validation_error(self, timestamp: float, error: str):
+            def track_validation_error(self, timestamp: float, error: str) -> None:
                 with self.lock:
                     self.validation_errors.append((timestamp, error))
 
-            def track_concurrent_operation(self, operation_id: str, start_time: float, end_time: float, success: bool):
+            def track_concurrent_operation(
+                self, operation_id: str, start_time: float, end_time: float, success: bool
+            ) -> None:
                 with self.lock:
                     self.concurrent_operations.append((operation_id, start_time, end_time, success))
 
-            def reset(self):
+            def reset(self) -> None:
                 with self.lock:
                     self.file_modifications.clear()
                     self.configuration_loads.clear()
@@ -131,7 +129,7 @@ class TestConfigurationHotReloadCritical:
             # Rapid file modification scenario
             modification_threads = []
 
-            def rapid_file_modifier(modifier_id: int):
+            def rapid_file_modifier(modifier_id: int) -> None:
                 """Rapidly modify configuration file."""
                 for i in range(10):
                     start_time = time.time()
@@ -165,7 +163,7 @@ class TestConfigurationHotReloadCritical:
                 thread.start()
 
             # Monitor configuration loads during rapid modifications
-            def monitor_config_loads():
+            def monitor_config_loads() -> None:
                 """Monitor configuration reloads."""
                 for _ in range(30):  # Monitor for 3 seconds
                     try:
@@ -221,9 +219,8 @@ class TestConfigurationHotReloadCritical:
         config_manager.start_file_watching()
 
         try:
-            concurrent_operations = []
 
-            def file_watcher_stress():
+            def file_watcher_stress() -> None:
                 """Stress the file watcher with frequent changes."""
                 for i in range(15):
                     start_time = time.time()
@@ -243,7 +240,7 @@ class TestConfigurationHotReloadCritical:
                     except Exception as e:
                         race_condition_tracker.track_validation_error(time.time(), f"Watcher stress: {e}")
 
-            def concurrent_config_reader():
+            def concurrent_config_reader() -> None:
                 """Concurrently read configuration while watcher is active."""
                 for i in range(20):
                     start_time = time.time()
@@ -261,7 +258,7 @@ class TestConfigurationHotReloadCritical:
 
                     time.sleep(0.1)
 
-            def concurrent_config_validator():
+            def concurrent_config_validator() -> None:
                 """Concurrently validate configuration while changes occur."""
                 for i in range(10):
                     start_time = time.time()
@@ -320,7 +317,7 @@ class TestConfigurationHotReloadCritical:
 
         try:
             # Test file deletion/recreation race condition
-            def file_deletion_recreation():
+            def file_deletion_recreation() -> None:
                 """Test file deletion and recreation."""
                 time.sleep(0.1)  # Let watcher start
 
@@ -336,7 +333,7 @@ class TestConfigurationHotReloadCritical:
                 time.sleep(0.5)  # Allow watcher to detect
 
             # Test partial write race condition
-            def partial_write_simulation():
+            def partial_write_simulation() -> None:
                 """Simulate partial write scenarios."""
                 time.sleep(0.3)
 
@@ -348,7 +345,7 @@ class TestConfigurationHotReloadCritical:
                 config_file.write_text(json.dumps(mock_config_data))
 
             # Test permission change race condition
-            def permission_change_simulation():
+            def permission_change_simulation() -> None:
                 """Simulate permission changes."""
                 time.sleep(0.5)
 
@@ -409,7 +406,7 @@ class TestConfigurationHotReloadCritical:
 
         try:
             # Store original configuration
-            original_config = config_manager.get_config()
+            config_manager.get_config()
 
             corruption_scenarios = [
                 ("invalid_json", '{"processing": invalid json}'),
@@ -463,7 +460,7 @@ class TestConfigurationHotReloadCritical:
             validation_results = []
             validation_lock = threading.Lock()
 
-            def validate_cross_dependencies():
+            def validate_cross_dependencies() -> None:
                 """Validate cross-dependencies between config sections."""
                 for i in range(15):
                     try:
@@ -490,7 +487,7 @@ class TestConfigurationHotReloadCritical:
 
                     time.sleep(0.1)
 
-            def concurrent_config_modifier():
+            def concurrent_config_modifier() -> None:
                 """Modify configuration while validation is running."""
                 for i in range(10):
                     try:
@@ -548,7 +545,7 @@ class TestConfigurationHotReloadCritical:
         notification_lock = threading.Lock()
 
         # Mock watcher callback to track notifications
-        def notification_callback(old_config, new_config):
+        def notification_callback(old_config, new_config) -> None:
             with notification_lock:
                 notifications_received.append({
                     "timestamp": time.time(),
@@ -594,10 +591,6 @@ class TestConfigurationHotReloadCritical:
         config_file.write_text(json.dumps(mock_config_data))
 
         # Set environment variables that should override config
-        env_overrides = {
-            "GOESVFI_PROCESSING_MAX_WORKERS": "999",
-            "GOESVFI_NETWORK_CONNECTION_TIMEOUT": "888",
-        }
 
         # Test basic configuration loading and modification
         config_manager = ConfigurationManager(config_file)
@@ -609,7 +602,7 @@ class TestConfigurationHotReloadCritical:
 
             # Verify basic functionality
             assert isinstance(initial_config.processing.max_workers, int)
-            assert isinstance(initial_config.network.connection_timeout, (int, float))
+            assert isinstance(initial_config.network.connection_timeout, int | float)
 
             # Modify file configuration
             modified_config = mock_config_data.copy()
@@ -637,10 +630,10 @@ class TestConfigurationHotReloadCritical:
         config_manager.start_file_watching()
 
         try:
-            original_config = config_manager.get_config()
+            config_manager.get_config()
 
             # Simulate interrupted atomic write
-            def interrupted_atomic_write():
+            def interrupted_atomic_write() -> None:
                 """Simulate atomic write that gets interrupted."""
                 temp_file = config_file.with_suffix(".tmp")
 
@@ -661,7 +654,7 @@ class TestConfigurationHotReloadCritical:
             # Monitor configuration during interrupted write
             config_states = []
 
-            def monitor_config_during_interruption():
+            def monitor_config_during_interruption() -> None:
                 """Monitor configuration state during write interruption."""
                 for _ in range(20):
                     try:

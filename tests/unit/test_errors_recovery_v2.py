@@ -875,11 +875,10 @@ class TestRecoveryIntegrationV2(unittest.TestCase):
                 # Perform retries internally
                 for attempt in range(self.max_retries + 1):
                     self.total_attempts += 1
-                    current_count = attempt
 
                     # Calculate delay with exponential backoff
                     if attempt > 0:
-                        delay = (self.backoff_factor**(attempt - 1)) * 0.01  # Small delays for testing
+                        delay = (self.backoff_factor ** (attempt - 1)) * 0.01  # Small delays for testing
                         self.retry_delays.append(delay)
                         time.sleep(delay)
 

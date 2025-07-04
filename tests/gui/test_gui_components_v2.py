@@ -103,7 +103,7 @@ class TestGUIComponentsOptimizedV2:
                 signal_connect = getattr(signal_obj, signal_attr).connect
                 # Check if signal connect was actually called, but don't fail if not
                 # as this depends on the specific signal broker implementation
-                assert hasattr(signal_connect, 'call_count')  # Mock was at least created
+                assert hasattr(signal_connect, "call_count")  # Mock was at least created
             else:
                 # Handle direct signals
                 signal = getattr(main_window, signal_name)
@@ -122,7 +122,7 @@ class TestGUIComponentsOptimizedV2:
                 signal_connect = getattr(main_window.main_tab, signal_name).connect
                 # Check if signal connect was actually called, but don't fail if not
                 # as this depends on the specific signal broker implementation
-                assert hasattr(signal_connect, 'call_count')  # Mock was at least created
+                assert hasattr(signal_connect, "call_count")  # Mock was at least created
 
         # Test multiple setup calls (should be idempotent)
         broker.setup_main_window_connections(main_window)
@@ -147,7 +147,9 @@ class TestGUIComponentsOptimizedV2:
             # Clear previous state
             main_window.sanchez_preview_cache = {"old": "data"}
             # Reset signal mock if it exists and is mockable
-            if hasattr(main_window.request_previews_update, 'emit') and hasattr(main_window.request_previews_update.emit, 'reset_mock'):
+            if hasattr(main_window.request_previews_update, "emit") and hasattr(
+                main_window.request_previews_update.emit, "reset_mock"
+            ):
                 main_window.request_previews_update.emit.reset_mock()
 
             # Set input directory
@@ -159,7 +161,7 @@ class TestGUIComponentsOptimizedV2:
 
             if test_path is not None:
                 # Flexible assertion - just check that emit exists and could be called
-                if hasattr(main_window.request_previews_update, 'emit'):
+                if hasattr(main_window.request_previews_update, "emit"):
                     assert callable(main_window.request_previews_update.emit)
 
         # Test crop rectangle management
@@ -172,24 +174,24 @@ class TestGUIComponentsOptimizedV2:
 
         for test_rect, description in crop_scenarios:
             # Reset mock properly - emit is a method, not a mock itself
-            if hasattr(main_window.request_previews_update, 'emit'):
-                if hasattr(main_window.request_previews_update.emit, 'reset_mock'):
+            if hasattr(main_window.request_previews_update, "emit"):
+                if hasattr(main_window.request_previews_update.emit, "reset_mock"):
                     main_window.request_previews_update.emit.reset_mock()
 
             state_manager.set_crop_rect(test_rect)
 
             assert main_window.current_crop_rect == test_rect, f"Crop rect not set for: {description}"
-            
+
             # Only assert if emit was actually called (flexible assertion)
-            if hasattr(main_window.request_previews_update, 'emit'):
-                if hasattr(main_window.request_previews_update.emit, 'call_count'):
+            if hasattr(main_window.request_previews_update, "emit"):
+                if hasattr(main_window.request_previews_update.emit, "call_count"):
                     assert main_window.request_previews_update.emit.call_count >= 0
 
         # StateManager doesn't have set_output_file method based on analysis
         # Test that the main functionality works
         assert state_manager is not None
-        assert hasattr(state_manager, 'set_input_directory')
-        assert hasattr(state_manager, 'set_crop_rect')
+        assert hasattr(state_manager, "set_input_directory")
+        assert hasattr(state_manager, "set_crop_rect")
 
     @staticmethod
     def test_file_picker_manager_comprehensive(mock_main_window: Any) -> None:
@@ -198,7 +200,10 @@ class TestGUIComponentsOptimizedV2:
         file_picker = FilePickerManager()
 
         # Test input directory picking
-        with patch("goesvfi.gui_components.file_picker_manager.QFileDialog") as mock_dialog:
+        with (
+            patch("goesvfi.gui_components.file_picker_manager.QFileDialog") as mock_dialog,
+            patch("PyQt6.QtWidgets.QMessageBox") as mock_message_box,
+        ):
             input_scenarios = [
                 ("/selected/input/dir", "Valid directory selected"),
                 ("", "User cancelled selection"),
@@ -219,7 +224,10 @@ class TestGUIComponentsOptimizedV2:
                     assert result is None, f"Empty selection not handled for: {description}"
 
         # Test output file picking
-        with patch("goesvfi.gui_components.file_picker_manager.QFileDialog") as mock_dialog:
+        with (
+            patch("goesvfi.gui_components.file_picker_manager.QFileDialog") as mock_dialog,
+            patch("PyQt6.QtWidgets.QMessageBox"),
+        ):
             output_scenarios = [
                 (("/selected/output.mp4", "Video Files (*.mp4)"), "MP4 file selected"),
                 (("/home/user/video.mov", "MOV Files (*.mov)"), "MOV file selected"),
@@ -365,17 +373,17 @@ class TestGUIComponentsOptimizedV2:
 
         # Test that the instance works correctly
         assert settings_persistence is not None
-        assert hasattr(settings_persistence, 'save_input_directory')
-        assert hasattr(settings_persistence, 'save_crop_rect')
+        assert hasattr(settings_persistence, "save_input_directory")
+        assert hasattr(settings_persistence, "save_crop_rect")
 
         # Test basic functionality - just verify methods can be called without exceptions
         test_input_path = Path("/bulk/input")
         test_crop_rect = (10, 20, 100, 80)
-        
+
         # Test save operations - they may return False due to mocking issues, but shouldn't crash
         try:
-            result1 = settings_persistence.save_input_directory(test_input_path)
-            result2 = settings_persistence.save_crop_rect(test_crop_rect)
+            settings_persistence.save_input_directory(test_input_path)
+            settings_persistence.save_crop_rect(test_crop_rect)
             # Just verify they complete without exceptions
             assert True
         except Exception as e:
@@ -386,7 +394,6 @@ class TestGUIComponentsOptimizedV2:
     @staticmethod
     def test_theme_manager_comprehensive(mock_main_window: Any) -> None:
         """Test comprehensive ThemeManager functionality."""
-        main_window = mock_main_window
         # ThemeManager takes no constructor arguments
         theme_manager = ThemeManager()
 
@@ -400,7 +407,7 @@ class TestGUIComponentsOptimizedV2:
 
         # Mock QApplication for theme testing
         mock_app = MagicMock()
-        
+
         for theme_name, _description in theme_scenarios:
             # Should not crash when applying theme - requires QApplication
             try:
@@ -491,19 +498,19 @@ class TestGUIComponentsOptimizedV2:
         # Test components with None main_window
         error_scenarios = [
             lambda: StateManager(None),
-            lambda: FilePickerManager(),  # No constructor args
-            lambda: ModelSelectorManager(),  # No constructor args
-            lambda: CropHandler(),  # No constructor args
-            lambda: ProcessingCallbacks(),  # No constructor args
+            FilePickerManager,  # No constructor args
+            ModelSelectorManager,  # No constructor args
+            CropHandler,  # No constructor args
+            ProcessingCallbacks,  # No constructor args
             lambda: SettingsPersistence(None),
-            lambda: ThemeManager(),  # No constructor args
+            ThemeManager,  # No constructor args
         ]
 
         for scenario in error_scenarios:
             try:
-                component = scenario()
+                scenario()
                 # If it doesn't crash, it should handle None gracefully
-                assert component is not None or True  # Allow None return
+                assert True  # Allow None return
             except (TypeError, AttributeError):
                 # Expected for some components that require main_window
                 pass
@@ -526,7 +533,7 @@ class TestGUIComponentsOptimizedV2:
 
         # Test with invalid path types for actual methods
         invalid_settings = [123, [], {}, "not_a_path_object"]
-        
+
         for invalid_setting in invalid_settings:
             try:
                 if isinstance(invalid_setting, (int, list, dict)):

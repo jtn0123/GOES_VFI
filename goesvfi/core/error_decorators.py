@@ -47,6 +47,7 @@ def with_error_handling(
 
         # Check if function is async
         if asyncio.iscoroutinefunction(func):
+
             @functools.wraps(func)
             async def async_wrapper(*args: P.args, **kwargs: P.kwargs) -> T | Any:
                 try:
@@ -66,26 +67,26 @@ def with_error_handling(
                     return default_return
 
             return cast("Callable[P, T | Any]", async_wrapper)
-        else:
-            @functools.wraps(func)
-            def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> T | Any:
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    # Create structured error
-                    classifier = ErrorClassifier()
-                    error = classifier.create_structured_error(e, op_name, comp_name)
 
-                    # Log the error
-                    log_func = getattr(LOGGER, log_level, LOGGER.exception)
-                    log_func("[%s] %s failed: %s", comp_name, op_name, error.user_message)
+        @functools.wraps(func)
+        def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> T | Any:
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                # Create structured error
+                classifier = ErrorClassifier()
+                error = classifier.create_structured_error(e, op_name, comp_name)
 
-                    # Re-raise or return default
-                    if reraise:
-                        raise
-                    return default_return
+                # Log the error
+                log_func = getattr(LOGGER, log_level, LOGGER.exception)
+                log_func("[%s] %s failed: %s", comp_name, op_name, error.user_message)
 
-            return sync_wrapper
+                # Re-raise or return default
+                if reraise:
+                    raise
+                return default_return
+
+        return sync_wrapper
 
     return decorator
 

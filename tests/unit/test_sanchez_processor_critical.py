@@ -128,7 +128,8 @@ class TestSanchezProcessorCritical:
             progress_tracker.reset()
 
             # Mock the Sanchez colourise function to avoid requiring actual binary
-            with patch("goesvfi.pipeline.sanchez_processor.colourise") as mock_colourise:
+            with patch("goesvfi.pipeline.sanchez_processor.colourise") as mock_colourise, \
+                 patch("goesvfi.pipeline.sanchez_processor.SanchezProcessor._is_valid_satellite_image", return_value=True):
                 # Mock the colourise function to create the output file it expects
                 def mock_colourise_func(input_path, output_path, **kwargs):
                     # Create the expected output file
@@ -182,7 +183,8 @@ class TestSanchezProcessorCritical:
         for _scenario_name, exception in failure_scenarios:
             progress_tracker.reset()
 
-            with patch("goesvfi.pipeline.sanchez_processor.colourise") as mock_colourise:
+            with patch("goesvfi.pipeline.sanchez_processor.colourise") as mock_colourise, \
+                 patch("goesvfi.pipeline.sanchez_processor.SanchezProcessor._is_valid_satellite_image", return_value=True):
                 mock_colourise.side_effect = exception
 
                 # Process should handle error gracefully and return original image
@@ -216,7 +218,8 @@ class TestSanchezProcessorCritical:
             return original_save(self, fp, format, **params)
 
         with patch.object(Image.Image, "save", track_temp_files):
-            with patch("goesvfi.pipeline.sanchez_processor.colourise") as mock_colourise:
+            with patch("goesvfi.pipeline.sanchez_processor.colourise") as mock_colourise, \
+                 patch("goesvfi.pipeline.sanchez_processor.SanchezProcessor._is_valid_satellite_image", return_value=True):
                 # Make colourise fail after input file is created
                 mock_colourise.side_effect = RuntimeError("Processing failed")
 
@@ -240,7 +243,8 @@ class TestSanchezProcessorCritical:
         # Create moderately large image (avoid memory issues)
         large_image_data = image_test_generator.create_test_image_data(500, 500, 3, np.uint8)
 
-        with patch("goesvfi.pipeline.sanchez_processor.colourise"):
+        with patch("goesvfi.pipeline.sanchez_processor.colourise"), \
+             patch("goesvfi.pipeline.sanchez_processor.SanchezProcessor._is_valid_satellite_image", return_value=True):
             # Create fake output
             fake_output = temp_dir / "large_output.png"
             fake_output.touch()
@@ -287,7 +291,8 @@ class TestSanchezProcessorCritical:
                 processor = SanchezProcessor(proc_temp_dir)
                 image_data = image_test_generator.create_test_image_data(50, 50, 1, np.uint8)
 
-                with patch("goesvfi.pipeline.sanchez_processor.colourise"):
+                with patch("goesvfi.pipeline.sanchez_processor.colourise"), \
+             patch("goesvfi.pipeline.sanchez_processor.SanchezProcessor._is_valid_satellite_image", return_value=True):
                     fake_output = proc_temp_dir / f"output_{processor_id}.png"
                     fake_output.touch()
 
@@ -344,7 +349,8 @@ class TestSanchezProcessorCritical:
                 image_data=test_array, source_path=f"{case_name}.png", metadata={"test_case": case_name}
             )
 
-            with patch("goesvfi.pipeline.sanchez_processor.colourise"):
+            with patch("goesvfi.pipeline.sanchez_processor.colourise"), \
+             patch("goesvfi.pipeline.sanchez_processor.SanchezProcessor._is_valid_satellite_image", return_value=True):
                 fake_output = temp_dir / f"{case_name}_output.png"
                 fake_output.touch()
 
@@ -367,7 +373,8 @@ class TestSanchezProcessorCritical:
         processor = SanchezProcessor(temp_dir, progress_tracker)
         image_data = image_test_generator.create_test_image_data(100, 100)
 
-        with patch("goesvfi.pipeline.sanchez_processor.colourise"):
+        with patch("goesvfi.pipeline.sanchez_processor.colourise"), \
+             patch("goesvfi.pipeline.sanchez_processor.SanchezProcessor._is_valid_satellite_image", return_value=True):
             fake_output = temp_dir / "progress_test.png"
             fake_output.touch()
 
@@ -411,7 +418,8 @@ class TestSanchezProcessorCritical:
         ]
 
         for scenario_name, method_to_patch, exception in io_error_scenarios:
-            with patch("goesvfi.pipeline.sanchez_processor.colourise"):
+            with patch("goesvfi.pipeline.sanchez_processor.colourise"), \
+             patch("goesvfi.pipeline.sanchez_processor.SanchezProcessor._is_valid_satellite_image", return_value=True):
                 fake_output = temp_dir / f"{scenario_name}_output.png"
                 fake_output.touch()
 
@@ -448,7 +456,8 @@ class TestSanchezProcessorCritical:
         # Test processing works with created directory
         image_data = image_test_generator.create_test_image_data(50, 50)
 
-        with patch("goesvfi.pipeline.sanchez_processor.colourise"):
+        with patch("goesvfi.pipeline.sanchez_processor.colourise"), \
+             patch("goesvfi.pipeline.sanchez_processor.SanchezProcessor._is_valid_satellite_image", return_value=True):
             fake_output = non_existent_dir / "test_output.png"
             fake_output.touch()
 
@@ -482,7 +491,8 @@ class TestSanchezProcessorCritical:
             metadata=original_metadata,
         )
 
-        with patch("goesvfi.pipeline.sanchez_processor.colourise"):
+        with patch("goesvfi.pipeline.sanchez_processor.colourise"), \
+             patch("goesvfi.pipeline.sanchez_processor.SanchezProcessor._is_valid_satellite_image", return_value=True):
             fake_output = temp_dir / "metadata_test.png"
             fake_output.touch()
 

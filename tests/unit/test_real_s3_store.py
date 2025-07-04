@@ -1,20 +1,14 @@
 """Integration tests for S3Store with real NOAA GOES data patterns."""
 
-from datetime import datetime, timedelta
-import os
+from datetime import datetime
 from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import AsyncMock, MagicMock
 
-import pytest
-
 from goesvfi.integrity_check.remote.s3_store import S3Store
 from goesvfi.integrity_check.time_index import (
-    RADC_MINUTES,
-    RADF_MINUTES,
     SatellitePattern,
-    to_s3_key,
 )
 
 
@@ -89,7 +83,7 @@ class TestRealS3Store(unittest.IsolatedAsyncioTestCase):
 
         # Test different bands with RadC product type
         bands_to_test = [1, 2, 7, 8, 13, 14]
-        
+
         for _ in bands_to_test:
             exists = await self.store.check_file_exists(
                 self.radc_test_date,

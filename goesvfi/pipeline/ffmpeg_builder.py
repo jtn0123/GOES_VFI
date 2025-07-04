@@ -234,10 +234,10 @@ class FFmpegCommandBuilder:
 
     def _get_preset(self, default: str) -> str:
         """Get the preset to use, with fallback to default.
-        
+
         Args:
             default (str): Default preset to use if none specified.
-            
+
         Returns:
             str: The preset to use.
         """
@@ -245,7 +245,7 @@ class FFmpegCommandBuilder:
 
     def _add_tune_and_profile_args(self, cmd: list[str]) -> None:
         """Add tune and profile arguments if set.
-        
+
         Args:
             cmd (list[str]): Command list to append to.
         """

@@ -85,24 +85,24 @@ class TestResourceTracker(unittest.TestCase):
 
         # Resource with close method - create a simple class with close
         class MockCloseableResource:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.close_called = False
-            
-            def close(self):
+
+            def close(self) -> None:
                 self.close_called = True
-        
+
         resource2 = MockCloseableResource()
 
         # Resource with __exit__ method - create a simple class with __exit__
         class MockExitableResource:
-            def __init__(self):
+            def __init__(self) -> None:
                 self.exit_called = False
                 self.exit_args = None
-            
+
             def __exit__(self, exc_type, exc_val, exc_tb):
                 self.exit_called = True
                 self.exit_args = (exc_type, exc_val, exc_tb)
-        
+
         resource3 = MockExitableResource()
 
         tracker.track(resource1)
@@ -378,21 +378,20 @@ class TestMemoryMonitor(unittest.TestCase):
         mock_memory.percent = 50.0
         mock_memory.used = 4000000000
         mock_memory.free = 4000000000
-        
+
         # Create a mock psutil module
         mock_psutil_module = MagicMock()
         mock_psutil_module.virtual_memory.return_value = mock_memory
-        
+
         # Patch the import call within the method
-        import sys
-        original_import = __builtins__['__import__']
-        
+        original_import = __builtins__["__import__"]
+
         def mock_import(name, *args, **kwargs):
-            if name == 'psutil':
+            if name == "psutil":
                 return mock_psutil_module
             return original_import(name, *args, **kwargs)
-        
-        with patch('builtins.__import__', side_effect=mock_import):
+
+        with patch("builtins.__import__", side_effect=mock_import):
             monitor = MemoryMonitor()
             usage = monitor.get_memory_usage()
 
